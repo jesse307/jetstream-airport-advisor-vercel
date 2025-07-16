@@ -1,9 +1,7 @@
 import { useState, useEffect } from "react";
 import { Calculator, Clock, Plane, MapPin, Route } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface Airport {
   code: string;
@@ -72,15 +70,13 @@ interface FlightCalculatorProps {
 }
 
 export function FlightCalculator({ departure, arrival }: FlightCalculatorProps) {
-  const [selectedAircraft, setSelectedAircraft] = useState<string>("Light Jet");
   const [distance, setDistance] = useState<number>(0);
-  const [flightTime, setFlightTime] = useState<string>("");
 
   // Simple distance calculation (in reality, you'd use great circle distance)
   const calculateDistance = (dep: Airport, arr: Airport): number => {
     // Mock calculation - in real app, use lat/lng coordinates
-    const hash1 = dep.code.split('').reduce((a, b) => a + b.charCodeAt(0), 0);
-    const hash2 = arr.code.split('').reduce((a, b) => a + b.charCodeAt(0), 0);
+    const hash1 = dep.code.split("").reduce((a, b) => a + b.charCodeAt(0), 0);
+    const hash2 = arr.code.split("").reduce((a, b) => a + b.charCodeAt(0), 0);
     return Math.abs(hash1 - hash2) * 10 + 200; // Mock distance in nautical miles
   };
 
@@ -88,30 +84,22 @@ export function FlightCalculator({ departure, arrival }: FlightCalculatorProps) 
     const timeInHours = distance / aircraftSpeed;
     const hours = Math.floor(timeInHours);
     const minutes = Math.round((timeInHours - hours) * 60);
-    return `${hours}h ${minutes.toString().padStart(2, '0')}m`;
+    return `${hours}h ${minutes.toString().padStart(2, "0")}m`;
+  };
+
+  const checkRunwayCompatibility = (runway: string, minRunway: number) => {
+    const runwayLength = parseInt(runway.replace(/[^\d]/g, ""));
+    return runwayLength >= minRunway;
   };
 
   useEffect(() => {
     if (departure && arrival) {
       const dist = calculateDistance(departure, arrival);
       setDistance(dist);
-      
-      const aircraft = AIRCRAFT_TYPES.find(a => a.category === selectedAircraft);
-      if (aircraft) {
-        setFlightTime(calculateFlightTime(dist, aircraft.speed));
-      }
     } else {
       setDistance(0);
-      setFlightTime("");
     }
-  }, [departure, arrival, selectedAircraft]);
-
-  const selectedAircraftData = AIRCRAFT_TYPES.find(a => a.category === selectedAircraft);
-
-  const checkRunwayCompatibility = (runway: string, minRunway: number) => {
-    const runwayLength = parseInt(runway.replace(/[^\d]/g, ''));
-    return runwayLength >= minRunway;
-  };
+  }, [departure, arrival]);
 
   return (
     <Card className="shadow-aviation">
@@ -122,29 +110,9 @@ export function FlightCalculator({ departure, arrival }: FlightCalculatorProps) 
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6 pt-6">
-        {/* Aircraft Selection */}
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Aircraft Category</label>
-          <Select value={selectedAircraft} onValueChange={setSelectedAircraft}>
-            <SelectTrigger className="bg-card">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {AIRCRAFT_TYPES.map((aircraft) => (
-                <SelectItem key={aircraft.category} value={aircraft.category}>
-                  <div className="flex items-center gap-2">
-                    <Plane className="h-4 w-4" />
-                    {aircraft.category}
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
         {/* Flight Route */}
         {departure && arrival && (
-          <div className="space-y-4">
+          <div className="space-y-6">
             <div className="flex items-center justify-between rounded-lg bg-gradient-sky p-4">
               <div className="flex items-center gap-4">
                 <div className="text-center">
@@ -163,76 +131,99 @@ export function FlightCalculator({ departure, arrival }: FlightCalculatorProps) 
               </div>
             </div>
 
-            {/* Flight Time */}
-            <div className="flex items-center justify-between rounded-lg border border-border bg-card p-4">
-              <div className="flex items-center gap-2">
-                <Clock className="h-5 w-5 text-accent" />
-                <span className="font-medium">Estimated Flight Time</span>
-              </div>
-              <div className="text-xl font-bold text-accent">{flightTime}</div>
-            </div>
+            {/* Flight Times for All Aircraft Types */}
+            <div className="space-y-4">
+              <h3 className="font-semibold flex items-center gap-2">
+                <Clock className="h-5 w-5 text-primary" />
+                Estimated Flight Times by Aircraft Type
+              </h3>
+              
+              <div className="grid gap-3">
+                {AIRCRAFT_TYPES.map((aircraft) => {
+                  const flightTime = calculateFlightTime(distance, aircraft.speed);
+                  const departureCompatible = checkRunwayCompatibility(departure.runway, aircraft.minRunway);
+                  const arrivalCompatible = checkRunwayCompatibility(arrival.runway, aircraft.minRunway);
+                  const isCompatible = departureCompatible && arrivalCompatible;
 
-            {/* Aircraft Details */}
-            {selectedAircraftData && (
-              <div className="rounded-lg border border-border bg-card p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-semibold flex items-center gap-2">
-                    <Plane className="h-4 w-4" />
-                    {selectedAircraftData.category}
-                  </h3>
-                  <Badge variant="outline">{selectedAircraftData.passengers} passengers</Badge>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <span className="text-muted-foreground">Cruise Speed:</span>
-                    <div className="font-medium">{selectedAircraftData.speed} kts</div>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Min Runway:</span>
-                    <div className="font-medium">{selectedAircraftData.minRunway.toLocaleString()} ft</div>
-                  </div>
-                </div>
-
-                <div>
-                  <span className="text-muted-foreground text-sm">Popular Aircraft:</span>
-                  <div className="flex flex-wrap gap-1 mt-1">
-                    {selectedAircraftData.examples.map((aircraft) => (
-                      <Badge key={aircraft} variant="secondary" className="text-xs">
-                        {aircraft}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Runway Compatibility */}
-                {departure && arrival && selectedAircraftData && (
-                  <div className="border-t border-border pt-3 space-y-2">
-                    <h4 className="text-sm font-medium">Runway Compatibility</h4>
-                    <div className="grid grid-cols-2 gap-3">
+                  return (
+                    <div 
+                      key={aircraft.category} 
+                      className={`rounded-lg border p-4 transition-colors ${
+                        isCompatible 
+                          ? "border-border bg-card hover:bg-secondary/30" 
+                          : "border-destructive/30 bg-destructive/5"
+                      }`}
+                    >
                       <div className="flex items-center justify-between">
-                        <span className="text-sm">{departure.code}</span>
-                        <Badge 
-                          variant={checkRunwayCompatibility(departure.runway, selectedAircraftData.minRunway) ? "default" : "destructive"}
-                          className="text-xs"
-                        >
-                          {departure.runway}
-                        </Badge>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm">{arrival.code}</span>
-                        <Badge 
-                          variant={checkRunwayCompatibility(arrival.runway, selectedAircraftData.minRunway) ? "default" : "destructive"}
-                          className="text-xs"
-                        >
-                          {arrival.runway}
-                        </Badge>
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-2">
+                              <Plane className="h-4 w-4 text-primary" />
+                              <span className="font-semibold">{aircraft.category}</span>
+                            </div>
+                            <Badge variant="outline" className="text-xs">
+                              {aircraft.passengers} passengers
+                            </Badge>
+                            {!isCompatible && (
+                              <Badge variant="destructive" className="text-xs">
+                                Runway Incompatible
+                              </Badge>
+                            )}
+                          </div>
+                          
+                          <div className="grid grid-cols-2 gap-4 text-sm">
+                            <div>
+                              <span className="text-muted-foreground">Cruise Speed:</span>
+                              <div className="font-medium">{aircraft.speed} kts</div>
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground">Min Runway:</span>
+                              <div className="font-medium">{aircraft.minRunway.toLocaleString()} ft</div>
+                            </div>
+                          </div>
+
+                          <div>
+                            <span className="text-muted-foreground text-sm">Popular Aircraft:</span>
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {aircraft.examples.map((example) => (
+                                <Badge key={example} variant="secondary" className="text-xs">
+                                  {example}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="text-right">
+                          <div className="text-sm text-muted-foreground">Flight Time</div>
+                          <div className={`text-2xl font-bold ${isCompatible ? "text-accent" : "text-muted-foreground"}`}>
+                            {flightTime}
+                          </div>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )}
+                  );
+                })}
               </div>
-            )}
+
+              {/* Runway Compatibility Summary */}
+              <div className="rounded-lg border border-border bg-secondary/30 p-4">
+                <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
+                  <MapPin className="h-4 w-4" />
+                  Runway Compatibility
+                </h4>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="text-muted-foreground">{departure.code}:</span>
+                    <div className="font-medium">{departure.runway}</div>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">{arrival.code}:</span>
+                    <div className="font-medium">{arrival.runway}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
