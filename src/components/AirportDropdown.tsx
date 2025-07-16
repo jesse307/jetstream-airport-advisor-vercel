@@ -10,6 +10,7 @@ interface Airport {
   city: string;
   runway: string;
   fbo: string;
+  type: string;
 }
 
 interface AlternativeAirport extends Airport {
@@ -111,6 +112,7 @@ const getAlternatives = (airport: Airport | null, type: string): AlternativeAirp
         city: "Caldwell, NJ",
         runway: "4997 ft",
         fbo: "Meridian",
+        type: "Public",
         distance: "15 NM",
         reason: "Lower costs, less congestion",
         advantages: ["Lower landing fees", "Less air traffic", "Shorter taxi times"]
@@ -121,6 +123,7 @@ const getAlternatives = (airport: Airport | null, type: string): AlternativeAirp
         city: "White Plains, NY",
         runway: "6549 ft",
         fbo: "Million Air",
+        type: "Public",
         distance: "25 NM",
         reason: "Longer runway, customs available",
         advantages: ["International customs", "Longer runway", "Premium FBO services"]
@@ -133,6 +136,7 @@ const getAlternatives = (airport: Airport | null, type: string): AlternativeAirp
         city: "Burbank, CA", 
         runway: "6886 ft",
         fbo: "Atlantic Aviation",
+        type: "Public",
         distance: "12 NM",
         reason: "Less congestion, closer to Hollywood",
         advantages: ["Less busy airspace", "Closer to entertainment district", "Good fuel prices"]
@@ -142,7 +146,8 @@ const getAlternatives = (airport: Airport | null, type: string): AlternativeAirp
         name: "Santa Monica Airport",
         city: "Santa Monica, CA",
         runway: "4973 ft",
-        fbo: "Atlantic Aviation", 
+        fbo: "Atlantic Aviation",
+        type: "Public", 
         distance: "18 NM",
         reason: "Coastal location, premium services",
         advantages: ["Ocean proximity", "Luxury FBO", "Less noise restrictions"]
@@ -155,6 +160,7 @@ const getAlternatives = (airport: Airport | null, type: string): AlternativeAirp
         city: "Teterboro, NJ",
         runway: "7000 ft", 
         fbo: "Atlantic Aviation, Meridian",
+        type: "Public",
         distance: "20 NM",
         reason: "Business aviation focused",
         advantages: ["No airline traffic", "Faster service", "Multiple FBO options"]
@@ -165,6 +171,7 @@ const getAlternatives = (airport: Airport | null, type: string): AlternativeAirp
         city: "New York, NY",
         runway: "7003 ft",
         fbo: "Atlantic Aviation",
+        type: "Public",
         distance: "15 NM", 
         reason: "Closer to Manhattan",
         advantages: ["Shorter drive to city", "Good ground transport", "Airline backup options"]
@@ -179,6 +186,7 @@ const getAlternatives = (airport: Airport | null, type: string): AlternativeAirp
       city: "Alternative City",
       runway: "5500 ft",
       fbo: "Regional Aviation Services",
+      type: "Public",
       distance: "35 NM",
       reason: "Cost-effective alternative",
       advantages: ["Lower fees", "Less congestion", "Good services"]
@@ -206,6 +214,12 @@ export function AirportDropdown({ airport, onSelect, type }: AirportDropdownProp
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
             <span className="font-bold text-primary text-lg">{details.code}</span>
+            <Badge 
+              variant={details.type === "Public" ? "default" : details.type === "Private" ? "secondary" : "destructive"}
+              className="text-xs"
+            >
+              {details.type}
+            </Badge>
             {details.customs && <Badge variant="default" className="text-xs">Customs</Badge>}
             {details.slots && <Badge variant="outline" className="text-xs">Slots</Badge>}
           </div>

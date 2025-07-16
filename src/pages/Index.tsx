@@ -11,6 +11,7 @@ interface Airport {
   city: string;
   runway: string;
   fbo: string;
+  type: string;
 }
 
 const Index = () => {
