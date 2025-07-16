@@ -1,4 +1,4 @@
-import { MapPin, Plane, Radio, Clock, Users, ChevronDown, ChevronUp, Navigation } from "lucide-react";
+import { MapPin, Plane, Clock, Users, ChevronDown, ChevronUp, Navigation } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -38,8 +38,6 @@ const getAirportDetails = (airport: Airport | null) => {
         { number: "06/24", length: "6013 ft", width: "150 ft", surface: "Asphalt" }
       ],
       hours: "24/7",
-      tower: "118.7 / 121.9",
-      ground: "121.9",
       fbos: [
         { name: "Atlantic Aviation", services: ["Fuel", "Hangar", "Catering", "Ground Transport"], phone: "+1-201-288-1771" },
         { name: "Meridian", services: ["Fuel", "Maintenance", "Hangar", "Catering"], phone: "+1-201-288-5040" }
@@ -55,8 +53,6 @@ const getAirportDetails = (airport: Airport | null) => {
         { number: "16L/34R", length: "4003 ft", width: "75 ft", surface: "Asphalt" }
       ],
       hours: "6:00 AM - 10:00 PM",
-      tower: "120.2",
-      ground: "121.7",
       fbos: [
         { name: "Atlantic Aviation", services: ["Fuel", "Hangar", "Catering", "Ground Transport"], phone: "+1-818-785-5920" },
         { name: "Clay Lacy Aviation", services: ["Fuel", "Maintenance", "Charter", "Management"], phone: "+1-818-989-2900" }
@@ -72,8 +68,6 @@ const getAirportDetails = (airport: Airport | null) => {
         { number: "04R/22L", length: "12079 ft", width: "150 ft", surface: "Asphalt" }
       ],
       hours: "24/7",
-      tower: "119.1 / 123.9",
-      ground: "121.9",
       fbos: [
         { name: "Jet Aviation", services: ["Fuel", "Hangar", "Catering", "Customs"], phone: "+1-718-995-4300" },
         { name: "Ross Aviation", services: ["Fuel", "Ground Support", "Catering"], phone: "+1-718-995-9500" }
@@ -88,8 +82,6 @@ const getAirportDetails = (airport: Airport | null) => {
     elevation: "N/A",
     runways: [{ number: "N/A", length: airport.runway, width: "N/A", surface: "N/A" }],
     hours: "N/A",
-    tower: "N/A",
-    ground: "N/A", 
     fbos: [{ name: airport.fbo, services: ["Standard Services"], phone: "N/A" }],
     customs: false,
     slots: false
@@ -257,32 +249,13 @@ export function AirportDropdown({ airport, onSelect, type }: AirportDropdownProp
             </div>
           </div>
 
-          {/* Radio Frequencies & Hours */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <h3 className="font-semibold flex items-center gap-2 text-sm">
-                <Radio className="h-4 w-4 text-primary" />
-                Radio
-              </h3>
-              <div className="space-y-1 text-sm">
-                <div>
-                  <span className="text-muted-foreground">Tower:</span>
-                  <div className="font-medium">{details.tower}</div>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">Ground:</span>
-                  <div className="font-medium">{details.ground}</div>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <h3 className="font-semibold flex items-center gap-2 text-sm">
-                <Clock className="h-4 w-4 text-primary" />
-                Hours
-              </h3>
-              <div className="text-sm font-medium">{details.hours}</div>
-            </div>
+          {/* Operating Hours */}
+          <div className="space-y-2">
+            <h3 className="font-semibold flex items-center gap-2 text-sm">
+              <Clock className="h-4 w-4 text-primary" />
+              Operating Hours
+            </h3>
+            <div className="text-sm font-medium">{details.hours}</div>
           </div>
 
           {/* FBO Services */}
