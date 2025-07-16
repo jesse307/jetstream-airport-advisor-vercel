@@ -177,20 +177,7 @@ const getAlternatives = (airport: Airport | null, type: string): AlternativeAirp
     ]
   };
 
-  return alternatives[airport.code] || [
-    {
-      code: "KALT",
-      name: "Alternative Regional Airport",
-      city: "Alternative City",
-      state: "XX",
-      runway: "5500 ft",
-      fbo: "Regional Aviation Services",
-      type: "Public",
-      distance: "35 NM",
-      reason: "Cost-effective alternative",
-      advantages: ["Lower fees", "Less congestion", "Good services"]
-    }
-  ];
+  return alternatives[airport.code] || [];
 };
 
 export function AirportDropdown({ airport, onSelect, type }: AirportDropdownProps) {
