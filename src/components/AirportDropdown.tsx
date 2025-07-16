@@ -1,4 +1,4 @@
-import { MapPin, Plane, Clock, Users, ChevronDown, ChevronUp, Navigation } from "lucide-react";
+import { MapPin, Plane, Clock, Users, ChevronDown, ChevronUp, Navigation, ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -86,6 +86,16 @@ const getAirportDetails = (airport: Airport | null) => {
     customs: false,
     slots: false
   };
+};
+
+// Generate NOTAM URL for airport
+const getNotamUrl = (airportCode: string): string => {
+  // For US airports (K prefix), use FAA NOTAM Search
+  if (airportCode.startsWith("K")) {
+    return `https://www.notams.faa.gov/search/landing?formatType=DOMESTIC&reportType=RAW&actionType=notamReportAction&searchType=0&icaoId=${airportCode}`;
+  }
+  // For international airports, use generic ICAO search
+  return `https://www.icao.int/safety/iStars/Pages/NOTAMs.aspx`;
 };
 
 // Mock alternative airports data
@@ -251,10 +261,21 @@ export function AirportDropdown({ airport, onSelect, type }: AirportDropdownProp
 
           {/* Operating Hours */}
           <div className="space-y-2">
-            <h3 className="font-semibold flex items-center gap-2 text-sm">
-              <Clock className="h-4 w-4 text-primary" />
-              Operating Hours
-            </h3>
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold flex items-center gap-2 text-sm">
+                <Clock className="h-4 w-4 text-primary" />
+                Operating Hours
+              </h3>
+              <a
+                href={getNotamUrl(details.code)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-muted-foreground hover:text-primary transition-colors flex items-center gap-1"
+              >
+                NOTAMs
+                <ExternalLink className="h-3 w-3" />
+              </a>
+            </div>
             <div className="text-sm font-medium">{details.hours}</div>
           </div>
 
