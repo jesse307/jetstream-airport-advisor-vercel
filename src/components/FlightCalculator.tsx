@@ -149,6 +149,8 @@ export function FlightCalculator({ departure, arrival }: FlightCalculatorProps) 
         'KSDL': [33.6228, -111.9105], // Scottsdale
         'KBDR': [41.1635, -73.1261], // Igor I. Sikorsky Memorial
         'KLGB': [33.8177, -118.1516], // Long Beach
+        'KBHB': [44.4497, -68.3616], // Bar Harbor, Maine
+        'KHOU': [29.6465, -95.2789], // Houston Hobby
       };
       
       const coords_result = coords[airport.code];

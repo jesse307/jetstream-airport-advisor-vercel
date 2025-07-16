@@ -71,7 +71,9 @@ const COMMERCIAL_AIRPORTS = [
   { code: "KCVG", name: "Cincinnati/Northern Kentucky International", city: "Cincinnati, OH", state: "OH", runway: "12000 ft", fbo: "Signature Flight Support", type: "Public" },
   { code: "KCLE", name: "Cleveland Hopkins International", city: "Cleveland, OH", state: "OH", runway: "9000 ft", fbo: "Signature Flight Support", type: "Public" },
   { code: "KPIT", name: "Pittsburgh International", city: "Pittsburgh, PA", state: "PA", runway: "11500 ft", fbo: "Signature Flight Support", type: "Public" },
-  { code: "KPHL", name: "Philadelphia International", city: "Philadelphia, PA", state: "PA", runway: "12000 ft", fbo: "Signature Flight Support", type: "Public" }
+  { code: "KPHL", name: "Philadelphia International", city: "Philadelphia, PA", state: "PA", runway: "12000 ft", fbo: "Signature Flight Support", type: "Public" },
+  { code: "KBHB", name: "Bar Harbor Airport", city: "Bar Harbor, ME", state: "ME", runway: "5200 ft", fbo: "Bar Harbor Aviation", type: "Public" },
+  { code: "KHOU", name: "William P. Hobby Airport", city: "Houston, TX", state: "TX", runway: "7602 ft", fbo: "Atlantic Aviation, Signature", type: "Public" }
 ];
 
 // Combine commercial airports with private airports
