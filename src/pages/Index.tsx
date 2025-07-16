@@ -4,15 +4,7 @@ import { AirportSearch } from "@/components/AirportSearch";
 import { FlightCalculator } from "@/components/FlightCalculator";
 import { AirportDropdown } from "@/components/AirportDropdown";
 import { Button } from "@/components/ui/button";
-
-interface Airport {
-  code: string;
-  name: string;
-  city: string;
-  runway: string;
-  fbo: string;
-  type: string;
-}
+import { type Airport } from "@/data/privateAirports";
 
 const Index = () => {
   const [departure, setDeparture] = useState<Airport | null>(null);

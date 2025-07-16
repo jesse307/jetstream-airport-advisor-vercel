@@ -3,15 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { useState } from "react";
-
-interface Airport {
-  code: string;
-  name: string;
-  city: string;
-  runway: string;
-  fbo: string;
-  type: string;
-}
+import { type Airport } from "@/data/privateAirports";
 
 interface AlternativeAirport extends Airport {
   distance: string;
@@ -110,6 +102,7 @@ const getAlternatives = (airport: Airport | null, type: string): AlternativeAirp
         code: "KCDW",
         name: "Essex County Airport",
         city: "Caldwell, NJ",
+        state: "NJ",
         runway: "4997 ft",
         fbo: "Meridian",
         type: "Public",
@@ -121,6 +114,7 @@ const getAlternatives = (airport: Airport | null, type: string): AlternativeAirp
         code: "KHPN",
         name: "Westchester County Airport", 
         city: "White Plains, NY",
+        state: "NY",
         runway: "6549 ft",
         fbo: "Million Air",
         type: "Public",
@@ -133,7 +127,8 @@ const getAlternatives = (airport: Airport | null, type: string): AlternativeAirp
       {
         code: "KBUR",
         name: "Hollywood Burbank Airport",
-        city: "Burbank, CA", 
+        city: "Burbank, CA",
+        state: "CA",
         runway: "6886 ft",
         fbo: "Atlantic Aviation",
         type: "Public",
@@ -145,6 +140,7 @@ const getAlternatives = (airport: Airport | null, type: string): AlternativeAirp
         code: "KSMO",
         name: "Santa Monica Airport",
         city: "Santa Monica, CA",
+        state: "CA",
         runway: "4973 ft",
         fbo: "Atlantic Aviation",
         type: "Public", 
@@ -158,6 +154,7 @@ const getAlternatives = (airport: Airport | null, type: string): AlternativeAirp
         code: "KTEB",
         name: "Teterboro Airport",
         city: "Teterboro, NJ",
+        state: "NJ",
         runway: "7000 ft", 
         fbo: "Atlantic Aviation, Meridian",
         type: "Public",
@@ -169,6 +166,7 @@ const getAlternatives = (airport: Airport | null, type: string): AlternativeAirp
         code: "KLGA",
         name: "LaGuardia Airport",
         city: "New York, NY",
+        state: "NY",
         runway: "7003 ft",
         fbo: "Atlantic Aviation",
         type: "Public",
@@ -184,6 +182,7 @@ const getAlternatives = (airport: Airport | null, type: string): AlternativeAirp
       code: "KALT",
       name: "Alternative Regional Airport",
       city: "Alternative City",
+      state: "XX",
       runway: "5500 ft",
       fbo: "Regional Aviation Services",
       type: "Public",
