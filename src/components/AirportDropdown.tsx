@@ -215,7 +215,7 @@ export function AirportDropdown({ airport, onSelect, type }: AirportDropdownProp
           <div className="flex items-center gap-2">
             <span className="font-bold text-primary text-lg">{details.code}</span>
             <Badge 
-              variant={details.type === "Public" ? "default" : details.type === "Private" ? "secondary" : "destructive"}
+              variant={details.type === "Public" ? "secondary" : details.type === "Private" ? "outline" : "destructive"}
               className="text-xs"
             >
               {details.type}

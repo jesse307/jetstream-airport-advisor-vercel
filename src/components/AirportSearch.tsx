@@ -188,7 +188,7 @@ export function AirportSearch({ value, onChange, placeholder = "Search airports 
                     <div className="flex items-center gap-2">
                       <span className="font-semibold text-primary">{airport.code}</span>
                       <Badge 
-                        variant={airport.type === "Public" ? "default" : airport.type === "Private" ? "secondary" : "destructive"}
+                        variant={airport.type === "Public" ? "secondary" : airport.type === "Private" ? "outline" : "destructive"}
                         className="text-xs"
                       >
                         {airport.type}
