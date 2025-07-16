@@ -29,7 +29,7 @@ interface AircraftType {
 const AIRCRAFT_TYPES: AircraftType[] = [
   {
     category: "Turboprop",
-    speed: 220, // Average speed including climb/descent (cruise ~300 kts)
+    speed: 220, // Block speed including taxi, climb, descent (cruise ~300 kts)
     examples: ["King Air 350", "TBM 940", "PC-12"],
     minRunway: 3000,
     passengers: "6-10",
@@ -37,7 +37,7 @@ const AIRCRAFT_TYPES: AircraftType[] = [
   },
   {
     category: "Light Jet", 
-    speed: 320, // Average speed including climb/descent (cruise ~450 kts)
+    speed: 320, // Block speed including taxi, climb, descent (cruise ~450 kts)
     examples: ["Citation CJ3+", "Phenom 300", "Learjet 75"],
     minRunway: 4000,
     passengers: "6-8",
@@ -45,7 +45,7 @@ const AIRCRAFT_TYPES: AircraftType[] = [
   },
   {
     category: "Mid Jet",
-    speed: 380, // Average speed including climb/descent (cruise ~500 kts)
+    speed: 360, // Block speed including taxi, climb, descent (cruise ~470 kts)
     examples: ["Citation XLS+", "Hawker 900XP", "Learjet 60XR"],
     minRunway: 5000,
     passengers: "8-10",
@@ -53,7 +53,7 @@ const AIRCRAFT_TYPES: AircraftType[] = [
   },
   {
     category: "Super Mid Jet",
-    speed: 420, // Average speed including climb/descent (cruise ~530 kts)
+    speed: 390, // Block speed including taxi, climb, descent (cruise ~490 kts)
     examples: ["Citation X+", "Challenger 350", "G280"],
     minRunway: 5500,
     passengers: "9-12",
@@ -61,7 +61,7 @@ const AIRCRAFT_TYPES: AircraftType[] = [
   },
   {
     category: "Heavy Jet",
-    speed: 450, // Average speed including climb/descent (cruise ~550 kts)
+    speed: 410, // Block speed including taxi, climb, descent (cruise ~520 kts)
     examples: ["Falcon 7X", "G650", "Global 6000"],
     minRunway: 6000,
     passengers: "12-16",
@@ -69,7 +69,7 @@ const AIRCRAFT_TYPES: AircraftType[] = [
   },
   {
     category: "Ultra Long Range",
-    speed: 480, // Average speed including climb/descent (cruise ~560 kts)
+    speed: 430, // Block speed including taxi, climb, descent (cruise ~540 kts)
     examples: ["G700", "Global 7500", "Falcon 8X"],
     minRunway: 6500,
     passengers: "14-19",
