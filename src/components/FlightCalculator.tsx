@@ -10,6 +10,8 @@ interface Airport {
   runway: string;
   fbo: string;
   type: string;
+  lat?: number;
+  lng?: number;
 }
 
 interface AircraftType {
@@ -73,12 +75,65 @@ interface FlightCalculatorProps {
 export function FlightCalculator({ departure, arrival }: FlightCalculatorProps) {
   const [distance, setDistance] = useState<number>(0);
 
-  // Simple distance calculation (in reality, you'd use great circle distance)
+  // Calculate great circle distance using Haversine formula
   const calculateDistance = (dep: Airport, arr: Airport): number => {
-    // Mock calculation - in real app, use lat/lng coordinates
-    const hash1 = dep.code.split("").reduce((a, b) => a + b.charCodeAt(0), 0);
-    const hash2 = arr.code.split("").reduce((a, b) => a + b.charCodeAt(0), 0);
-    return Math.abs(hash1 - hash2) * 10 + 200; // Mock distance in nautical miles
+    // Use approximate coordinates for major airports
+    const getCoordinates = (airport: Airport) => {
+      const coords: { [key: string]: [number, number] } = {
+        'KJFK': [40.6413, -73.7781], // JFK
+        'KLAX': [33.9425, -118.4081], // LAX
+        'KORD': [41.9742, -87.9073], // ORD
+        'KATL': [33.6407, -84.4277], // ATL
+        'KDFW': [32.8998, -97.0403], // DFW
+        'KDEN': [39.8561, -104.6737], // DEN
+        'KSFO': [37.6213, -122.3790], // SFO
+        'KLAS': [36.0840, -115.1537], // LAS
+        'KMIA': [25.7959, -80.2870], // MIA
+        'KBOS': [42.3656, -71.0096], // BOS
+        'KJFB': [40.6892, -74.1745], // Teterboro
+        'KTEB': [40.8501, -74.0606], // Teterboro
+        'KHPN': [41.0674, -73.7063], // Westchester
+        'KPDK': [33.8756, -84.3020], // DeKalb-Peachtree
+        'KVNY': [34.2198, -118.4898], // Van Nuys
+        'KBUR': [34.2007, -118.3591], // Burbank
+        'KSNA': [33.6757, -117.8681], // John Wayne
+        'KSDL': [33.6228, -111.9105], // Scottsdale
+        'KPHX': [33.4484, -112.0740], // Phoenix Sky Harbor
+        'KIAH': [29.9902, -95.3368], // Houston Intercontinental
+        'KMCO': [28.4312, -81.3081], // Orlando International
+        'KFLL': [26.0742, -80.1506], // Fort Lauderdale
+        'KTPA': [27.9755, -82.5332], // Tampa
+        'KPBI': [26.6832, -80.0956], // West Palm Beach
+        'KFXE': [26.1973, -80.1707], // Fort Lauderdale Executive
+        'KOPF': [25.9077, -80.2784], // Miami-Opa Locka Executive
+        'KTMB': [25.6479, -80.4328], // Tamiami Executive
+        'KJQF': [26.1953, -80.2489], // Concord Field
+        'KBCT': [26.3785, -80.1076], // Boca Raton
+        'KSRQ': [27.3954, -82.5544], // Sarasota-Bradenton
+        'KAPF': [26.1525, -81.7756], // Naples Municipal
+        'KRSW': [26.5362, -81.7552], // Southwest Florida International
+        'KPGD': [26.9202, -81.9905], // Charlotte County
+        'KSUA': [26.6862, -80.0659], // Stuart Witham Field
+      };
+      
+      return coords[airport.code] || [40.6413, -73.7781]; // Default to JFK if not found
+    };
+
+    const [lat1, lon1] = getCoordinates(dep);
+    const [lat2, lon2] = getCoordinates(arr);
+
+    const R = 3440; // Earth's radius in nautical miles
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(dLon/2) * Math.sin(dLon/2);
+    
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    const distance = R * c;
+    
+    return Math.round(distance);
   };
 
   const calculateFlightTime = (distance: number, aircraftSpeed: number): string => {
