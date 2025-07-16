@@ -85,18 +85,16 @@ interface FlightCalculatorProps {
 export function FlightCalculator({ departure, arrival }: FlightCalculatorProps) {
   const [distance, setDistance] = useState<number>(0);
 
-  // Calculate great circle distance using Haversine formula
-  const calculateDistance = (dep: Airport, arr: Airport): number => {
-    // Use coordinates from airport data if available, otherwise lookup table
-    const getCoordinates = (airport: Airport) => {
-      // First try to use coordinates from airport data
-      if (airport.latitude && airport.longitude) {
-        console.log(`Using airport data coordinates for ${airport.code}: [${airport.latitude}, ${airport.longitude}]`);
-        return [airport.latitude, airport.longitude];
-      }
-      
-      // Extended coordinate lookup table for major airports
-      const coords: { [key: string]: [number, number] } = {
+  // Use coordinates from airport data if available, otherwise lookup table
+  const getCoordinates = (airport: Airport) => {
+    // First try to use coordinates from airport data
+    if (airport.latitude && airport.longitude) {
+      console.log(`Using airport data coordinates for ${airport.code}: [${airport.latitude}, ${airport.longitude}]`);
+      return [airport.latitude, airport.longitude];
+    }
+    
+    // Extended coordinate lookup table for major airports
+    const coords: { [key: string]: [number, number] } = {
         // Major US Hubs
         'KJFK': [40.6413, -73.7781], // JFK
         'KLAX': [33.9425, -118.4081], // LAX
@@ -163,6 +161,8 @@ export function FlightCalculator({ departure, arrival }: FlightCalculatorProps) 
       }
     };
 
+  // Calculate great circle distance using Haversine formula
+  const calculateDistance = (dep: Airport, arr: Airport): number => {
     const [lat1, lon1] = getCoordinates(dep);
     const [lat2, lon2] = getCoordinates(arr);
 
@@ -183,16 +183,63 @@ export function FlightCalculator({ departure, arrival }: FlightCalculatorProps) 
     return Math.round(distance);
   };
 
-  const calculateFlightTime = (distance: number, aircraftSpeed: number): string => {
-    const timeInHours = distance / aircraftSpeed;
+  // Get typical wind component for route
+  const getWindComponent = (dep: Airport, arr: Airport): number => {
+    const depCoords = getCoordinates(dep);
+    const arrCoords = getCoordinates(arr);
+    
+    if (!depCoords || !arrCoords) return 0;
+    
+    // Calculate bearing (direction of flight)
+    const lat1 = depCoords[0] * Math.PI / 180;
+    const lat2 = arrCoords[0] * Math.PI / 180;
+    const deltaLon = (arrCoords[1] - depCoords[1]) * Math.PI / 180;
+    
+    const y = Math.sin(deltaLon) * Math.cos(lat2);
+    const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(deltaLon);
+    const bearing = (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+    
+    // Typical wind patterns (prevailing westerlies in US)
+    // Winds generally flow west to east at 15-25 kts at typical private jet altitudes
+    const avgWindSpeed = 20; // knots
+    const avgWindDirection = 270; // degrees (west wind)
+    
+    // Calculate wind component (headwind = negative, tailwind = positive)
+    const windDiff = Math.abs(bearing - avgWindDirection);
+    const normalizedDiff = windDiff > 180 ? 360 - windDiff : windDiff;
+    const windComponent = avgWindSpeed * Math.cos(normalizedDiff * Math.PI / 180);
+    
+    console.log(`Route bearing: ${bearing.toFixed(0)}°, Wind component: ${windComponent.toFixed(1)} kts`);
+    return windComponent;
+  };
+
+  const calculateFlightTime = (distance: number, aircraftSpeed: number, dep?: Airport, arr?: Airport): string => {
+    let effectiveSpeed = aircraftSpeed;
+    
+    // Apply wind component if both airports are provided
+    if (dep && arr) {
+      const windComponent = getWindComponent(dep, arr);
+      effectiveSpeed = aircraftSpeed + windComponent; // tailwind increases effective speed
+      console.log(`Wind-adjusted speed: ${aircraftSpeed} + ${windComponent.toFixed(1)} = ${effectiveSpeed.toFixed(1)} kts`);
+    }
+    
+    const timeInHours = distance / effectiveSpeed;
     const hours = Math.floor(timeInHours);
     const minutes = Math.round((timeInHours - hours) * 60);
-    console.log(`Flight time calculation: ${distance} NM ÷ ${aircraftSpeed} kts = ${timeInHours.toFixed(2)} hours = ${hours}h ${minutes}m`);
+    console.log(`Flight time calculation: ${distance} NM ÷ ${effectiveSpeed.toFixed(1)} kts = ${timeInHours.toFixed(2)} hours = ${hours}h ${minutes}m`);
     return `${hours}h ${minutes.toString().padStart(2, "0")}m`;
   };
 
-  const calculateFlightTimeInHours = (distance: number, aircraftSpeed: number): number => {
-    return distance / aircraftSpeed;
+  const calculateFlightTimeInHours = (distance: number, aircraftSpeed: number, dep?: Airport, arr?: Airport): number => {
+    let effectiveSpeed = aircraftSpeed;
+    
+    // Apply wind component if both airports are provided
+    if (dep && arr) {
+      const windComponent = getWindComponent(dep, arr);
+      effectiveSpeed = aircraftSpeed + windComponent;
+    }
+    
+    return distance / effectiveSpeed;
   };
 
   const calculateCostRange = (flightTimeHours: number, hourlyRate: number): { min: number; max: number } => {
@@ -264,8 +311,8 @@ export function FlightCalculator({ departure, arrival }: FlightCalculatorProps) 
               
               <div className="grid gap-3">
                 {AIRCRAFT_TYPES.map((aircraft) => {
-                  const flightTime = calculateFlightTime(distance, aircraft.speed);
-                  const flightTimeHours = calculateFlightTimeInHours(distance, aircraft.speed);
+                  const flightTime = calculateFlightTime(distance, aircraft.speed, departure, arrival);
+                  const flightTimeHours = calculateFlightTimeInHours(distance, aircraft.speed, departure, arrival);
                   const costRange = calculateCostRange(flightTimeHours, aircraft.hourlyRate);
                   const departureCompatible = checkRunwayCompatibility(departure.runway, aircraft.minRunway);
                   const arrivalCompatible = checkRunwayCompatibility(arrival.runway, aircraft.minRunway);
