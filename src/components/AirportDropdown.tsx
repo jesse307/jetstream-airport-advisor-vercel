@@ -1,6 +1,7 @@
-import { MapPin, Plane, Radio, Clock, Users, ChevronDown, ChevronUp } from "lucide-react";
+import { MapPin, Plane, Radio, Clock, Users, ChevronDown, ChevronUp, Navigation } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 import { useState } from "react";
 
 interface Airport {
@@ -11,8 +12,16 @@ interface Airport {
   fbo: string;
 }
 
+interface AlternativeAirport extends Airport {
+  distance: string;
+  reason: string;
+  advantages: string[];
+}
+
 interface AirportDropdownProps {
   airport: Airport | null;
+  onSelect: (airport: Airport) => void;
+  type: "departure" | "arrival";
 }
 
 // Enhanced airport data for detailed view
@@ -87,9 +96,98 @@ const getAirportDetails = (airport: Airport | null) => {
   };
 };
 
-export function AirportDropdown({ airport }: AirportDropdownProps) {
+// Mock alternative airports data
+const getAlternatives = (airport: Airport | null, type: string): AlternativeAirport[] => {
+  if (!airport) return [];
+
+  // Sample alternatives based on selected airport
+  const alternatives: Record<string, AlternativeAirport[]> = {
+    "KTEB": [
+      {
+        code: "KCDW",
+        name: "Essex County Airport",
+        city: "Caldwell, NJ",
+        runway: "4997 ft",
+        fbo: "Meridian",
+        distance: "15 NM",
+        reason: "Lower costs, less congestion",
+        advantages: ["Lower landing fees", "Less air traffic", "Shorter taxi times"]
+      },
+      {
+        code: "KHPN",
+        name: "Westchester County Airport", 
+        city: "White Plains, NY",
+        runway: "6549 ft",
+        fbo: "Million Air",
+        distance: "25 NM",
+        reason: "Longer runway, customs available",
+        advantages: ["International customs", "Longer runway", "Premium FBO services"]
+      }
+    ],
+    "KVAN": [
+      {
+        code: "KBUR",
+        name: "Hollywood Burbank Airport",
+        city: "Burbank, CA", 
+        runway: "6886 ft",
+        fbo: "Atlantic Aviation",
+        distance: "12 NM",
+        reason: "Less congestion, closer to Hollywood",
+        advantages: ["Less busy airspace", "Closer to entertainment district", "Good fuel prices"]
+      },
+      {
+        code: "KSMO",
+        name: "Santa Monica Airport",
+        city: "Santa Monica, CA",
+        runway: "4973 ft",
+        fbo: "Atlantic Aviation", 
+        distance: "18 NM",
+        reason: "Coastal location, premium services",
+        advantages: ["Ocean proximity", "Luxury FBO", "Less noise restrictions"]
+      }
+    ],
+    "KJFK": [
+      {
+        code: "KTEB",
+        name: "Teterboro Airport",
+        city: "Teterboro, NJ",
+        runway: "7000 ft", 
+        fbo: "Atlantic Aviation, Meridian",
+        distance: "20 NM",
+        reason: "Business aviation focused",
+        advantages: ["No airline traffic", "Faster service", "Multiple FBO options"]
+      },
+      {
+        code: "KLGA",
+        name: "LaGuardia Airport",
+        city: "New York, NY",
+        runway: "7003 ft",
+        fbo: "Atlantic Aviation",
+        distance: "15 NM", 
+        reason: "Closer to Manhattan",
+        advantages: ["Shorter drive to city", "Good ground transport", "Airline backup options"]
+      }
+    ]
+  };
+
+  return alternatives[airport.code] || [
+    {
+      code: "KALT",
+      name: "Alternative Regional Airport",
+      city: "Alternative City",
+      runway: "5500 ft",
+      fbo: "Regional Aviation Services",
+      distance: "35 NM",
+      reason: "Cost-effective alternative",
+      advantages: ["Lower fees", "Less congestion", "Good services"]
+    }
+  ];
+};
+
+export function AirportDropdown({ airport, onSelect, type }: AirportDropdownProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const details = getAirportDetails(airport);
+  const alternatives = getAlternatives(airport, type);
 
   if (!airport || !details) {
     return null;
@@ -213,6 +311,85 @@ export function AirportDropdown({ airport }: AirportDropdownProps) {
               ))}
             </div>
           </div>
+
+          {/* Alternative Airports */}
+          {alternatives.length > 0 && (
+            <>
+              <Separator />
+              <div className="space-y-3">
+                <h3 className="font-semibold flex items-center gap-2 text-sm">
+                  <Navigation className="h-4 w-4 text-primary" />
+                  Alternative {type === "departure" ? "Departure" : "Arrival"} Airports
+                </h3>
+                <div className="space-y-3">
+                  {alternatives.map((altAirport) => (
+                    <div 
+                      key={altAirport.code}
+                      className="border border-border rounded-md p-3 hover:bg-secondary/30 transition-colors"
+                    >
+                      <div className="space-y-2">
+                        {/* Alternative Airport Header */}
+                        <div className="flex items-start justify-between">
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-primary text-sm">{altAirport.code}</span>
+                              <Badge variant="outline" className="text-xs">
+                                <Clock className="h-3 w-3 mr-1" />
+                                {altAirport.distance}
+                              </Badge>
+                            </div>
+                            <h4 className="font-medium text-xs">{altAirport.name}</h4>
+                            <p className="text-xs text-muted-foreground flex items-center gap-1">
+                              <MapPin className="h-3 w-3" />
+                              {altAirport.city}
+                            </p>
+                          </div>
+                          <Button 
+                            variant="aviation" 
+                            size="sm"
+                            className="text-xs h-7"
+                            onClick={() => onSelect(altAirport)}
+                          >
+                            Select
+                          </Button>
+                        </div>
+
+                        {/* Alternative Airport Details */}
+                        <div className="grid grid-cols-2 gap-3 text-xs">
+                          <div>
+                            <span className="text-muted-foreground">Runway:</span>
+                            <div className="font-medium">{altAirport.runway}</div>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">FBO:</span>
+                            <div className="font-medium">{altAirport.fbo}</div>
+                          </div>
+                        </div>
+
+                        {/* Reason */}
+                        <div className="text-xs">
+                          <span className="text-muted-foreground">Why consider:</span>
+                          <div className="font-medium text-accent">{altAirport.reason}</div>
+                        </div>
+
+                        {/* Advantages */}
+                        <div>
+                          <span className="text-muted-foreground text-xs">Key advantages:</span>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {altAirport.advantages.map((advantage, index) => (
+                              <Badge key={index} variant="secondary" className="text-xs">
+                                {advantage}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>

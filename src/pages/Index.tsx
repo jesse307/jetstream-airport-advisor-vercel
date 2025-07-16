@@ -2,10 +2,8 @@ import { useState } from "react";
 import { Plane, MapPin, Navigation, Settings } from "lucide-react";
 import { AirportSearch } from "@/components/AirportSearch";
 import { FlightCalculator } from "@/components/FlightCalculator";
-import { AlternativeAirports } from "@/components/AlternativeAirports";
 import { AirportDropdown } from "@/components/AirportDropdown";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 
 interface Airport {
   code: string;
@@ -60,7 +58,11 @@ const Index = () => {
                 label="Departure Airport"
                 placeholder="Search departure airport..."
               />
-              <AirportDropdown airport={departure} />
+              <AirportDropdown 
+                airport={departure} 
+                onSelect={setDeparture}
+                type="departure"
+              />
             </div>
             
             <div className="flex items-start gap-3">
@@ -71,7 +73,11 @@ const Index = () => {
                   label="Arrival Airport"
                   placeholder="Search arrival airport..."
                 />
-                <AirportDropdown airport={arrival} />
+                <AirportDropdown 
+                  airport={arrival} 
+                  onSelect={setArrival}
+                  type="arrival"
+                />
               </div>
               <Button
                 variant="professional"
@@ -87,26 +93,6 @@ const Index = () => {
 
           {/* Flight Calculator */}
           <FlightCalculator departure={departure} arrival={arrival} />
-
-          <Separator />
-
-          {/* Alternative Airports */}
-          <div className="grid lg:grid-cols-2 gap-8">
-            {departure && (
-              <AlternativeAirports
-                selectedAirport={departure}
-                onSelect={setDeparture}
-                type="departure"
-              />
-            )}
-            {arrival && (
-              <AlternativeAirports
-                selectedAirport={arrival}
-                onSelect={setArrival}
-                type="arrival"
-              />
-            )}
-          </div>
         </div>
       </main>
 
