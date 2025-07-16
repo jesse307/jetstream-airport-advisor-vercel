@@ -3,7 +3,7 @@ import { Plane, MapPin, Navigation, Settings } from "lucide-react";
 import { AirportSearch } from "@/components/AirportSearch";
 import { FlightCalculator } from "@/components/FlightCalculator";
 import { AlternativeAirports } from "@/components/AlternativeAirports";
-import { AirportDetails } from "@/components/AirportDetails";
+import { AirportDropdown } from "@/components/AirportDropdown";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 
@@ -60,9 +60,10 @@ const Index = () => {
                 label="Departure Airport"
                 placeholder="Search departure airport..."
               />
+              <AirportDropdown airport={departure} />
             </div>
             
-            <div className="flex items-end">
+            <div className="flex items-start gap-3">
               <div className="flex-1 space-y-4">
                 <AirportSearch
                   value={arrival}
@@ -70,11 +71,12 @@ const Index = () => {
                   label="Arrival Airport"
                   placeholder="Search arrival airport..."
                 />
+                <AirportDropdown airport={arrival} />
               </div>
               <Button
                 variant="professional"
                 size="sm"
-                className="ml-3 mb-0"
+                className="mt-7"
                 onClick={handleSwapAirports}
                 disabled={!departure && !arrival}
               >
@@ -88,31 +90,22 @@ const Index = () => {
 
           <Separator />
 
-          {/* Airport Details and Alternatives */}
+          {/* Alternative Airports */}
           <div className="grid lg:grid-cols-2 gap-8">
-            {/* Left Column - Airport Details */}
-            <div className="space-y-6">
-              <AirportDetails airport={departure} title="Departure Airport Details" />
-              <AirportDetails airport={arrival} title="Arrival Airport Details" />
-            </div>
-
-            {/* Right Column - Alternative Airports */}
-            <div className="space-y-6">
-              {departure && (
-                <AlternativeAirports
-                  selectedAirport={departure}
-                  onSelect={setDeparture}
-                  type="departure"
-                />
-              )}
-              {arrival && (
-                <AlternativeAirports
-                  selectedAirport={arrival}
-                  onSelect={setArrival}
-                  type="arrival"
-                />
-              )}
-            </div>
+            {departure && (
+              <AlternativeAirports
+                selectedAirport={departure}
+                onSelect={setDeparture}
+                type="departure"
+              />
+            )}
+            {arrival && (
+              <AlternativeAirports
+                selectedAirport={arrival}
+                onSelect={setArrival}
+                type="arrival"
+              />
+            )}
           </div>
         </div>
       </main>
