@@ -21,17 +21,16 @@ export interface Airport {
 export const PRIVATE_AIRPORTS: Airport[] = [
   // California Private Airports
   { code: "CA03", name: "Aero Acres Airport", city: "Bakersfield, CA", state: "CA", runway: "2400 ft", fbo: "Self Service", type: "Private", latitude: 35.2345, longitude: -119.1234, elevation: 405 },
-  { code: "CA06", name: "Agua Dulce Airpark", city: "Agua Dulce, CA", state: "CA", runway: "3200 ft", fbo: "Private", type: "Private", latitude: 34.4956, longitude: -118.3234, elevation: 2688 },
-  { code: "CA08", name: "Arvin Airport", city: "Arvin, CA", state: "CA", runway: "2600 ft", fbo: "Private", type: "Private", latitude: 35.2089, longitude: -118.8234, elevation: 449 },
-  { code: "CA09", name: "Atwater-Merced Regional", city: "Atwater, CA", state: "CA", runway: "6000 ft", fbo: "Castle Aviation", type: "Private", latitude: 37.3678, longitude: -120.5689, elevation: 151 },
-  { code: "CA10", name: "Big Bear City Airport", city: "Big Bear City, CA", state: "CA", runway: "5850 ft", fbo: "Big Bear Aviation", type: "Private", latitude: 34.2636, longitude: -116.8567, elevation: 6752 },
+  { code: "CA06", name: "Agua Dulce Airpark", city: "Agua Dulce, CA", state: "CA", runway: "3200 ft", fbo: "Self Service", type: "Private", latitude: 34.4956, longitude: -118.3234, elevation: 2688 },
+  { code: "KCCB", name: "Cable Airport", city: "Upland, CA", state: "CA", runway: "3865 ft", fbo: "Cable Airport Services", type: "Public", latitude: 34.1115, longitude: -117.6881, elevation: 1444 },
+  { code: "KCMA", name: "Camarillo Airport", city: "Camarillo, CA", state: "CA", runway: "6013 ft", fbo: "American Flyers", type: "Public", latitude: 34.2137, longitude: -119.0942, elevation: 77 },
+  { code: "KWJF", name: "General William J. Fox Airfield", city: "Lancaster, CA", state: "CA", runway: "7201 ft", fbo: "Fox Aviation Services", type: "Public", latitude: 34.7411, longitude: -118.2194, elevation: 2351 },
   
   // Texas Private Airports
-  { code: "TA02", name: "Addison Airport", city: "Addison, TX", state: "TX", runway: "7202 ft", fbo: "Atlantic Aviation, Million Air", type: "Private", latitude: 32.9686, longitude: -96.8364, elevation: 644 },
-  { code: "TA05", name: "David Wayne Hooks Memorial", city: "Spring, TX", state: "TX", runway: "6000 ft", fbo: "Lone Star Executive", type: "Private", latitude: 30.0617, longitude: -95.5528, elevation: 152 },
-  { code: "TA07", name: "Georgetown Municipal", city: "Georgetown, TX", state: "TX", runway: "5000 ft", fbo: "Williamson County Aviation", type: "Private", latitude: 30.6789, longitude: -97.6789, elevation: 790 },
-  { code: "TA08", name: "Horseshoe Bay Resort Airport", city: "Horseshoe Bay, TX", state: "TX", runway: "4200 ft", fbo: "Resort Aviation", type: "Private", latitude: 30.5234, longitude: -98.3567, elevation: 791 },
-  { code: "TA10", name: "Lakeway Airpark", city: "Lakeway, TX", state: "TX", runway: "3000 ft", fbo: "Lakeway Aviation", type: "Private", latitude: 30.3567, longitude: -97.9876, elevation: 756 },
+  { code: "KGKY", name: "Arlington Municipal", city: "Arlington, TX", state: "TX", runway: "6100 ft", fbo: "Texas Jet", type: "Public", latitude: 32.6639, longitude: -97.0947, elevation: 628 },
+  { code: "KDWH", name: "David Wayne Hooks Memorial", city: "Spring, TX", state: "TX", runway: "6000 ft", fbo: "Lone Star Executive", type: "Public", latitude: 30.0617, longitude: -95.5528, elevation: 152 },
+  { code: "KGTU", name: "Georgetown Municipal", city: "Georgetown, TX", state: "TX", runway: "5004 ft", fbo: "Williamson County Aviation", type: "Public", latitude: 30.6789, longitude: -97.6789, elevation: 790 },
+  { code: "KRAS", name: "Austin Executive Airport", city: "Austin, TX", state: "TX", runway: "6025 ft", fbo: "Austin Jet Center", type: "Public", latitude: 30.2978, longitude: -97.6889, elevation: 565 },
   
   // Florida Private Airports
   { code: "FL02", name: "Bartow Executive", city: "Bartow, FL", state: "FL", runway: "5000 ft", fbo: "Bartow Aviation", type: "Private", latitude: 27.9434, longitude: -81.7834, elevation: 125 },

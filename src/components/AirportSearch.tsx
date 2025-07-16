@@ -11,24 +11,24 @@ import { PRIVATE_AIRPORTS, type Airport } from "@/data/privateAirports";
 const COMMERCIAL_AIRPORTS = [
   // Major Commercial/Public Airports
   // New York Area
-  { code: "KTEB", name: "Teterboro Airport", city: "Teterboro, NJ", state: "NJ", runway: "7000 ft", fbo: "Atlantic Aviation, Meridian", type: "Public" },
-  { code: "KJFK", name: "John F. Kennedy International", city: "New York, NY", state: "NY", runway: "14511 ft", fbo: "Jet Aviation, Ross Aviation", type: "Public" },
-  { code: "KLGA", name: "LaGuardia Airport", city: "New York, NY", state: "NY", runway: "7003 ft", fbo: "Atlantic Aviation", type: "Public" },
+  { code: "KTEB", name: "Teterboro Airport", city: "Teterboro, NJ", state: "NJ", runway: "7000 ft", fbo: "Atlantic Aviation, Signature Flight Support, Jet Aviation", type: "Public" },
+  { code: "KJFK", name: "John F. Kennedy International", city: "New York, NY", state: "NY", runway: "14511 ft", fbo: "Signature Flight Support", type: "Public" },
+  { code: "KLGA", name: "LaGuardia Airport", city: "New York, NY", state: "NY", runway: "7003 ft", fbo: "Signature Flight Support", type: "Public" },
   { code: "KBDR", name: "Igor I. Sikorsky Memorial", city: "Bridgeport, CT", state: "CT", runway: "4761 ft", fbo: "Atlantic Aviation", type: "Public" },
   { code: "KHPN", name: "Westchester County Airport", city: "White Plains, NY", state: "NY", runway: "6549 ft", fbo: "Million Air", type: "Public" },
   { code: "KCDW", name: "Essex County Airport", city: "Caldwell, NJ", state: "NJ", runway: "4997 ft", fbo: "Meridian", type: "Public" },
 
   // Los Angeles Area  
-  { code: "KVAN", name: "Van Nuys Airport", city: "Van Nuys, CA", state: "CA", runway: "8001 ft", fbo: "Atlantic Aviation, Clay Lacy", type: "Public" },
+  { code: "KVAN", name: "Van Nuys Airport", city: "Van Nuys, CA", state: "CA", runway: "8001 ft", fbo: "Atlantic Aviation, Clay Lacy Aviation", type: "Public" },
   { code: "KSMO", name: "Santa Monica Airport", city: "Santa Monica, CA", state: "CA", runway: "4973 ft", fbo: "Atlantic Aviation", type: "Public" },
   { code: "KBUR", name: "Hollywood Burbank Airport", city: "Burbank, CA", state: "CA", runway: "6886 ft", fbo: "Atlantic Aviation", type: "Public" },
-  { code: "KLAX", name: "Los Angeles International", city: "Los Angeles, CA", state: "CA", runway: "12091 ft", fbo: "Atlantic Aviation", type: "Public" },
-  { code: "KSNA", name: "John Wayne Airport", city: "Santa Ana, CA", state: "CA", runway: "5701 ft", fbo: "Atlantic Aviation", type: "Public" },
+  { code: "KLAX", name: "Los Angeles International", city: "Los Angeles, CA", state: "CA", runway: "12923 ft", fbo: "Atlantic Aviation, Signature Flight Support", type: "Public" },
+  { code: "KSNA", name: "John Wayne Airport", city: "Santa Ana, CA", state: "CA", runway: "5701 ft", fbo: "Atlantic Aviation, Clay Lacy Aviation", type: "Public" },
   { code: "KLGB", name: "Long Beach Airport", city: "Long Beach, CA", state: "CA", runway: "10000 ft", fbo: "Atlantic Aviation", type: "Public" },
 
   // Florida
   { code: "KMCO", name: "Orlando International Airport", city: "Orlando, FL", state: "FL", runway: "12005 ft", fbo: "Signature Flight Support", type: "Public" },
-  { code: "KORL", name: "Orlando Executive Airport", city: "Orlando, FL", state: "FL", runway: "7003 ft", fbo: "Sheltair, Signature", type: "Public" },
+  { code: "KORL", name: "Orlando Executive Airport", city: "Orlando, FL", state: "FL", runway: "6004 ft", fbo: "Sheltair, Signature Flight Support", type: "Public" },
   { code: "KFLL", name: "Fort Lauderdale-Hollywood International", city: "Fort Lauderdale, FL", state: "FL", runway: "9000 ft", fbo: "Signature Flight Support", type: "Public" },
   { code: "KOPF", name: "Miami-Opa Locka Executive", city: "Opa-locka, FL", state: "FL", runway: "8002 ft", fbo: "Signature Flight Support", type: "Public" },
   { code: "KMIA", name: "Miami International Airport", city: "Miami, FL", state: "FL", runway: "13016 ft", fbo: "Signature Flight Support", type: "Public" },
