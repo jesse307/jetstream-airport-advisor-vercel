@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Calculator, Clock, Plane, MapPin, Route } from "lucide-react";
+import { Calculator, Clock, Plane, MapPin, Route, DollarSign } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
@@ -20,6 +20,7 @@ interface AircraftType {
   examples: string[];
   minRunway: number; // feet
   passengers: string;
+  hourlyRate: number; // USD per hour
 }
 
 const AIRCRAFT_TYPES: AircraftType[] = [
@@ -28,42 +29,48 @@ const AIRCRAFT_TYPES: AircraftType[] = [
     speed: 300,
     examples: ["King Air 350", "TBM 940", "PC-12"],
     minRunway: 3000,
-    passengers: "6-10"
+    passengers: "6-10",
+    hourlyRate: 6500
   },
   {
-    category: "Light Jet",
+    category: "Light Jet", 
     speed: 450,
     examples: ["Citation CJ3+", "Phenom 300", "Learjet 75"],
     minRunway: 4000,
-    passengers: "6-8"
+    passengers: "6-8",
+    hourlyRate: 8100
   },
   {
     category: "Mid Jet",
     speed: 500,
     examples: ["Citation XLS+", "Hawker 900XP", "Learjet 60XR"],
     minRunway: 5000,
-    passengers: "8-10"
+    passengers: "8-10",
+    hourlyRate: 8600
   },
   {
     category: "Super Mid Jet",
     speed: 530,
     examples: ["Citation X+", "Challenger 350", "G280"],
     minRunway: 5500,
-    passengers: "9-12"
+    passengers: "9-12",
+    hourlyRate: 11000
   },
   {
     category: "Heavy Jet",
     speed: 550,
     examples: ["Falcon 7X", "G650", "Global 6000"],
     minRunway: 6000,
-    passengers: "12-16"
+    passengers: "12-16",
+    hourlyRate: 13000
   },
   {
     category: "Ultra Long Range",
     speed: 560,
     examples: ["G700", "Global 7500", "Falcon 8X"],
     minRunway: 6500,
-    passengers: "14-19"
+    passengers: "14-19",
+    hourlyRate: 18000
   }
 ];
 
@@ -143,6 +150,26 @@ export function FlightCalculator({ departure, arrival }: FlightCalculatorProps) 
     return `${hours}h ${minutes.toString().padStart(2, "0")}m`;
   };
 
+  const calculateFlightTimeInHours = (distance: number, aircraftSpeed: number): number => {
+    return distance / aircraftSpeed;
+  };
+
+  const calculateCostRange = (flightTimeHours: number, hourlyRate: number): { min: number; max: number } => {
+    const baseCost = flightTimeHours * hourlyRate;
+    const minCost = baseCost * 0.9; // -10%
+    const maxCost = baseCost * 1.1; // +10%
+    return { min: Math.round(minCost), max: Math.round(maxCost) };
+  };
+
+  const formatCurrency = (amount: number): string => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
+
   const checkRunwayCompatibility = (runway: string, minRunway: number) => {
     const runwayLength = parseInt(runway.replace(/[^\d]/g, ""));
     return runwayLength >= minRunway;
@@ -191,12 +218,14 @@ export function FlightCalculator({ departure, arrival }: FlightCalculatorProps) 
             <div className="space-y-4">
               <h3 className="font-semibold flex items-center gap-2">
                 <Clock className="h-5 w-5 text-primary" />
-                Estimated Flight Times by Aircraft Type
+                Flight Times & Cost Estimates by Aircraft Type
               </h3>
               
               <div className="grid gap-3">
                 {AIRCRAFT_TYPES.map((aircraft) => {
                   const flightTime = calculateFlightTime(distance, aircraft.speed);
+                  const flightTimeHours = calculateFlightTimeInHours(distance, aircraft.speed);
+                  const costRange = calculateCostRange(flightTimeHours, aircraft.hourlyRate);
                   const departureCompatible = checkRunwayCompatibility(departure.runway, aircraft.minRunway);
                   const arrivalCompatible = checkRunwayCompatibility(arrival.runway, aircraft.minRunway);
                   const isCompatible = departureCompatible && arrivalCompatible;
@@ -227,7 +256,7 @@ export function FlightCalculator({ departure, arrival }: FlightCalculatorProps) 
                             )}
                           </div>
                           
-                          <div className="grid grid-cols-2 gap-4 text-sm">
+                          <div className="grid grid-cols-3 gap-4 text-sm">
                             <div>
                               <span className="text-muted-foreground">Cruise Speed:</span>
                               <div className="font-medium">{aircraft.speed} kts</div>
@@ -235,6 +264,10 @@ export function FlightCalculator({ departure, arrival }: FlightCalculatorProps) 
                             <div>
                               <span className="text-muted-foreground">Min Runway:</span>
                               <div className="font-medium">{aircraft.minRunway.toLocaleString()} ft</div>
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground">Hourly Rate:</span>
+                              <div className="font-medium">{formatCurrency(aircraft.hourlyRate)}/hr</div>
                             </div>
                           </div>
 
@@ -250,10 +283,21 @@ export function FlightCalculator({ departure, arrival }: FlightCalculatorProps) 
                           </div>
                         </div>
 
-                        <div className="text-right">
-                          <div className="text-sm text-muted-foreground">Flight Time</div>
-                          <div className={`text-2xl font-bold ${isCompatible ? "text-accent" : "text-muted-foreground"}`}>
-                            {flightTime}
+                        <div className="text-right space-y-3">
+                          <div>
+                            <div className="text-sm text-muted-foreground">Flight Time</div>
+                            <div className={`text-xl font-bold ${isCompatible ? "text-accent" : "text-muted-foreground"}`}>
+                              {flightTime}
+                            </div>
+                          </div>
+                          <div>
+                            <div className="text-sm text-muted-foreground flex items-center gap-1">
+                              <DollarSign className="h-3 w-3" />
+                              Estimated Cost (±10%)
+                            </div>
+                            <div className={`text-lg font-bold ${isCompatible ? "text-primary" : "text-muted-foreground"}`}>
+                              {formatCurrency(costRange.min)} - {formatCurrency(costRange.max)}
+                            </div>
                           </div>
                         </div>
                       </div>
