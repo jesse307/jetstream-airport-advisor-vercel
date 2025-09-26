@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Plane, MapPin, Navigation, Settings } from "lucide-react";
 import { AirportSearch } from "@/components/AirportSearch";
 import { FlightCalculator } from "@/components/FlightCalculator";
-import { DistanceTimeAPITest } from "@/components/DistanceTimeAPITest";
 import { Button } from "@/components/ui/button";
 
 const Index = () => {
@@ -75,9 +74,6 @@ const Index = () => {
 
         {/* Flight Calculator */}
         <FlightCalculator departure={departure} arrival={arrival} />
-        
-        {/* API Test Component - Temporary */}
-        <DistanceTimeAPITest />
       </div>
       </main>
 
