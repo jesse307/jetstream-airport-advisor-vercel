@@ -600,19 +600,66 @@ export function FlightCalculator({ departure, arrival }: FlightCalculatorProps) 
                 {aviapagesResult ? (
                   <>
                     {aviapagesResult.errors && aviapagesResult.errors.length > 0 ? (
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2 text-destructive">
-                          <span className="text-sm font-medium">⚠️ Aviapages Errors:</span>
-                        </div>
-                        {aviapagesResult.errors.map((error: any, index: number) => (
-                          <div key={index} className="text-sm text-destructive bg-destructive/10 p-2 rounded">
-                            {error.message}
+                      (() => {
+                        // Check if errors are fuel/weight related
+                        const fuelErrors = aviapagesResult.errors.filter((error: any) => 
+                          error.message.toLowerCase().includes('weight exceeded') ||
+                          error.message.toLowerCase().includes('fuel') ||
+                          error.message.toLowerCase().includes('payload')
+                        );
+                        
+                        const otherErrors = aviapagesResult.errors.filter((error: any) => 
+                          !error.message.toLowerCase().includes('weight exceeded') &&
+                          !error.message.toLowerCase().includes('fuel') &&
+                          !error.message.toLowerCase().includes('payload')
+                        );
+
+                        return (
+                          <div className="space-y-4">
+                            {/* Show fuel stops needed if fuel-related errors */}
+                            {fuelErrors.length > 0 && (
+                              <div className="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                  <span className="text-muted-foreground">Aircraft:</span>
+                                  <div className="font-medium">{aviapagesResult.aircraft || selectedAircraft}</div>
+                                </div>
+                                <div>
+                                  <span className="text-muted-foreground">Fuel Stop Needed:</span>
+                                  <div className="font-medium text-destructive">Yes</div>
+                                </div>
+                                {aviapagesResult.airport?.techstop && aviapagesResult.airport.techstop.length > 0 && (
+                                  <div className="col-span-2">
+                                    <span className="text-muted-foreground">📍 Suggested Fuel Stops:</span>
+                                    <div className="text-sm font-medium mt-1">
+                                      {aviapagesResult.airport.techstop.join(', ')}
+                                    </div>
+                                    <div className="text-xs text-muted-foreground mt-1">
+                                      {aviapagesResult.airport.techstop.length === 1 ? '1 fuel stop required' : `${aviapagesResult.airport.techstop.length} fuel stops required`}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                            
+                            {/* Show other non-fuel errors */}
+                            {otherErrors.length > 0 && (
+                              <div className="space-y-2">
+                                <div className="flex items-center gap-2 text-destructive">
+                                  <span className="text-sm font-medium">⚠️ Aviapages Errors:</span>
+                                </div>
+                                {otherErrors.map((error: any, index: number) => (
+                                  <div key={index} className="text-sm text-destructive bg-destructive/10 p-2 rounded">
+                                    {error.message}
+                                  </div>
+                                ))}
+                                <p className="text-xs text-muted-foreground mt-2">
+                                  Try using a different aircraft type or simpler aircraft names like "Citation X", "Hawker 900XP", "Embraer Legacy 650", etc.
+                                </p>
+                              </div>
+                            )}
                           </div>
-                        ))}
-                        <p className="text-xs text-muted-foreground mt-2">
-                          Try using a different aircraft type or simpler aircraft names like "Citation X", "Hawker 900XP", "Embraer Legacy 650", etc.
-                        </p>
-                      </div>
+                        );
+                      })()
                     ) : (
                       <div className="grid grid-cols-2 gap-4 text-sm">
                         <div>
