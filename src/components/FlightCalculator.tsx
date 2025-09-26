@@ -627,7 +627,7 @@ export function FlightCalculator({ departure, arrival }: FlightCalculatorProps) 
                         {aviapagesResult.distance?.airway && (
                           <div>
                             <span className="text-muted-foreground">Distance:</span>
-                            <div className="font-medium">{aviapagesResult.distance.airway} NM</div>
+                            <div className="font-medium">{Math.round(aviapagesResult.distance.airway * 0.539957)} NM</div>
                           </div>
                         )}
                         {aviapagesResult.fuel?.airway && (
