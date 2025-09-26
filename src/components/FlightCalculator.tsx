@@ -26,56 +26,98 @@ interface AircraftType {
   minRunway: number; // feet
   passengers: string;
   hourlyRate: number; // USD per hour
+  maxRange: number; // nautical miles
+  maxPayload: number; // pounds
+  fuelCapacity: number; // pounds
+  fuelConsumption: number; // pounds per hour
+  emptyWeight: number; // pounds
+  maxTakeoffWeight: number; // pounds
 }
 
 const AIRCRAFT_TYPES: AircraftType[] = [
   {
     category: "Turboprop",
-    speed: 220, // Block speed including taxi, climb, descent (cruise ~300 kts)
+    speed: 220,
     examples: ["King Air 350", "TBM 940", "PC-12"],
     minRunway: 3000,
     passengers: "6-10",
-    hourlyRate: 6500
+    hourlyRate: 6500,
+    maxRange: 1200,
+    maxPayload: 2500,
+    fuelCapacity: 2100,
+    fuelConsumption: 280,
+    emptyWeight: 9000,
+    maxTakeoffWeight: 15000
   },
   {
     category: "Light Jet", 
-    speed: 320, // Block speed including taxi, climb, descent (cruise ~450 kts)
+    speed: 320,
     examples: ["Citation CJ3+", "Phenom 300", "Learjet 75"],
     minRunway: 4000,
     passengers: "6-8",
-    hourlyRate: 8100
+    hourlyRate: 8100,
+    maxRange: 2000,
+    maxPayload: 2200,
+    fuelCapacity: 5200,
+    fuelConsumption: 230,
+    emptyWeight: 11500,
+    maxTakeoffWeight: 17110
   },
   {
     category: "Mid Jet",
-    speed: 360, // Block speed including taxi, climb, descent (cruise ~470 kts)
+    speed: 360,
     examples: ["Citation XLS+", "Hawker 900XP", "Learjet 60XR"],
     minRunway: 5000,
     passengers: "8-10",
-    hourlyRate: 8600
+    hourlyRate: 8600,
+    maxRange: 2400,
+    maxPayload: 2800,
+    fuelCapacity: 8500,
+    fuelConsumption: 310,
+    emptyWeight: 16000,
+    maxTakeoffWeight: 23000
   },
   {
     category: "Super Mid Jet",
-    speed: 390, // Block speed including taxi, climb, descent (cruise ~490 kts)
+    speed: 390,
     examples: ["Citation X+", "Challenger 350", "G280"],
     minRunway: 5500,
     passengers: "9-12",
-    hourlyRate: 11000
+    hourlyRate: 11000,
+    maxRange: 3200,
+    maxPayload: 3500,
+    fuelCapacity: 12000,
+    fuelConsumption: 350,
+    emptyWeight: 18500,
+    maxTakeoffWeight: 28100
   },
   {
     category: "Heavy Jet",
-    speed: 410, // Block speed including taxi, climb, descent (cruise ~520 kts)
+    speed: 410,
     examples: ["Falcon 7X", "G650", "Global 6000"],
     minRunway: 6000,
     passengers: "12-16",
-    hourlyRate: 13000
+    hourlyRate: 13000,
+    maxRange: 5500,
+    maxPayload: 4200,
+    fuelCapacity: 24000,
+    fuelConsumption: 450,
+    emptyWeight: 25000,
+    maxTakeoffWeight: 42000
   },
   {
     category: "Ultra Long Range",
-    speed: 430, // Block speed including taxi, climb, descent (cruise ~540 kts)
+    speed: 430,
     examples: ["G700", "Global 7500", "Falcon 8X"],
     minRunway: 6500,
     passengers: "14-19",
-    hourlyRate: 18000
+    hourlyRate: 18000,
+    maxRange: 7700,
+    maxPayload: 5000,
+    fuelCapacity: 32000,
+    fuelConsumption: 500,
+    emptyWeight: 35000,
+    maxTakeoffWeight: 54000
   }
 ];
 
@@ -266,6 +308,39 @@ export function FlightCalculator({ departure, arrival }: FlightCalculatorProps) 
     return runwayLength >= minRunway;
   };
 
+  const calculateAircraftCapability = (aircraft: AircraftType, distance: number, passengers: number) => {
+    // Calculate weights
+    const pilotWeight = 2 * 180; // 2 pilots at 180 lbs each
+    const passengerWeight = passengers * 230; // 180 lbs + 50 lbs luggage per passenger
+    const totalPersonWeight = pilotWeight + passengerWeight;
+    
+    // Calculate fuel needed (with 45 min reserve)
+    const flightTimeHours = calculateFlightTimeInHours(distance, aircraft.speed, departure, arrival);
+    const fuelNeeded = (flightTimeHours + 0.75) * aircraft.fuelConsumption; // +45 min reserve
+    
+    // Calculate total weight
+    const totalWeight = aircraft.emptyWeight + totalPersonWeight + fuelNeeded;
+    
+    // Check all capabilities
+    const rangeCapable = distance <= aircraft.maxRange;
+    const weightCapable = totalWeight <= aircraft.maxTakeoffWeight;
+    const payloadCapable = totalPersonWeight <= aircraft.maxPayload;
+    const fuelCapable = fuelNeeded <= aircraft.fuelCapacity;
+    
+    return {
+      capable: rangeCapable && weightCapable && payloadCapable && fuelCapable,
+      pilotWeight,
+      passengerWeight,
+      totalPersonWeight,
+      fuelNeeded: Math.round(fuelNeeded),
+      totalWeight: Math.round(totalWeight),
+      rangeCapable,
+      weightCapable,
+      payloadCapable,
+      fuelCapable
+    };
+  };
+
   useEffect(() => {
     if (departure && arrival) {
       const dist = calculateDistance(departure, arrival);
@@ -342,7 +417,8 @@ export function FlightCalculator({ departure, arrival }: FlightCalculatorProps) 
                   const costRange = calculateCostRange(flightTimeHours, aircraft.hourlyRate);
                   const departureCompatible = checkRunwayCompatibility(departure.runway, aircraft.minRunway);
                   const arrivalCompatible = checkRunwayCompatibility(arrival.runway, aircraft.minRunway);
-                  const isCompatible = departureCompatible && arrivalCompatible;
+                  const capability = calculateAircraftCapability(aircraft, distance, passengers);
+                  const isCompatible = departureCompatible && arrivalCompatible && capability.capable;
 
                   return (
                     <div 
