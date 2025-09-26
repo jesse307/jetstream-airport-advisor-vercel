@@ -10,15 +10,43 @@ export const ApiTest = () => {
   const testApiKey = async () => {
     setTesting(true);
     try {
-      const { data, error } = await supabase.functions.invoke('test-api');
+      // Test the API by making a search call and checking the logs
+      const { data, error } = await supabase.functions.invoke('search-airports', {
+        body: { query: 'JFK' }
+      });
       
       if (error) {
-        setTestResult({ error: error.message });
+        setTestResult({ 
+          error: error.message,
+          success: false,
+          testType: 'search_function_error'
+        });
       } else {
-        setTestResult(data);
+        // Check if we got results and what type
+        const hasResults = data?.airports && data.airports.length > 0;
+        const resultType = hasResults 
+          ? (data.airports[0].code === 'KJFK' ? 'fallback_database' : 'api_success')
+          : 'no_results';
+        
+        setTestResult({
+          success: hasResults,
+          resultType,
+          airportCount: data?.airports?.length || 0,
+          firstAirport: data?.airports?.[0] || null,
+          testType: 'search_function_test',
+          message: resultType === 'fallback_database' 
+            ? 'API may be failing, using fallback database'
+            : resultType === 'api_success' 
+            ? 'API appears to be working correctly'
+            : 'No results returned - check API configuration'
+        });
       }
     } catch (err) {
-      setTestResult({ error: err instanceof Error ? err.message : 'Unknown error' });
+      setTestResult({ 
+        error: err instanceof Error ? err.message : 'Unknown error',
+        success: false,
+        testType: 'fetch_error'
+      });
     } finally {
       setTesting(false);
     }
