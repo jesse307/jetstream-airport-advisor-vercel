@@ -123,14 +123,43 @@ const AIRCRAFT_TYPES: AircraftType[] = [
 ];
 
 interface FlightCalculatorProps {
-  departure: Airport | null;
-  arrival: Airport | null;
+  departure: string;
+  arrival: string;
 }
 
 export function FlightCalculator({ departure, arrival }: FlightCalculatorProps) {
   const [distance, setDistance] = useState<number>(0);
   const [passengers, setPassengers] = useState<number>(1);
   const [selectedAircraft, setSelectedAircraft] = useState<string>("");
+
+  // Parse airport string to extract code and create minimal Airport object
+  const parseAirportString = (airportString: string): Airport | null => {
+    if (!airportString) return null;
+    
+    // Expected format: "KJFK - John F. Kennedy International, New York"
+    const parts = airportString.split(' - ');
+    if (parts.length < 2) return null;
+    
+    const code = parts[0].trim();
+    const rest = parts[1];
+    
+    // Split by comma to get name and city
+    const nameAndCity = rest.split(', ');
+    const name = nameAndCity[0] || '';
+    const city = nameAndCity.slice(1).join(', ') || '';
+    
+    return {
+      code,
+      name,
+      city,
+      runway: "8000 ft", // Default runway length
+      fbo: "Various",
+      type: "Public"
+    };
+  };
+
+  const departureAirport = parseAirportString(departure);
+  const arrivalAirport = parseAirportString(arrival);
 
   // Use coordinates from airport data if available, otherwise lookup table
   const getCoordinates = (airport: Airport) => {
@@ -317,7 +346,7 @@ export function FlightCalculator({ departure, arrival }: FlightCalculatorProps) 
     const totalPersonWeight = pilotWeight + passengerWeight;
     
     // Calculate fuel needed (with 45 min reserve)
-    const flightTimeHours = calculateFlightTimeInHours(distance, aircraft.speed, departure, arrival);
+    const flightTimeHours = calculateFlightTimeInHours(distance, aircraft.speed, departureAirport, arrivalAirport);
     const fuelNeeded = (flightTimeHours + 0.75) * aircraft.fuelConsumption; // +45 min reserve
     
     // Calculate total weight
@@ -347,10 +376,8 @@ export function FlightCalculator({ departure, arrival }: FlightCalculatorProps) 
     if (!departure || !arrival || distance === 0) return [];
     
     return AIRCRAFT_TYPES.filter(aircraft => {
-      const departureCompatible = checkRunwayCompatibility(departure.runway, aircraft.minRunway);
-      const arrivalCompatible = checkRunwayCompatibility(arrival.runway, aircraft.minRunway);
-      const capability = calculateAircraftCapability(aircraft, distance, passengers);
-      return departureCompatible && arrivalCompatible && capability.capable;
+    const capability = calculateAircraftCapability(aircraft, distance, passengers);
+    return departureCompatible && arrivalCompatible && capability.capable;
     });
   };
 
@@ -390,7 +417,7 @@ export function FlightCalculator({ departure, arrival }: FlightCalculatorProps) 
             />
             
             {/* Aircraft Selection Dropdown */}
-            {departure && arrival && distance > 0 && (
+            {departureAirport && arrivalAirport && distance > 0 && (
               <div className="flex items-center gap-2">
                 <Label className="text-sm font-medium text-muted-foreground">Aircraft:</Label>
                 <Select value={selectedAircraft} onValueChange={setSelectedAircraft}>
@@ -426,18 +453,18 @@ export function FlightCalculator({ departure, arrival }: FlightCalculatorProps) 
         </div>
 
         {/* Flight Route */}
-        {departure && arrival && (
+        {departureAirport && arrivalAirport && (
           <div className="space-y-6">
             <div className="flex items-center justify-between rounded-lg bg-gradient-sky p-4">
               <div className="flex items-center gap-4">
                 <div className="text-center">
-                  <div className="text-lg font-bold text-primary">{departure.code}</div>
-                  <div className="text-xs text-muted-foreground">{departure.city}</div>
+                  <div className="text-lg font-bold text-primary">{departureAirport.code}</div>
+                  <div className="text-xs text-muted-foreground">{departureAirport.city}</div>
                 </div>
                 <Route className="h-6 w-6 text-primary" />
                 <div className="text-center">
-                  <div className="text-lg font-bold text-primary">{arrival.code}</div>
-                  <div className="text-xs text-muted-foreground">{arrival.city}</div>
+                  <div className="text-lg font-bold text-primary">{arrivalAirport.code}</div>
+                  <div className="text-xs text-muted-foreground">{arrivalAirport.city}</div>
                 </div>
               </div>
               <div className="text-right">

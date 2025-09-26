@@ -2,13 +2,11 @@ import { useState } from "react";
 import { Plane, MapPin, Navigation, Settings } from "lucide-react";
 import { AirportSearch } from "@/components/AirportSearch";
 import { FlightCalculator } from "@/components/FlightCalculator";
-import { AirportDropdown } from "@/components/AirportDropdown";
 import { Button } from "@/components/ui/button";
-import { type Airport } from "@/data/privateAirports";
 
 const Index = () => {
-  const [departure, setDeparture] = useState<Airport | null>(null);
-  const [arrival, setArrival] = useState<Airport | null>(null);
+  const [departure, setDeparture] = useState<string>("");
+  const [arrival, setArrival] = useState<string>("");
 
   const handleSwapAirports = () => {
     const temp = departure;
@@ -51,11 +49,6 @@ const Index = () => {
                 label="Departure Airport"
                 placeholder="Search by city or airport code"
               />
-              <AirportDropdown 
-                airport={departure} 
-                onSelect={setDeparture}
-                type="departure"
-              />
             </div>
             
             <div className="flex items-start gap-3">
@@ -65,11 +58,6 @@ const Index = () => {
                   onChange={setArrival}
                   label="Arrival Airport"
                   placeholder="Search by city or airport code"
-                />
-                <AirportDropdown 
-                  airport={arrival} 
-                  onSelect={setArrival}
-                  type="arrival"
                 />
               </div>
               <Button
