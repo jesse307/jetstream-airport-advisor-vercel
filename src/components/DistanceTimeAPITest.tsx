@@ -6,8 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 
 export const DistanceTimeAPITest: React.FC = () => {
-  const [fromAirport, setFromAirport] = useState('KJFK');
-  const [toAirport, setToAirport] = useState('KLAX');
+  const [fromAirport, setFromAirport] = useState('JFK');
+  const [toAirport, setToAirport] = useState('LAX');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
@@ -48,21 +48,21 @@ export const DistanceTimeAPITest: React.FC = () => {
       <CardContent className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <Label htmlFor="fromAirport">From Airport (ICAO)</Label>
+            <Label htmlFor="fromAirport">From Airport (IATA)</Label>
             <Input
               id="fromAirport"
               value={fromAirport}
               onChange={(e) => setFromAirport(e.target.value)}
-              placeholder="KJFK"
+              placeholder="JFK"
             />
           </div>
           <div>
-            <Label htmlFor="toAirport">To Airport (ICAO)</Label>
+            <Label htmlFor="toAirport">To Airport (IATA)</Label>
             <Input
               id="toAirport"
               value={toAirport}
               onChange={(e) => setToAirport(e.target.value)}
-              placeholder="KLAX"
+              placeholder="LAX"
             />
           </div>
         </div>

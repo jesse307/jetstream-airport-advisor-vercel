@@ -31,7 +31,7 @@ serve(async (req) => {
 
       try {
         const distanceTimeResponse = await fetch(
-          `https://aerodatabox.p.rapidapi.com/airports/icao/${fromAirport}/distance-time/${toAirport}`,
+          `https://aerodatabox.p.rapidapi.com/airports/iata/${fromAirport}/distance-time/${toAirport}?flightTimeModel=Standard&aircraftName=Airbus%20A320`,
           {
             method: 'GET',
             headers: {
