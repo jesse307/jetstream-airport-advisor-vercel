@@ -71,7 +71,7 @@ const AIRCRAFT_TYPES: AircraftType[] = [
     minRunway: 5000,
     passengers: "8-10",
     hourlyRate: 8600,
-    maxRange: 2400,
+    maxRange: 2100,
     maxPayload: 2800,
     fuelCapacity: 8500,
     fuelConsumption: 310,
