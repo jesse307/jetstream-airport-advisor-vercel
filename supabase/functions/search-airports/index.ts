@@ -69,15 +69,25 @@ serve(async (req) => {
     };
     
     try {
-      // First try AviationAPI
-      console.log('Trying AviationAPI...');
-      const aviationResponse = await fetch(`https://api.aviationapi.com/v1/airports?search=${encodeURIComponent(query)}`, {
+      // First try AviationAPI with original query
+      console.log('Trying AviationAPI with query:', query);
+      let aviationResponse = await fetch(`https://api.aviationapi.com/v1/airports?search=${encodeURIComponent(query)}`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
-        signal: AbortSignal.timeout(5000) // 5 second timeout
+        signal: AbortSignal.timeout(5000)
       });
       
-        if (aviationResponse.ok) {
+      // If no results and query is 3 letters, try with K prefix (US airports)
+      if (!aviationResponse.ok && query.length === 3 && !query.startsWith('K')) {
+        console.log('Trying AviationAPI with K prefix:', `K${query}`);
+        aviationResponse = await fetch(`https://api.aviationapi.com/v1/airports?search=${encodeURIComponent('K' + query)}`, {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' },
+          signal: AbortSignal.timeout(5000)
+        });
+      }
+      
+      if (aviationResponse.ok) {
         const aviationData = await aviationResponse.json();
         console.log('AviationAPI response received:', aviationData.length || 0, 'airports');
         if (Array.isArray(aviationData) && aviationData.length > 0) {
@@ -143,15 +153,28 @@ serve(async (req) => {
         { code: 'KSFO', name: 'San Francisco International Airport', city: 'San Francisco', state: 'CA', country: 'US', type: 'Commercial', runwayLength: 11870 },
         { code: 'KBOS', name: 'Boston Logan International Airport', city: 'Boston', state: 'MA', country: 'US', type: 'Commercial', runwayLength: 10083 },
         { code: 'KTEB', name: 'Teterboro Airport', city: 'Teterboro', state: 'NJ', country: 'US', type: 'Private', runwayLength: 7000 },
-        { code: 'KVAN', name: 'Van Nuys Airport', city: 'Van Nuys', state: 'CA', country: 'US', type: 'Private', runwayLength: 8001 }
+        { code: 'KVNY', name: 'Van Nuys Airport', city: 'Van Nuys', state: 'CA', country: 'US', type: 'Private', runwayLength: 8001 },
+        { code: 'KSMO', name: 'Santa Monica Airport', city: 'Santa Monica', state: 'CA', country: 'US', type: 'Private', runwayLength: 4973 },
+        { code: 'KBUR', name: 'Hollywood Burbank Airport', city: 'Burbank', state: 'CA', country: 'US', type: 'Commercial', runwayLength: 6886 },
+        { code: 'KHPN', name: 'Westchester County Airport', city: 'White Plains', state: 'NY', country: 'US', type: 'Private', runwayLength: 6549 },
+        { code: 'KPDK', name: 'DeKalb-Peachtree Airport', city: 'Atlanta', state: 'GA', country: 'US', type: 'Private', runwayLength: 6001 }
       ];
       
       const searchTerm = query.toLowerCase();
-      airports = fallbackAirports.filter(airport => 
-        airport.code.toLowerCase().includes(searchTerm) ||
-        airport.name.toLowerCase().includes(searchTerm) ||
-        airport.city.toLowerCase().includes(searchTerm)
-      );
+      airports = fallbackAirports.filter(airport => {
+        const code = airport.code.toLowerCase();
+        const name = airport.name.toLowerCase();
+        const city = airport.city.toLowerCase();
+        
+        // Handle different search patterns
+        return (
+          code.includes(searchTerm) ||
+          code.replace('k', '').includes(searchTerm) || // Handle ICAO vs IATA (KVNY vs VNY)
+          name.includes(searchTerm) ||
+          city.includes(searchTerm) ||
+          (searchTerm.length === 3 && code.endsWith(searchTerm)) // Handle 3-letter codes
+        );
+      });
     }
     console.log(`Found ${airports.length} airports`);
 
