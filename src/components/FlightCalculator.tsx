@@ -597,30 +597,48 @@ export function FlightCalculator({ departure, arrival }: FlightCalculatorProps) 
                 </div>
                 
                 {aviapagesResult ? (
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <span className="text-muted-foreground">Aircraft:</span>
-                      <div className="font-medium">{aviapagesResult.aircraft || selectedAircraft}</div>
-                    </div>
-                    {aviapagesResult.time?.airway && (
-                      <div>
-                        <span className="text-muted-foreground">Flight Time:</span>
-                        <div className="font-bold text-primary">{Math.floor(aviapagesResult.time.airway / 60)}h {aviapagesResult.time.airway % 60}m</div>
+                  <>
+                    {aviapagesResult.errors && aviapagesResult.errors.length > 0 ? (
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2 text-destructive">
+                          <span className="text-sm font-medium">⚠️ Aviapages Errors:</span>
+                        </div>
+                        {aviapagesResult.errors.map((error: any, index: number) => (
+                          <div key={index} className="text-sm text-destructive bg-destructive/10 p-2 rounded">
+                            {error.message}
+                          </div>
+                        ))}
+                        <p className="text-xs text-muted-foreground mt-2">
+                          Try using a different aircraft type or simpler aircraft names like "Citation X", "Hawker 900XP", "Embraer Legacy 650", etc.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <span className="text-muted-foreground">Aircraft:</span>
+                          <div className="font-medium">{aviapagesResult.aircraft || selectedAircraft}</div>
+                        </div>
+                        {aviapagesResult.time?.airway && (
+                          <div>
+                            <span className="text-muted-foreground">Flight Time:</span>
+                            <div className="font-bold text-primary">{Math.floor(aviapagesResult.time.airway / 60)}h {aviapagesResult.time.airway % 60}m</div>
+                          </div>
+                        )}
+                        {aviapagesResult.distance?.airway && (
+                          <div>
+                            <span className="text-muted-foreground">Distance:</span>
+                            <div className="font-medium">{aviapagesResult.distance.airway} NM</div>
+                          </div>
+                        )}
+                        {aviapagesResult.fuel?.airway && (
+                          <div>
+                            <span className="text-muted-foreground">Fuel:</span>
+                            <div className="font-medium">{aviapagesResult.fuel.airway} lbs</div>
+                          </div>
+                        )}
                       </div>
                     )}
-                    {aviapagesResult.distance?.airway && (
-                      <div>
-                        <span className="text-muted-foreground">Distance:</span>
-                        <div className="font-medium">{aviapagesResult.distance.airway} NM</div>
-                      </div>
-                    )}
-                    {aviapagesResult.fuel?.airway && (
-                      <div>
-                        <span className="text-muted-foreground">Fuel:</span>
-                        <div className="font-medium">{aviapagesResult.fuel.airway} lbs</div>
-                      </div>
-                    )}
-                  </div>
+                  </>
                 ) : (
                   <p className="text-sm text-muted-foreground">
                     Click "Calculate with Aviapages" to get professional flight time, distance, and fuel calculations using real airway routing.

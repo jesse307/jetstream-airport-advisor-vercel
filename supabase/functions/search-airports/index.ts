@@ -6,6 +6,22 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Map our aircraft names to aviapages format
+function mapAircraftName(aircraftType: string): string {
+  const mappings: { [key: string]: string } = {
+    "Super Mid Jet-Citation X+": "Citation X",
+    "Heavy Jet-Falcon 7X": "Dassault Falcon 7X", 
+    "Mid Jet-Hawker 900XP": "Hawker 900XP",
+    "Light Jet-Citation CJ3": "Citation CJ3",
+    "Turboprop-King Air 350": "King Air 350",
+    "Ultra Long Range-Global 7500": "Global 7500",
+    "Turboprop-TBM 940": "TBM 940",
+    "Light Jet-Phenom 300": "Embraer Phenom 300"
+  };
+  
+  return mappings[aircraftType] || aircraftType.split('-').pop() || aircraftType;
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -43,7 +59,7 @@ serve(async (req) => {
             body: JSON.stringify({
               departure_airport: departure,
               arrival_airport: arrival,
-              aircraft: aircraftType,
+              aircraft: mapAircraftName(aircraftType),
               pax: 4,
               airway_time: true
             }),
