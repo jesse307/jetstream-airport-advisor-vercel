@@ -13,7 +13,69 @@ serve(async (req) => {
   }
 
   try {
-    const { query } = await req.json();
+    const { query, testDistanceTime, fromAirport, toAirport } = await req.json();
+    
+    // Test endpoint for distance-time API
+    if (testDistanceTime && fromAirport && toAirport) {
+      console.log(`Testing distance-time API from ${fromAirport} to ${toAirport}`);
+      
+      const rapidApiKey = Deno.env.get('RAPIDAPI_KEY');
+      if (!rapidApiKey) {
+        return new Response(JSON.stringify({ 
+          error: "RAPIDAPI_KEY not configured"
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 500
+        });
+      }
+
+      try {
+        const distanceTimeResponse = await fetch(
+          `https://aerodatabox.p.rapidapi.com/airports/icao/${fromAirport}/distance-time/${toAirport}`,
+          {
+            method: 'GET',
+            headers: {
+              'X-RapidAPI-Key': rapidApiKey,
+              'X-RapidAPI-Host': 'aerodatabox.p.rapidapi.com',
+              'Accept': 'application/json'
+            },
+            signal: AbortSignal.timeout(8000)
+          }
+        );
+
+        if (distanceTimeResponse.ok) {
+          const distanceTimeData = await distanceTimeResponse.json();
+          console.log('AeroDataBox distance-time response:', JSON.stringify(distanceTimeData, null, 2));
+          
+          return new Response(JSON.stringify({ 
+            success: true,
+            from: fromAirport,
+            to: toAirport,
+            data: distanceTimeData
+          }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        } else {
+          const errorText = await distanceTimeResponse.text();
+          console.log('AeroDataBox distance-time API failed:', distanceTimeResponse.status, errorText);
+          
+          return new Response(JSON.stringify({ 
+            success: false,
+            error: `API returned ${distanceTimeResponse.status}: ${errorText}`
+          }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      } catch (error) {
+        console.log('AeroDataBox distance-time API error:', error);
+        return new Response(JSON.stringify({ 
+          success: false,
+          error: error instanceof Error ? error.message : 'Unknown error'
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
     
     if (!query || query.trim().length < 2) {
       return new Response(JSON.stringify({ 
