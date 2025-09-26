@@ -5,7 +5,6 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { calculateFlightTimeWithAviapages } from "@/lib/aviapages";
 import { toast } from "sonner";
 
 interface Airport {
@@ -133,8 +132,6 @@ export function FlightCalculator({ departure, arrival }: FlightCalculatorProps) 
   const [distance, setDistance] = useState<number>(0);
   const [passengers, setPassengers] = useState<number>(1);
   const [selectedAircraft, setSelectedAircraft] = useState<string>("");
-  const [aviapagesResult, setAviapagesResult] = useState<any>(null);
-  const [isLoadingAviapages, setIsLoadingAviapages] = useState(false);
 
   // Parse airport string to extract code and create minimal Airport object
   const parseAirportString = (airportString: string): Airport | null => {
@@ -461,38 +458,6 @@ export function FlightCalculator({ departure, arrival }: FlightCalculatorProps) 
     }
   }, [departureAirport, arrivalAirport]);
 
-  // Call aviapages API when parameters change
-  useEffect(() => {
-    if (departureAirport && arrivalAirport && selectedAircraft) {
-      const fetchAviapagesData = async () => {
-        setIsLoadingAviapages(true);
-        try {
-          const result = await calculateFlightTimeWithAviapages(
-            departureAirport.code,
-            arrivalAirport.code,
-            selectedAircraft
-          );
-          
-          if (result.success) {
-            setAviapagesResult(result.flightTime);
-            toast.success("Flight time calculated with aviapages API");
-          } else {
-            console.warn("Aviapages API failed:", result.error);
-            toast.error("Failed to get aviapages data, using built-in calculations");
-            setAviapagesResult(null);
-          }
-        } catch (error) {
-          console.error("Error calling aviapages:", error);
-          setAviapagesResult(null);
-        } finally {
-          setIsLoadingAviapages(false);
-        }
-      };
-
-      fetchAviapagesData();
-    }
-  }, [departureAirport, arrivalAirport, selectedAircraft]);
-
   return (
     <Card className="shadow-aviation">
       <CardHeader className="bg-gradient-horizon">
@@ -575,42 +540,6 @@ export function FlightCalculator({ departure, arrival }: FlightCalculatorProps) 
                 <div className="text-xl font-bold text-primary">{distance} NM</div>
               </div>
             </div>
-
-            {/* Aviapages API Results */}
-            {isLoadingAviapages && (
-              <div className="rounded-lg bg-secondary/50 p-4">
-                <div className="flex items-center gap-2">
-                  <div className="animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full"></div>
-                  <span className="text-sm text-muted-foreground">Calculating flight time with aviapages API...</span>
-                </div>
-              </div>
-            )}
-            
-            {aviapagesResult && selectedAircraft && (
-              <div className="rounded-lg bg-gradient-to-r from-primary/10 to-accent/10 border border-primary/20 p-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <Plane className="h-4 w-4 text-primary" />
-                  <span className="font-semibold text-primary">Aviapages API Result</span>
-                  <Badge variant="outline" className="text-xs bg-primary/10">Real-time calculation</Badge>
-                </div>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <span className="text-muted-foreground">Aircraft Type:</span>
-                    <div className="font-medium">{selectedAircraft}</div>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Flight Duration:</span>
-                    <div className="font-bold text-primary">{aviapagesResult.duration ? `${Math.floor(aviapagesResult.duration / 60)}h ${aviapagesResult.duration % 60}m` : 'N/A'}</div>
-                  </div>
-                  {aviapagesResult.distance && (
-                    <div>
-                      <span className="text-muted-foreground">API Distance:</span>
-                      <div className="font-medium">{aviapagesResult.distance} NM</div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
 
             {/* Flight Times for All Aircraft Types */}
             <div className="space-y-4">
