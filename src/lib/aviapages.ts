@@ -29,7 +29,8 @@ export interface FlightTimeResult {
 export async function calculateFlightTimeWithAviapages(
   departure: string,
   arrival: string,
-  aircraftType: string
+  aircraftType: string,
+  passengers: number
 ): Promise<FlightTimeResult> {
   try {
     const { data, error } = await supabase.functions.invoke('search-airports', {
@@ -37,7 +38,8 @@ export async function calculateFlightTimeWithAviapages(
         calculateFlightTime: true,
         departure,
         arrival,
-        aircraftType
+        aircraftType,
+        passengers
       }
     });
 

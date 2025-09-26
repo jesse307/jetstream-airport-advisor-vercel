@@ -29,11 +29,11 @@ serve(async (req) => {
   }
 
   try {
-    const { query, calculateFlightTime, departure, arrival, aircraftType } = await req.json();
+    const { query, calculateFlightTime, departure, arrival, aircraftType, passengers } = await req.json();
     
     // Handle flight time calculation requests
-    if (calculateFlightTime && departure && arrival && aircraftType) {
-      console.log(`Calculating flight time from ${departure} to ${arrival} using ${aircraftType}`);
+    if (calculateFlightTime && departure && arrival && aircraftType && passengers) {
+      console.log(`Calculating flight time from ${departure} to ${arrival} using ${aircraftType} with ${passengers} passengers`);
       
       const aviapagesToken = Deno.env.get('AVIAPAGES_API_TOKEN');
       if (!aviapagesToken) {
@@ -60,8 +60,8 @@ serve(async (req) => {
               departure_airport: departure,
               arrival_airport: arrival,
               aircraft: mapAircraftName(aircraftType),
-              pax: 2,
-              aircraft_custom_payload: (2 * 200), // 2 passengers + luggage (200 lbs each = ~91 kg each)
+              pax: passengers,
+              aircraft_custom_payload: (passengers * 230), // Dynamic passenger count * 230 lbs each (180 lbs + 50 lbs luggage)
               airway_time: true,
               airway_fuel: true,
               airway_distance: true,

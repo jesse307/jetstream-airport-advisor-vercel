@@ -564,7 +564,8 @@ export function FlightCalculator({ departure, arrival }: FlightCalculatorProps) 
                           const result = await calculateFlightTimeWithAviapages(
                             departureAirport.code,
                             arrivalAirport.code,
-                            selectedAircraft
+                            selectedAircraft,
+                            passengers
                           );
                           
                           if (result.success) {
