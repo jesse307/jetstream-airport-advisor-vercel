@@ -49,7 +49,7 @@ const Index = () => {
                 value={departure}
                 onChange={setDeparture}
                 label="Departure Airport"
-                placeholder="Search departure airport..."
+                placeholder="Search by city or airport code"
               />
               <AirportDropdown 
                 airport={departure} 
@@ -64,7 +64,7 @@ const Index = () => {
                   value={arrival}
                   onChange={setArrival}
                   label="Arrival Airport"
-                  placeholder="Search arrival airport..."
+                  placeholder="Search by city or airport code"
                 />
                 <AirportDropdown 
                   airport={arrival} 

@@ -208,7 +208,7 @@ interface AirportSearchProps {
   label?: string;
 }
 
-export function AirportSearch({ value, onChange, placeholder = "Search airports (ICAO/IATA)", label }: AirportSearchProps) {
+export function AirportSearch({ value, onChange, placeholder = "Search by city or airport code", label }: AirportSearchProps) {
   const [query, setQuery] = useState("");
   const [isOpen, setIsOpen] = useState(false);
 
