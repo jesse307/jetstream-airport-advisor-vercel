@@ -14,6 +14,7 @@ const COMMERCIAL_AIRPORTS = [
   { code: "KTEB", name: "Teterboro Airport", city: "Teterboro, NJ", state: "NJ", runway: "7000 ft", fbo: "Atlantic Aviation, Signature Flight Support, Jet Aviation", type: "Public" },
   { code: "KJFK", name: "John F. Kennedy International", city: "New York, NY", state: "NY", runway: "14511 ft", fbo: "Signature Flight Support", type: "Public" },
   { code: "KLGA", name: "LaGuardia Airport", city: "New York, NY", state: "NY", runway: "7003 ft", fbo: "Signature Flight Support", type: "Public" },
+  { code: "KEWR", name: "Newark Liberty International Airport", city: "Newark, NJ", state: "NJ", runway: "11000 ft", fbo: "Signature Flight Support, Atlantic Aviation", type: "Public" },
   { code: "KBDR", name: "Igor I. Sikorsky Memorial", city: "Bridgeport, CT", state: "CT", runway: "4761 ft", fbo: "Atlantic Aviation", type: "Public" },
   { code: "KHPN", name: "Westchester County Airport", city: "White Plains, NY", state: "NY", runway: "6549 ft", fbo: "Million Air", type: "Public" },
   { code: "KCDW", name: "Essex County Airport", city: "Caldwell, NJ", state: "NJ", runway: "4997 ft", fbo: "Meridian", type: "Public" },
