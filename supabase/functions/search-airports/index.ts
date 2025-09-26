@@ -30,11 +30,19 @@ serve(async (req) => {
 
     // If this is a flight time calculation request
     if (calculateFlightTime) {
+      console.log('=== AVIAPAGES FLIGHT TIME CALCULATION ===');
       console.log('Flight time calculation requested');
+      console.log('Departure:', departure);
+      console.log('Arrival:', arrival);
+      console.log('Aircraft Type:', aircraftType);
+      console.log('Passengers:', passengers);
+      
       const aviapagesApiToken = Deno.env.get('AVIAPAGES_API_TOKEN');
+      console.log('AVIAPAGES_API_TOKEN configured:', !!aviapagesApiToken);
+      console.log('AVIAPAGES_API_TOKEN length:', aviapagesApiToken?.length || 0);
       
       if (!aviapagesApiToken) {
-        console.log('AVIAPAGES_API_TOKEN not configured');
+        console.log('ERROR: AVIAPAGES_API_TOKEN not configured');
         return new Response(JSON.stringify({
           success: false,
           error: 'Aviapages API token not configured'
@@ -45,7 +53,16 @@ serve(async (req) => {
 
       try {
         const mappedAircraftName = mapAircraftName(aircraftType);
-        console.log(`Calculating flight time: ${departure} to ${arrival}, aircraft: ${mappedAircraftName}, passengers: ${passengers}`);
+        console.log(`Mapped aircraft: ${aircraftType} -> ${mappedAircraftName}`);
+        console.log(`Making API call to aviapages with: ${departure} to ${arrival}, aircraft: ${mappedAircraftName}, passengers: ${passengers}`);
+
+        const requestBody = {
+          departure_airport: departure,
+          arrival_airport: arrival,
+          aircraft: mappedAircraftName,
+          passengers: passengers || 1
+        };
+        console.log('Request body:', JSON.stringify(requestBody));
 
         const aviapagesResponse = await fetch('https://api.aviapages.com/v2/route/calculate', {
           method: 'POST',
@@ -53,18 +70,17 @@ serve(async (req) => {
             'Authorization': `Bearer ${aviapagesApiToken}`,
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            departure_airport: departure,
-            arrival_airport: arrival,
-            aircraft: mappedAircraftName,
-            passengers: passengers || 1
-          }),
+          body: JSON.stringify(requestBody),
           signal: AbortSignal.timeout(15000)
         });
 
+        console.log('Aviapages response status:', aviapagesResponse.status);
+        console.log('Aviapages response headers:', JSON.stringify([...aviapagesResponse.headers.entries()]));
+
         if (aviapagesResponse.ok) {
           const flightData = await aviapagesResponse.json();
-          console.log('Aviapages API response:', JSON.stringify(flightData).substring(0, 300));
+          console.log('Aviapages API SUCCESS - response length:', JSON.stringify(flightData).length);
+          console.log('Aviapages API response preview:', JSON.stringify(flightData).substring(0, 500));
           
           return new Response(JSON.stringify({
             success: true,
@@ -74,7 +90,8 @@ serve(async (req) => {
           });
         } else {
           const errorText = await aviapagesResponse.text();
-          console.log('Aviapages API failed:', aviapagesResponse.status, errorText);
+          console.log('Aviapages API FAILED - Status:', aviapagesResponse.status);
+          console.log('Aviapages API FAILED - Error body:', errorText);
           return new Response(JSON.stringify({
             success: false,
             error: `Aviapages API error: ${aviapagesResponse.status} - ${errorText}`
@@ -83,10 +100,12 @@ serve(async (req) => {
           });
         }
       } catch (error) {
-        console.error('Aviapages API error:', error);
+        console.error('Aviapages API EXCEPTION:', error);
+        console.error('Error details:', error instanceof Error ? error.message : 'Unknown error type');
+        console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
         return new Response(JSON.stringify({
           success: false,
-          error: 'Failed to calculate flight time'
+          error: `Failed to calculate flight time: ${error instanceof Error ? error.message : 'Unknown error'}`
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
