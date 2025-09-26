@@ -161,9 +161,53 @@ serve(async (req) => {
       return null;
     };
     
+    // Try Aviation Edge API as primary option (more reliable)
     try {
-      // Use AeroDataBox API via RapidAPI
-      console.log('Trying AeroDataBox API with query:', query);
+      console.log('Trying Aviation Edge API with query:', query);
+      const aviationEdgeKey = Deno.env.get('AVIATION_EDGE_API_KEY');
+      
+      if (aviationEdgeKey) {
+        const aviationEdgeResponse = await fetch(
+          `https://aviation-edge.com/v2/public/airportDatabase?key=${aviationEdgeKey}&limit=20&search=${encodeURIComponent(query)}`,
+          {
+            method: 'GET',
+            headers: { 'Accept': 'application/json' },
+            signal: AbortSignal.timeout(8000)
+          }
+        );
+
+        if (aviationEdgeResponse.ok) {
+          const aviationEdgeData = await aviationEdgeResponse.json();
+          console.log('Aviation Edge response received:', JSON.stringify(aviationEdgeData, null, 2));
+          
+          if (Array.isArray(aviationEdgeData) && aviationEdgeData.length > 0) {
+            airports = aviationEdgeData.map((airport: any) => ({
+              code: airport.codeIcaoAirport || airport.codeIataAirport || 'N/A',
+              name: airport.nameAirport || 'Unknown Airport',
+              city: airport.nameCountry || 'Unknown City',
+              state: airport.codeIso2Country,
+              country: airport.nameCountry,
+              type: airport.typeAirport === 'large_airport' ? 'Commercial' : 'Private',
+              runwayLength: null, // Aviation Edge doesn't provide runway data
+              fbo: null,
+              latitude: parseFloat(airport.latitudeAirport),
+              longitude: parseFloat(airport.longitudeAirport)
+            }));
+            console.log('Processed airports from Aviation Edge:', airports.length);
+          }
+        } else {
+          console.log('Aviation Edge API failed:', aviationEdgeResponse.status, await aviationEdgeResponse.text());
+        }
+      } else {
+        console.log('AVIATION_EDGE_API_KEY not configured');
+      }
+    } catch (error) {
+      console.log('Aviation Edge API error:', error instanceof Error ? error.message : 'Unknown error');
+    }
+
+    // Fallback to AeroDataBox if Aviation Edge didn't work
+    if (airports.length === 0) {
+      try {
       const rapidApiKey = Deno.env.get('RAPIDAPI_KEY');
       
       if (!rapidApiKey) {
@@ -238,6 +282,7 @@ serve(async (req) => {
     } catch (error) {
       console.log('AeroDataBox API error:', error instanceof Error ? error.message : 'Unknown error');
     }
+    } // Close the if (airports.length === 0) block
     
     // If no results, use a simple hardcoded search as fallback
     if (airports.length === 0) {
