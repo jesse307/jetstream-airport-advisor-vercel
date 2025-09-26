@@ -390,8 +390,41 @@ serve(async (req) => {
         totalAirportsFound: airports.length,
         debugEntries: airports.filter(a => a.type === 'DEBUG'),
         realResults: airports.filter(a => a.type !== 'DEBUG'),
-        fellbackToHardcoded: airports.some(a => a.code === 'KJFK' || a.code === 'KLAX')
+        fellbackToHardcoded: airports.some(a => a.code === 'KJFK' || a.code === 'KLAX'),
+        rawApiResponse: null // Will be set if we captured it
       };
+      
+      // Try to capture the raw API response for debugging
+      if (rapidApiKey) {
+        try {
+          const testResponse = await fetch('https://aerodatabox.p.rapidapi.com/airports/iata/LHR', {
+            method: 'GET',
+            headers: {
+              'X-RapidAPI-Key': rapidApiKey,
+              'X-RapidAPI-Host': 'aerodatabox.p.rapidapi.com',
+              'Accept': 'application/json'
+            },
+            signal: AbortSignal.timeout(5000)
+          });
+          
+          if (testResponse.ok) {
+            const rawData = await testResponse.json();
+            response.debug.rawApiResponse = rawData;
+          } else {
+            response.debug.rawApiResponse = {
+              error: true,
+              status: testResponse.status,
+              statusText: testResponse.statusText,
+              body: await testResponse.text()
+            };
+          }
+        } catch (error) {
+          response.debug.rawApiResponse = {
+            error: true,
+            message: error instanceof Error ? error.message : 'Unknown error'
+          };
+        }
+      }
     }
 
     return new Response(JSON.stringify(response), {
