@@ -8,15 +8,31 @@ const corsHeaders = {
 
 // Aircraft name mapping for aviapages API
 function mapAircraftName(aircraftType: string): string {
+  console.log('Original aircraft type received:', aircraftType);
+  
+  // Handle the format "Category-Model" that comes from the frontend
+  if (aircraftType.includes('-')) {
+    const parts = aircraftType.split('-');
+    if (parts.length >= 2) {
+      const modelName = parts.slice(1).join('-'); // Everything after the first dash
+      console.log('Extracted model name:', modelName);
+      return modelName;
+    }
+  }
+  
+  // Fallback mappings for category names
   const mappings: { [key: string]: string } = {
-    'Light Jet': 'Citation CJ',
-    'Mid-Size Jet': 'Citation XLS',
+    'Light Jet': 'Citation CJ3',
+    'Mid Jet': 'Citation XLS+',
+    'Super Mid Jet': 'Challenger 350',
     'Heavy Jet': 'Gulfstream G550',
     'Ultra Long Range': 'Global 7500',
     'Turboprop': 'King Air 350',
   };
   
-  return mappings[aircraftType] || aircraftType;
+  const mapped = mappings[aircraftType] || aircraftType;
+  console.log('Final mapped aircraft name:', mapped);
+  return mapped;
 }
 
 serve(async (req) => {
