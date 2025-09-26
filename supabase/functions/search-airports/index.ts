@@ -76,14 +76,17 @@ serve(async (req) => {
           departure_airport: departure,
           arrival_airport: arrival,
           aircraft: mappedAircraftName,
-          passengers: passengers || 1
+          pax: passengers || 2,
+          great_circle_time: true,
+          great_circle_distance: true,
+          airway_time: true
         };
         console.log('Request body:', JSON.stringify(requestBody));
 
-        const aviapagesResponse = await fetch('https://api.aviapages.com/v2/route/calculate', {
+        const aviapagesResponse = await fetch('https://frc.aviapages.com/api/flight_calculator/', {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${aviapagesApiToken}`,
+            'Authorization': `Token ${aviapagesApiToken}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify(requestBody),
