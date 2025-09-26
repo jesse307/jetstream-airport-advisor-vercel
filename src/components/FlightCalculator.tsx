@@ -152,7 +152,7 @@ export function FlightCalculator({ departure, arrival }: FlightCalculatorProps) 
       code,
       name,
       city,
-      runway: "8000 ft", // Default runway length
+      runway: "8000 ft", // Default runway length - should work for all aircraft
       fbo: "Various",
       type: "Public"
     };
@@ -336,6 +336,7 @@ export function FlightCalculator({ departure, arrival }: FlightCalculatorProps) 
 
   const checkRunwayCompatibility = (runway: string, minRunway: number) => {
     const runwayLength = parseInt(runway.replace(/[^\d]/g, ""));
+    console.log(`Runway compatibility check: ${runway} -> ${runwayLength} ft vs required ${minRunway} ft = ${runwayLength >= minRunway ? 'COMPATIBLE' : 'INCOMPATIBLE'}`);
     return runwayLength >= minRunway;
   };
 

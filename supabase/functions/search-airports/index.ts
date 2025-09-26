@@ -64,7 +64,7 @@ serve(async (req) => {
             type: airport.type === 'large_airport' ? 'Commercial' : 
                   airport.type === 'medium_airport' ? 'Commercial' :
                   airport.type === 'small_airport' ? 'Private' : 'Other',
-            runwayLength: airport.runway_length_ft || null,
+            runwayLength: airport.runway_length_ft || 8000, // Use API runway length or default to 8000
             fbo: airport.services || null,
             latitude: airport.latitude_deg,
             longitude: airport.longitude_deg
