@@ -10,83 +10,43 @@ export const ApiTest = () => {
   const testApiKey = async () => {
     setTesting(true);
     try {
-      // Test with a code that should trigger the API (not in fallback)
-      const testCode = 'LHR'; // London Heathrow - not in fallback list
+      // First, let's test if the function returns any debugging info
+      console.log('Testing with diagnostic query...');
       const { data, error } = await supabase.functions.invoke('search-airports', {
-        body: { query: testCode }
+        body: { query: 'DEBUG_TEST_LHR' }
       });
+      
+      console.log('Function response:', { data, error });
       
       if (error) {
         setTestResult({ 
           error: error.message,
           success: false,
-          testType: 'function_error'
+          testType: 'function_error',
+          rawError: error
         });
         return;
       }
 
-      // Check if we got API error details in the results
-      const apiError = data?.airports?.find(a => a.code === 'API_ERROR');
-      const fetchError = data?.airports?.find(a => a.code === 'FETCH_ERROR');
+      // Log the full response for debugging
+      setTestResult({
+        success: false,
+        testType: 'debug_response',
+        fullResponse: data,
+        airports: data?.airports || [],
+        airportCount: data?.airports?.length || 0,
+        message: 'Check the full response below for debugging info',
+        hasApiError: data?.airports?.some(a => a.code === 'API_ERROR'),
+        hasFetchError: data?.airports?.some(a => a.code === 'FETCH_ERROR'),
+        testQuery: 'DEBUG_TEST_LHR'
+      });
       
-      if (apiError) {
-        setTestResult({
-          success: false,
-          errorType: 'API_ERROR',
-          statusCode: apiError.name.match(/\d+/)?.[0] || 'unknown',
-          errorMessage: apiError.city,
-          fullError: apiError.name,
-          testCode: testCode,
-          testType: 'api_error_detected'
-        });
-      } else if (fetchError) {
-        setTestResult({
-          success: false,
-          errorType: 'FETCH_ERROR', 
-          errorMessage: fetchError.city,
-          fullError: fetchError.name,
-          testCode: testCode,
-          testType: 'fetch_error_detected'
-        });
-      } else {
-        // Check if results came from API or fallback
-        const hasResults = data?.airports && data.airports.length > 0;
-        const isFromFallback = hasResults && data.airports.some(a => 
-          a.code === 'KJFK' || a.code === 'KLAX' || a.code === 'KEWR'
-        );
-        
-        if (hasResults && !isFromFallback) {
-          setTestResult({
-            success: true,
-            resultType: 'api_working',
-            airportCount: data.airports.length,
-            firstAirport: data.airports[0],
-            testCode: testCode,
-            message: 'AeroDataBox API is working correctly!'
-          });
-        } else if (hasResults && isFromFallback) {
-          setTestResult({
-            success: false,
-            resultType: 'using_fallback',
-            airportCount: data.airports.length,
-            testCode: testCode,
-            message: 'API failed silently - check your RapidAPI key configuration',
-            suggestion: 'Verify your API key is valid and has remaining quota'
-          });
-        } else {
-          setTestResult({
-            success: false,
-            resultType: 'no_results',
-            testCode: testCode,
-            message: 'No results found - API may be completely broken'
-          });
-        }
-      }
     } catch (err) {
       setTestResult({ 
         error: err instanceof Error ? err.message : 'Unknown error',
         success: false,
-        testType: 'client_error'
+        testType: 'client_error',
+        stack: err instanceof Error ? err.stack : undefined
       });
     } finally {
       setTesting(false);
