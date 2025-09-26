@@ -336,7 +336,6 @@ export function FlightCalculator({ departure, arrival }: FlightCalculatorProps) 
 
   const checkRunwayCompatibility = (runway: string, minRunway: number) => {
     const runwayLength = parseInt(runway.replace(/[^\d]/g, ""));
-    console.log(`Runway compatibility check: ${runway} -> ${runwayLength} ft vs required ${minRunway} ft = ${runwayLength >= minRunway ? 'COMPATIBLE' : 'INCOMPATIBLE'}`);
     return runwayLength >= minRunway;
   };
 
@@ -373,14 +372,72 @@ export function FlightCalculator({ departure, arrival }: FlightCalculatorProps) 
     };
   };
 
+  const getFlightLimitation = (aircraft: AircraftType, distance: number, passengers: number, departureAirport: Airport, arrivalAirport: Airport) => {
+    const departureCompatible = checkRunwayCompatibility(departureAirport.runway, aircraft.minRunway);
+    const arrivalCompatible = checkRunwayCompatibility(arrivalAirport.runway, aircraft.minRunway);
+    const capability = calculateAircraftCapability(aircraft, distance, passengers);
+    
+    // Check limitations in order of importance
+    if (!capability.rangeCapable) {
+      return {
+        compatible: false,
+        reason: `Exceeds maximum range (${aircraft.maxRange} NM)`,
+        type: 'range'
+      };
+    }
+    
+    if (!capability.fuelCapable) {
+      return {
+        compatible: false,
+        reason: `Insufficient fuel capacity for this route`,
+        type: 'fuel'
+      };
+    }
+    
+    if (!capability.payloadCapable) {
+      return {
+        compatible: false,
+        reason: `Too many passengers (max payload: ${aircraft.maxPayload} lbs)`,
+        type: 'payload'
+      };
+    }
+    
+    if (!capability.weightCapable) {
+      return {
+        compatible: false,
+        reason: `Exceeds maximum takeoff weight`,
+        type: 'weight'
+      };
+    }
+    
+    if (!departureCompatible) {
+      return {
+        compatible: false,
+        reason: `Departure runway too short (needs ${aircraft.minRunway} ft)`,
+        type: 'runway'
+      };
+    }
+    
+    if (!arrivalCompatible) {
+      return {
+        compatible: false,
+        reason: `Arrival runway too short (needs ${aircraft.minRunway} ft)`,
+        type: 'runway'
+      };
+    }
+    
+    return {
+      compatible: true,
+      reason: 'Flight possible',
+      type: 'compatible'
+    };
+  };
   const getCapableAircraft = () => {
     if (!departureAirport || !arrivalAirport || distance === 0) return [];
     
     return AIRCRAFT_TYPES.filter(aircraft => {
-      const departureCompatible = checkRunwayCompatibility(departureAirport.runway, aircraft.minRunway);
-      const arrivalCompatible = checkRunwayCompatibility(arrivalAirport.runway, aircraft.minRunway);
-      const capability = calculateAircraftCapability(aircraft, distance, passengers);
-      return departureCompatible && arrivalCompatible && capability.capable;
+      const limitation = getFlightLimitation(aircraft, distance, passengers, departureAirport, arrivalAirport);
+      return limitation.compatible;
     });
   };
 
@@ -488,10 +545,8 @@ export function FlightCalculator({ departure, arrival }: FlightCalculatorProps) 
                   const flightTime = calculateFlightTime(distance, aircraft.speed, departureAirport, arrivalAirport);
                   const flightTimeHours = calculateFlightTimeInHours(distance, aircraft.speed, departureAirport, arrivalAirport);
                   const costRange = calculateCostRange(flightTimeHours, aircraft.hourlyRate);
-                  const departureCompatible = checkRunwayCompatibility(departureAirport.runway, aircraft.minRunway);
-                  const arrivalCompatible = checkRunwayCompatibility(arrivalAirport.runway, aircraft.minRunway);
-                  const capability = calculateAircraftCapability(aircraft, distance, passengers);
-                  const isCompatible = departureCompatible && arrivalCompatible && capability.capable;
+                  const limitation = getFlightLimitation(aircraft, distance, passengers, departureAirport, arrivalAirport);
+                  const isCompatible = limitation.compatible;
 
                   return (
                     <div 
@@ -514,7 +569,7 @@ export function FlightCalculator({ departure, arrival }: FlightCalculatorProps) 
                             </Badge>
                             {!isCompatible && (
                               <Badge variant="destructive" className="text-xs">
-                                Runway Incompatible
+                                {limitation.reason}
                               </Badge>
                             )}
                           </div>
