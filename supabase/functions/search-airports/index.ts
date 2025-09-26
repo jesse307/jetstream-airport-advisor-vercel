@@ -375,7 +375,23 @@ serve(async (req) => {
     console.log('Final result count:', airports.length);
     console.log('=== END DEBUG ===');
 
-    return new Response(JSON.stringify({ airports }), {
+    // For debugging, include debug info in response if it's a debug query
+    const response: any = { airports };
+    if (query.includes('DEBUG_TEST')) {
+      response.debug = {
+        queryReceived: query,
+        aviationEdgeConfigured: !!aviationEdgeKey,
+        rapidApiConfigured: !!rapidApiKey,
+        rapidApiKeyLength: rapidApiKey?.length || 0,
+        rapidApiKeyPreview: rapidApiKey?.substring(0, 10) + '...' || 'NOT_SET',
+        totalAirportsFound: airports.length,
+        debugEntries: airports.filter(a => a.type === 'DEBUG'),
+        realResults: airports.filter(a => a.type !== 'DEBUG'),
+        fellbackToHardcoded: airports.some(a => a.code === 'KJFK' || a.code === 'KLAX')
+      };
+    }
+
+    return new Response(JSON.stringify(response), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
