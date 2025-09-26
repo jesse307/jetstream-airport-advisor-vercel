@@ -1,12 +1,14 @@
 import { useState } from "react";
-import { Plane, MapPin, Navigation, Settings } from "lucide-react";
+import { Plane, MapPin, Navigation, Settings, TestTube } from "lucide-react";
 import { AirportSearch } from "@/components/AirportSearch";
 import { FlightCalculator } from "@/components/FlightCalculator";
+import { ApiTest } from "@/components/ApiTest";
 import { Button } from "@/components/ui/button";
 
 const Index = () => {
   const [departure, setDeparture] = useState<string>("");
   const [arrival, setArrival] = useState<string>("");
+  const [showApiTest, setShowApiTest] = useState<boolean>(false);
 
   const handleSwapAirports = () => {
     const temp = departure;
@@ -29,10 +31,20 @@ const Index = () => {
                 <p className="text-sm text-muted-foreground">Private Jet Flight Planning</p>
               </div>
             </div>
-            <Button variant="professional" size="sm">
-              <Settings className="h-4 w-4 mr-2" />
-              Settings
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button variant="professional" size="sm">
+                <Settings className="h-4 w-4 mr-2" />
+                Settings
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setShowApiTest(!showApiTest)}
+              >
+                <TestTube className="h-4 w-4 mr-2" />
+                API Test
+              </Button>
+            </div>
           </div>
         </div>
       </header>
@@ -40,6 +52,9 @@ const Index = () => {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
         <div className="space-y-8">
+          {/* API Test Panel */}
+          {showApiTest && <ApiTest />}
+          
           {/* Airport Selection */}
           <div className="grid md:grid-cols-2 gap-6">
             <div className="space-y-4">
