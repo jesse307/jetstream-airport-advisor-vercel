@@ -301,8 +301,8 @@ export function FlightCalculator({ departure, arrival }: FlightCalculatorProps) 
               className="w-24 bg-card shadow-card-custom"
             />
             <div className="text-sm text-muted-foreground">
-              Total passenger weight: <span className="font-medium text-foreground">{passengers * 180} lbs</span>
-              <span className="text-xs block mt-1">Assuming 180 lbs per passenger</span>
+              Total weight: <span className="font-medium text-foreground">{passengers * 230} lbs</span>
+              <span className="text-xs block mt-1">180 lbs per passenger + 50 lbs luggage</span>
             </div>
           </div>
         </div>
