@@ -71,6 +71,7 @@ const COMMERCIAL_AIRPORTS = [
   { code: "KIAD", name: "Washington Dulles International", city: "Washington, DC", state: "DC", runway: "11500 ft", fbo: "Signature Flight Support", type: "Public" },
   { code: "KPIT", name: "Pittsburgh International", city: "Pittsburgh, PA", state: "PA", runway: "11500 ft", fbo: "Signature Flight Support", type: "Public" },
   { code: "KPHX", name: "Phoenix Sky Harbor International", city: "Phoenix, AZ", state: "AZ", runway: "11489 ft", fbo: "Signature Flight Support", type: "Public" },
+  { code: "KSEZ", name: "Sedona Airport", city: "Sedona, AZ", state: "AZ", runway: "5132 ft", fbo: "Sedona Air Tours, Classic Aviation", type: "Public" },
   { code: "KMSP", name: "Minneapolis-St. Paul International", city: "Minneapolis, MN", state: "MN", runway: "11000 ft", fbo: "Signature Flight Support", type: "Public" },
   { code: "KPDX", name: "Portland International", city: "Portland, OR", state: "OR", runway: "11000 ft", fbo: "Signature Flight Support", type: "Public" },
   { code: "KTPA", name: "Tampa International Airport", city: "Tampa, FL", state: "FL", runway: "11002 ft", fbo: "Signature Flight Support", type: "Public" },
