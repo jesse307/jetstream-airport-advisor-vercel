@@ -60,8 +60,8 @@ serve(async (req) => {
               departure_airport: departure,
               arrival_airport: arrival,
               aircraft: mapAircraftName(aircraftType),
-              pax: 4,
-              aircraft_custom_payload: (4 * 230), // 4 passengers + luggage (230 lbs each = ~104 kg each)
+              pax: 2,
+              aircraft_custom_payload: (2 * 200), // 2 passengers + luggage (200 lbs each = ~91 kg each)
               airway_time: true,
               airway_fuel: true,
               airway_distance: true,
