@@ -214,6 +214,7 @@ serve(async (req) => {
         if (!rapidApiKey) {
           console.log('RAPIDAPI_KEY not configured, skipping AeroDataBox API');
         } else {
+          console.log('RAPIDAPI_KEY found, length:', rapidApiKey.length);
           // Test with a direct airport lookup first, then fallback to search
           let aeroDataBoxResponse: Response | undefined;
           let foundDirectly = false;
@@ -224,6 +225,7 @@ serve(async (req) => {
             
             // Try IATA code first
             try {
+              console.log('Attempting IATA lookup for:', query.toUpperCase());
               aeroDataBoxResponse = await fetch(
                 `https://aerodatabox.p.rapidapi.com/airports/iata/${query.toUpperCase()}`,
                 {
@@ -237,11 +239,15 @@ serve(async (req) => {
                 }
               );
               
+              console.log('IATA response status:', aeroDataBoxResponse.status);
               if (aeroDataBoxResponse.ok) {
                 foundDirectly = true;
+                console.log('IATA lookup successful');
+              } else {
+                console.log('IATA lookup failed with status:', aeroDataBoxResponse.status);
               }
             } catch (err) {
-              console.log('IATA lookup failed, trying ICAO');
+              console.log('IATA lookup error:', err);
             }
             
             // If IATA failed and query is 4 characters, try ICAO
