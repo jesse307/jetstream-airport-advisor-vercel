@@ -13,7 +13,78 @@ serve(async (req) => {
   }
 
   try {
-    const { query } = await req.json();
+    const { query, calculateFlightTime, departure, arrival, aircraftType } = await req.json();
+    
+    // Handle flight time calculation requests
+    if (calculateFlightTime && departure && arrival && aircraftType) {
+      console.log(`Calculating flight time from ${departure} to ${arrival} using ${aircraftType}`);
+      
+      const aviapagesToken = Deno.env.get('AVIAPAGES_API_TOKEN');
+      if (!aviapagesToken) {
+        return new Response(JSON.stringify({ 
+          error: "AVIAPAGES_API_TOKEN not configured"
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 500
+        });
+      }
+
+      try {
+        // Call aviapages API for flight time calculation
+        const aviapagesResponse = await fetch(
+          `https://frc.aviapages.com/api/flight_calculator/`,
+          {
+            method: 'POST',
+            headers: {
+              'Authorization': `Token ${aviapagesToken}`,
+              'Content-Type': 'application/json',
+              'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+              departure_airport: departure,
+              arrival_airport: arrival,
+              aircraft: aircraftType,
+              pax: 4,
+              airway_time: true
+            }),
+            signal: AbortSignal.timeout(15000)
+          }
+        );
+
+        if (aviapagesResponse.ok) {
+          const flightTimeData = await aviapagesResponse.json();
+          console.log('Aviapages flight time response:', JSON.stringify(flightTimeData, null, 2));
+          
+          return new Response(JSON.stringify({ 
+            success: true,
+            departure,
+            arrival,
+            aircraftType,
+            flightTime: flightTimeData
+          }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        } else {
+          const errorText = await aviapagesResponse.text();
+          console.log('Aviapages API failed:', aviapagesResponse.status, errorText);
+          
+          return new Response(JSON.stringify({ 
+            success: false,
+            error: `Aviapages API returned ${aviapagesResponse.status}: ${errorText}`
+          }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      } catch (error) {
+        console.log('Aviapages API error:', error);
+        return new Response(JSON.stringify({ 
+          success: false,
+          error: error instanceof Error ? error.message : 'Unknown error'
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
     
     if (!query || query.trim().length < 2) {
       return new Response(JSON.stringify({ 
