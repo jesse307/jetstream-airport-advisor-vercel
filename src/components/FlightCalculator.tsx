@@ -373,22 +373,24 @@ export function FlightCalculator({ departure, arrival }: FlightCalculatorProps) 
   };
 
   const getCapableAircraft = () => {
-    if (!departure || !arrival || distance === 0) return [];
+    if (!departureAirport || !arrivalAirport || distance === 0) return [];
     
     return AIRCRAFT_TYPES.filter(aircraft => {
-    const capability = calculateAircraftCapability(aircraft, distance, passengers);
-    return departureCompatible && arrivalCompatible && capability.capable;
+      const departureCompatible = checkRunwayCompatibility(departureAirport.runway, aircraft.minRunway);
+      const arrivalCompatible = checkRunwayCompatibility(arrivalAirport.runway, aircraft.minRunway);
+      const capability = calculateAircraftCapability(aircraft, distance, passengers);
+      return departureCompatible && arrivalCompatible && capability.capable;
     });
   };
 
   useEffect(() => {
-    if (departure && arrival) {
-      const dist = calculateDistance(departure, arrival);
+    if (departureAirport && arrivalAirport) {
+      const dist = calculateDistance(departureAirport, arrivalAirport);
       setDistance(dist);
     } else {
       setDistance(0);
     }
-  }, [departure, arrival]);
+  }, [departureAirport, arrivalAirport]);
 
   return (
     <Card className="shadow-aviation">
@@ -482,11 +484,11 @@ export function FlightCalculator({ departure, arrival }: FlightCalculatorProps) 
               
               <div className="grid gap-3">
                 {AIRCRAFT_TYPES.map((aircraft) => {
-                  const flightTime = calculateFlightTime(distance, aircraft.speed, departure, arrival);
-                  const flightTimeHours = calculateFlightTimeInHours(distance, aircraft.speed, departure, arrival);
+                  const flightTime = calculateFlightTime(distance, aircraft.speed, departureAirport, arrivalAirport);
+                  const flightTimeHours = calculateFlightTimeInHours(distance, aircraft.speed, departureAirport, arrivalAirport);
                   const costRange = calculateCostRange(flightTimeHours, aircraft.hourlyRate);
-                  const departureCompatible = checkRunwayCompatibility(departure.runway, aircraft.minRunway);
-                  const arrivalCompatible = checkRunwayCompatibility(arrival.runway, aircraft.minRunway);
+                  const departureCompatible = checkRunwayCompatibility(departureAirport.runway, aircraft.minRunway);
+                  const arrivalCompatible = checkRunwayCompatibility(arrivalAirport.runway, aircraft.minRunway);
                   const capability = calculateAircraftCapability(aircraft, distance, passengers);
                   const isCompatible = departureCompatible && arrivalCompatible && capability.capable;
 
@@ -574,12 +576,12 @@ export function FlightCalculator({ departure, arrival }: FlightCalculatorProps) 
                 </h4>
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
-                    <span className="text-muted-foreground">{departure.code}:</span>
-                    <div className="font-medium">{departure.runway}</div>
+                    <span className="text-muted-foreground">{departureAirport.code}:</span>
+                    <div className="font-medium">{departureAirport.runway}</div>
                   </div>
                   <div>
-                    <span className="text-muted-foreground">{arrival.code}:</span>
-                    <div className="font-medium">{arrival.runway}</div>
+                    <span className="text-muted-foreground">{arrivalAirport.code}:</span>
+                    <div className="font-medium">{arrivalAirport.runway}</div>
                   </div>
                 </div>
               </div>
