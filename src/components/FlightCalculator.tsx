@@ -174,9 +174,9 @@ export function FlightCalculator({ departure, arrival }: FlightCalculatorProps) 
       return [airport.latitude, airport.longitude];
     }
     
-    // Extended coordinate lookup table for major airports
+    // Extended coordinate lookup table for major airports (both IATA and ICAO codes)
     const coords: { [key: string]: [number, number] } = {
-        // Major US Hubs
+        // Major US Hubs - ICAO Codes
         'KJFK': [40.6413, -73.7781], // JFK
         'KLAX': [33.9425, -118.4081], // LAX
         'KORD': [41.9742, -87.9073], // ORD Chicago O'Hare
@@ -202,6 +202,57 @@ export function FlightCalculator({ departure, arrival }: FlightCalculatorProps) 
         'KCLE': [41.4117, -81.8498], // CLE Cleveland
         'KPIT': [40.4915, -80.2329], // PIT Pittsburgh
         'KPDX': [45.5898, -122.5951], // PDX Portland
+        'KEWR': [40.6925, -74.1687], // Newark Liberty
+        
+        // Major US Hubs - IATA Codes
+        'JFK': [40.6413, -73.7781], // JFK
+        'LAX': [33.9425, -118.4081], // LAX
+        'ORD': [41.9742, -87.9073], // Chicago O'Hare
+        'ATL': [33.6407, -84.4277], // Hartsfield-Jackson
+        'DFW': [32.8998, -97.0403], // Dallas/Fort Worth
+        'DEN': [39.8561, -104.6737], // Denver
+        'SFO': [37.6213, -122.3790], // San Francisco
+        'LAS': [36.0840, -115.1537], // Las Vegas
+        'MIA': [25.7959, -80.2870], // Miami
+        'BOS': [42.3656, -71.0096], // Boston Logan
+        'SEA': [47.4502, -122.3088], // Seattle
+        'PHX': [33.4484, -112.0740], // Phoenix
+        'IAH': [29.9902, -95.3368], // Houston
+        'MCO': [28.4312, -81.3081], // Orlando
+        'CLT': [35.2144, -80.9473], // Charlotte
+        'PHL': [39.8744, -75.2424], // Philadelphia
+        'BWI': [39.1754, -76.6683], // Baltimore
+        'DCA': [38.8512, -77.0402], // Reagan National
+        'IAD': [38.9445, -77.4558], // Dulles
+        'MSP': [44.8848, -93.2223], // Minneapolis
+        'STL': [38.7487, -90.3700], // St. Louis
+        'CVG': [39.0488, -84.6678], // Cincinnati
+        'CLE': [41.4117, -81.8498], // Cleveland
+        'PIT': [40.4915, -80.2329], // Pittsburgh
+        'PDX': [45.5898, -122.5951], // Portland
+        'EWR': [40.6925, -74.1687], // Newark Liberty
+        
+        // International Airports - ICAO Codes
+        'EGLL': [51.4706, -0.461941], // London Heathrow
+        'EGKK': [51.1481, -0.1903], // London Gatwick
+        'LFPG': [49.0128, 2.5500], // Paris Charles de Gaulle
+        'EDDF': [50.0379, 8.5622], // Frankfurt
+        'LIRF': [41.8003, 12.2389], // Rome Fiumicino
+        'LEMD': [40.4719, -3.5626], // Madrid
+        'EHAM': [52.3086, 4.7639], // Amsterdam
+        'LOWW': [48.1103, 16.5697], // Vienna
+        'LSZH': [47.4647, 8.5492], // Zurich
+        
+        // International Airports - IATA Codes
+        'LHR': [51.4706, -0.461941], // London Heathrow
+        'LGW': [51.1481, -0.1903], // London Gatwick
+        'CDG': [49.0128, 2.5500], // Paris Charles de Gaulle
+        'FRA': [50.0379, 8.5622], // Frankfurt
+        'FCO': [41.8003, 12.2389], // Rome Fiumicino
+        'MAD': [40.4719, -3.5626], // Madrid
+        'AMS': [52.3086, 4.7639], // Amsterdam
+        'VIE': [48.1103, 16.5697], // Vienna
+        'ZUR': [47.4647, 8.5492], // Zurich
         
         // Business Aviation Airports
         'KTEB': [40.8501, -74.0606], // Teterboro
