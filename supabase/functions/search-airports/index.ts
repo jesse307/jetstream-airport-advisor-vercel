@@ -267,11 +267,51 @@ serve(async (req) => {
           console.log('AeroDataBox response type:', Array.isArray(aeroData) ? 'array' : typeof aeroData);
           console.log('AeroDataBox FULL response:', JSON.stringify(aeroData, null, 2));
           
+          // Function to get runway data for an airport
+          const getRunwayData = async (airportCode: string): Promise<number> => {
+            try {
+              const runwayResponse = await fetch(
+                `https://aerodatabox.p.rapidapi.com/airports/iata/${airportCode}/runways`,
+                {
+                  method: 'GET',
+                  headers: {
+                    'X-RapidAPI-Key': rapidApiKey,
+                    'X-RapidAPI-Host': 'aerodatabox.p.rapidapi.com',
+                    'Accept': 'application/json'
+                  },
+                  signal: AbortSignal.timeout(5000)
+                }
+              );
+              
+              if (runwayResponse.ok) {
+                const runwayData = await runwayResponse.json();
+                console.log('Runway data for', airportCode, ':', JSON.stringify(runwayData));
+                
+                // Find the longest runway
+                if (Array.isArray(runwayData) && runwayData.length > 0) {
+                  const longestRunway = runwayData.reduce((max, runway) => {
+                    const length = runway.length?.meter || runway.lengthMeter || runway.length || 0;
+                    return length > max ? length : max;
+                  }, 0);
+                  
+                  // Convert from meters to feet if needed
+                  return Math.round(longestRunway * 3.28084);
+                }
+              }
+            } catch (error) {
+              console.log('Error fetching runway data for', airportCode, ':', error);
+            }
+            return 0;
+          };
+          
           // Handle different response formats
           if (Array.isArray(aeroData)) {
             console.log('Processing array response with', aeroData.length, 'items');
-            aeroData.forEach((airport: any, index: number) => {
-              console.log(`Airport ${index}:`, JSON.stringify(airport, null, 2));
+            for (const airport of aeroData) {
+              console.log('Processing airport:', JSON.stringify(airport, null, 2));
+              const airportCode = airport.iata || airport.icao;
+              const runwayLength = airportCode ? await getRunwayData(airportCode) : 0;
+              
               airports.push({
                 code: airport.iata || airport.icao || 'N/A',
                 name: airport.fullName || airport.shortName || airport.name || 'Unknown',
@@ -279,11 +319,14 @@ serve(async (req) => {
                 state: airport.country?.code || airport.regionName || 'N/A',
                 country: airport.country?.name || airport.countryName || 'Unknown',
                 type: 'Commercial',
-                runwayLength: 0
+                runwayLength: runwayLength
               });
-            });
+            }
           } else if (aeroData && typeof aeroData === 'object') {
             console.log('Processing single object response:', JSON.stringify(aeroData, null, 2));
+            const airportCode = aeroData.iata || aeroData.icao;
+            const runwayLength = airportCode ? await getRunwayData(airportCode) : 0;
+            
             // Single airport response
             airports.push({
               code: aeroData.iata || aeroData.icao || 'N/A',
@@ -292,7 +335,7 @@ serve(async (req) => {
               state: aeroData.country?.code || aeroData.regionName || 'N/A',
               country: aeroData.country?.name || aeroData.countryName || 'Unknown',
               type: 'Commercial',
-              runwayLength: 0
+              runwayLength: runwayLength
             });
           }
           
@@ -357,8 +400,8 @@ serve(async (req) => {
         { code: 'KEWR', name: 'Newark Liberty International Airport', city: 'Newark', state: 'NJ', country: 'US', type: 'Commercial', runwayLength: 11000 },
         { code: 'KSFO', name: 'San Francisco International Airport', city: 'San Francisco', state: 'CA', country: 'US', type: 'Commercial', runwayLength: 11870 },
         { code: 'KBOS', name: 'Boston Logan International Airport', city: 'Boston', state: 'MA', country: 'US', type: 'Commercial', runwayLength: 10083 },
-        { code: 'KLHR', name: 'London Heathrow Airport', city: 'London', state: 'England', country: 'UK', type: 'Commercial', runwayLength: 12800 },
-        { code: 'LHR', name: 'London Heathrow Airport', city: 'London', state: 'England', country: 'UK', type: 'Commercial', runwayLength: 12800 }
+        { code: 'EGLL', name: 'London Heathrow Airport', city: 'London', state: 'England', country: 'UK', type: 'Commercial', runwayLength: 12799 },
+        { code: 'LHR', name: 'London Heathrow Airport', city: 'London', state: 'England', country: 'UK', type: 'Commercial', runwayLength: 12799 }
       ];
       
       const queryLower = query.toLowerCase();
