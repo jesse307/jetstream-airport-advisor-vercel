@@ -208,23 +208,62 @@ serve(async (req) => {
     // Fallback to AeroDataBox if Aviation Edge didn't work
     if (airports.length === 0) {
       try {
-      const rapidApiKey = Deno.env.get('RAPIDAPI_KEY');
-      
-      if (!rapidApiKey) {
-        console.log('RAPIDAPI_KEY not configured, skipping AeroDataBox API');
-      } else {
-        const aeroDataBoxResponse = await fetch(
-          `https://aerodatabox.p.rapidapi.com/airports/search/term?q=${encodeURIComponent(query)}&limit=20`,
-          {
-            method: 'GET',
-            headers: {
-              'X-RapidAPI-Key': rapidApiKey,
-              'X-RapidAPI-Host': 'aerodatabox.p.rapidapi.com',
-              'Accept': 'application/json'
-            },
-            signal: AbortSignal.timeout(8000)
+        console.log('Trying AeroDataBox API with query:', query);
+        const rapidApiKey = Deno.env.get('RAPIDAPI_KEY');
+        
+        if (!rapidApiKey) {
+          console.log('RAPIDAPI_KEY not configured, skipping AeroDataBox API');
+        } else {
+          // Test with a direct airport lookup first, then fallback to search
+          let aeroDataBoxResponse;
+          
+          // If query looks like an airport code, try direct lookup first
+          if (query.length === 3 || query.length === 4) {
+            console.log(`Trying direct airport lookup for code: ${query}`);
+            aeroDataBoxResponse = await fetch(
+              `https://aerodatabox.p.rapidapi.com/airports/iata/${query.toUpperCase()}`,
+              {
+                method: 'GET',
+                headers: {
+                  'X-RapidAPI-Key': rapidApiKey,
+                  'X-RapidAPI-Host': 'aerodatabox.p.rapidapi.com',
+                  'Accept': 'application/json'
+                },
+                signal: AbortSignal.timeout(8000)
+              }
+            );
+            
+            // If direct lookup fails, fallback to search
+            if (!aeroDataBoxResponse.ok) {
+              console.log('Direct lookup failed, trying search endpoint');
+              aeroDataBoxResponse = await fetch(
+                `https://aerodatabox.p.rapidapi.com/airports/search/term?q=${encodeURIComponent(query)}&limit=20`,
+                {
+                  method: 'GET',
+                  headers: {
+                    'X-RapidAPI-Key': rapidApiKey,
+                    'X-RapidAPI-Host': 'aerodatabox.p.rapidapi.com',
+                    'Accept': 'application/json'
+                  },
+                  signal: AbortSignal.timeout(8000)
+                }
+              );
+            }
+          } else {
+            // For longer queries, use search endpoint directly
+            aeroDataBoxResponse = await fetch(
+              `https://aerodatabox.p.rapidapi.com/airports/search/term?q=${encodeURIComponent(query)}&limit=20`,
+              {
+                method: 'GET',
+                headers: {
+                  'X-RapidAPI-Key': rapidApiKey,
+                  'X-RapidAPI-Host': 'aerodatabox.p.rapidapi.com',
+                  'Accept': 'application/json'
+                },
+                signal: AbortSignal.timeout(8000)
+              }
+            );
           }
-        );
 
         if (aeroDataBoxResponse.ok) {
           const aeroDataBoxData = await aeroDataBoxResponse.json();
