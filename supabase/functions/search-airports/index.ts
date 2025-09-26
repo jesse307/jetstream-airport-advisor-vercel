@@ -356,16 +356,47 @@ serve(async (req) => {
             console.log('Processed airports from AeroDataBox:', airports.length);
           }
         } else if (aeroDataBoxResponse) {
-          console.log('AeroDataBox API failed:', aeroDataBoxResponse.status, await aeroDataBoxResponse.text());
+          const errorText = await aeroDataBoxResponse.text();
+          console.log('AeroDataBox API failed:', aeroDataBoxResponse.status, errorText);
+          
+          // Store API error details for debugging
+          if (!airports.length) {
+            airports.push({
+              code: 'API_ERROR',
+              name: `AeroDataBox API Error: ${aeroDataBoxResponse.status}`,
+              city: errorText.substring(0, 100),
+              state: 'ERROR',
+              country: 'ERROR',
+              type: 'ERROR',
+              runwayLength: 0
+            });
+          }
         }
       }
     } catch (error) {
-      console.log('AeroDataBox API error:', error instanceof Error ? error.message : 'Unknown error');
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.log('AeroDataBox API error:', errorMessage);
+      
+      // Store fetch error details for debugging
+      if (!airports.length) {
+        airports.push({
+          code: 'FETCH_ERROR',
+          name: `API Fetch Error: ${errorMessage}`,
+          city: 'Check API key and network connectivity',
+          state: 'ERROR',
+          country: 'ERROR', 
+          type: 'ERROR',
+          runwayLength: 0
+        });
+      }
     }
     } // Close the if (airports.length === 0) block
     
-    // If no results, use a simple hardcoded search as fallback
-    if (airports.length === 0) {
+    // If no results from APIs (but we might have error info), use fallback database
+    const hasErrorInfo = airports.some(a => a.code === 'API_ERROR' || a.code === 'FETCH_ERROR');
+    const hasRealResults = airports.some(a => a.code !== 'API_ERROR' && a.code !== 'FETCH_ERROR');
+    
+    if (!hasRealResults) {
       console.log('Using fallback airport database...');
       const fallbackAirports = [
         { code: 'EYW', name: 'Key West International Airport', city: 'Key West', state: 'FL', country: 'US', type: 'Commercial', runwayLength: 4801 },
@@ -387,7 +418,7 @@ serve(async (req) => {
       ];
       
       const searchTerm = query.toLowerCase();
-      airports = fallbackAirports.filter(airport => {
+      const fallbackResults = fallbackAirports.filter(airport => {
         const code = airport.code.toLowerCase();
         const name = airport.name.toLowerCase();
         const city = airport.city.toLowerCase();
@@ -401,6 +432,15 @@ serve(async (req) => {
           (searchTerm.length === 3 && code.endsWith(searchTerm)) // Handle 3-letter codes
         );
       });
+      
+      // If we have error info, prepend it to results for debugging
+      const hasErrorInfo = airports.some(a => a.code === 'API_ERROR' || a.code === 'FETCH_ERROR');
+      if (hasErrorInfo) {
+        const errorAirports = airports.filter(a => a.code === 'API_ERROR' || a.code === 'FETCH_ERROR');
+        airports = [...errorAirports, ...fallbackResults];
+      } else {
+        airports = fallbackResults;
+      }
     }
     console.log(`Found ${airports.length} airports`);
 
