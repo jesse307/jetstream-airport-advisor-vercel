@@ -11,7 +11,7 @@ interface Airport {
   name: string;
   city: string;
   state?: string;
-  runway: string;
+  runway: string | number; // Support both string format and numeric runway length
   fbo: string;
   type: string;
   latitude?: number;
@@ -334,8 +334,15 @@ export function FlightCalculator({ departure, arrival }: FlightCalculatorProps) 
     }).format(amount);
   };
 
-  const checkRunwayCompatibility = (runway: string, minRunway: number) => {
-    const runwayLength = parseInt(runway.replace(/[^\d]/g, ""));
+  const checkRunwayCompatibility = (runway: string | number, minRunway: number) => {
+    let runwayLength: number;
+    
+    if (typeof runway === 'number') {
+      runwayLength = runway;
+    } else {
+      runwayLength = parseInt(runway.replace(/[^\d]/g, ""));
+    }
+    
     return runwayLength >= minRunway;
   };
 
@@ -633,11 +640,15 @@ export function FlightCalculator({ departure, arrival }: FlightCalculatorProps) 
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
                     <span className="text-muted-foreground">{departureAirport.code}:</span>
-                    <div className="font-medium">{departureAirport.runway}</div>
+                    <div className="font-medium">
+                      {typeof departureAirport.runway === 'number' ? `${departureAirport.runway} ft` : departureAirport.runway}
+                    </div>
                   </div>
                   <div>
                     <span className="text-muted-foreground">{arrivalAirport.code}:</span>
-                    <div className="font-medium">{arrivalAirport.runway}</div>
+                    <div className="font-medium">
+                      {typeof arrivalAirport.runway === 'number' ? `${arrivalAirport.runway} ft` : arrivalAirport.runway}
+                    </div>
                   </div>
                 </div>
               </div>

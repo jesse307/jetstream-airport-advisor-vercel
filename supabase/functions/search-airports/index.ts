@@ -42,6 +42,32 @@ serve(async (req) => {
     
     let airports: Airport[] = [];
     
+    // Helper function to get detailed airport info from AirportDB.io
+    const getAirportDetails = async (icaoCode: string): Promise<any> => {
+      const apiToken = Deno.env.get('AIRPORTDB_API_TOKEN');
+      if (!apiToken) {
+        console.warn('AIRPORTDB_API_TOKEN not configured');
+        return null;
+      }
+      
+      try {
+        console.log(`Getting detailed info for ${icaoCode} from AirportDB.io`);
+        const response = await fetch(`https://airportdb.io/api/v1/airport/${icaoCode}?apiToken=${apiToken}`, {
+          method: 'GET',
+          signal: AbortSignal.timeout(3000)
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log(`AirportDB.io data for ${icaoCode}:`, JSON.stringify(data, null, 2));
+          return data;
+        }
+      } catch (error) {
+        console.log(`Failed to get AirportDB.io data for ${icaoCode}:`, error instanceof Error ? error.message : 'Unknown error');
+      }
+      return null;
+    };
+    
     try {
       // First try AviationAPI
       console.log('Trying AviationAPI...');
@@ -51,24 +77,53 @@ serve(async (req) => {
         signal: AbortSignal.timeout(5000) // 5 second timeout
       });
       
-      if (aviationResponse.ok) {
+        if (aviationResponse.ok) {
         const aviationData = await aviationResponse.json();
         console.log('AviationAPI response received:', aviationData.length || 0, 'airports');
         if (Array.isArray(aviationData) && aviationData.length > 0) {
-          airports = aviationData.map((airport: any) => ({
-            code: airport.iata_code || airport.icao_code || airport.ident,
-            name: airport.name,
-            city: airport.municipality || airport.city,
-            state: airport.iso_region ? airport.iso_region.split('-')[1] : '',
-            country: airport.iso_country,
-            type: airport.type === 'large_airport' ? 'Commercial' : 
-                  airport.type === 'medium_airport' ? 'Commercial' :
-                  airport.type === 'small_airport' ? 'Private' : 'Other',
-            runwayLength: airport.runway_length_ft || 8000, // Use API runway length or default to 8000
-            fbo: airport.services || null,
-            latitude: airport.latitude_deg,
-            longitude: airport.longitude_deg
-          }));
+          // Get detailed runway info for each airport from AirportDB.io
+          const airportsWithDetails = await Promise.allSettled(
+            aviationData.slice(0, 10).map(async (airport: any) => { // Limit to 10 to avoid rate limits
+              const icaoCode = airport.icao_code || airport.ident;
+              let runwayLength = airport.runway_length_ft || 8000;
+              
+              // Try to get more accurate runway data from AirportDB.io
+              if (icaoCode) {
+                const detailedInfo = await getAirportDetails(icaoCode);
+                if (detailedInfo && detailedInfo.runways && detailedInfo.runways.length > 0) {
+                  // Find the longest runway
+                  const longestRunway = detailedInfo.runways.reduce((longest: any, runway: any) => {
+                    const length = runway.length_ft || 0;
+                    return length > (longest.length_ft || 0) ? runway : longest;
+                  }, detailedInfo.runways[0]);
+                  
+                  if (longestRunway.length_ft) {
+                    runwayLength = longestRunway.length_ft;
+                    console.log(`Updated runway length for ${icaoCode}: ${runwayLength} ft`);
+                  }
+                }
+              }
+              
+              return {
+                code: airport.iata_code || airport.icao_code || airport.ident,
+                name: airport.name,
+                city: airport.municipality || airport.city,
+                state: airport.iso_region ? airport.iso_region.split('-')[1] : '',
+                country: airport.iso_country,
+                type: airport.type === 'large_airport' ? 'Commercial' : 
+                      airport.type === 'medium_airport' ? 'Commercial' :
+                      airport.type === 'small_airport' ? 'Private' : 'Other',
+                runwayLength,
+                fbo: airport.services || null,
+                latitude: airport.latitude_deg,
+                longitude: airport.longitude_deg
+              };
+            })
+          );
+          
+          airports = airportsWithDetails
+            .filter(result => result.status === 'fulfilled')
+            .map(result => (result as PromiseFulfilledResult<Airport>).value);
         }
       }
     } catch (error) {
