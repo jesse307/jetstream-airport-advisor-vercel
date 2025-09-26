@@ -629,12 +629,12 @@ export function FlightCalculator({ departure, arrival }: FlightCalculatorProps) 
                                 </div>
                                 {aviapagesResult.airport?.techstop && aviapagesResult.airport.techstop.length > 0 && (
                                   <div className="col-span-2">
-                                    <span className="text-muted-foreground">📍 Suggested Fuel Stops:</span>
+                                    <span className="text-muted-foreground">📍 Suggested Fuel Stop Options:</span>
                                     <div className="text-sm font-medium mt-1">
                                       {aviapagesResult.airport.techstop.join(', ')}
                                     </div>
                                     <div className="text-xs text-muted-foreground mt-1">
-                                      {aviapagesResult.airport.techstop.length === 1 ? '1 fuel stop required' : `${aviapagesResult.airport.techstop.length} fuel stops required`}
+                                      Typically requires 1 fuel stop - choose from above options
                                     </div>
                                   </div>
                                 )}
