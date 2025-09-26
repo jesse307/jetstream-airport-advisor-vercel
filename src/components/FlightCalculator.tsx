@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface Airport {
   code: string;
@@ -129,6 +130,7 @@ interface FlightCalculatorProps {
 export function FlightCalculator({ departure, arrival }: FlightCalculatorProps) {
   const [distance, setDistance] = useState<number>(0);
   const [passengers, setPassengers] = useState<number>(1);
+  const [selectedAircraft, setSelectedAircraft] = useState<string>("");
 
   // Use coordinates from airport data if available, otherwise lookup table
   const getCoordinates = (airport: Airport) => {
@@ -341,6 +343,17 @@ export function FlightCalculator({ departure, arrival }: FlightCalculatorProps) 
     };
   };
 
+  const getCapableAircraft = () => {
+    if (!departure || !arrival || distance === 0) return [];
+    
+    return AIRCRAFT_TYPES.filter(aircraft => {
+      const departureCompatible = checkRunwayCompatibility(departure.runway, aircraft.minRunway);
+      const arrivalCompatible = checkRunwayCompatibility(arrival.runway, aircraft.minRunway);
+      const capability = calculateAircraftCapability(aircraft, distance, passengers);
+      return departureCompatible && arrivalCompatible && capability.capable;
+    });
+  };
+
   useEffect(() => {
     if (departure && arrival) {
       const dist = calculateDistance(departure, arrival);
@@ -375,6 +388,36 @@ export function FlightCalculator({ departure, arrival }: FlightCalculatorProps) 
               onChange={(e) => setPassengers(Math.max(1, Math.min(20, parseInt(e.target.value) || 1)))}
               className="w-24 bg-card shadow-card-custom"
             />
+            
+            {/* Aircraft Selection Dropdown */}
+            {departure && arrival && distance > 0 && (
+              <div className="flex items-center gap-2">
+                <Label className="text-sm font-medium text-muted-foreground">Aircraft:</Label>
+                <Select value={selectedAircraft} onValueChange={setSelectedAircraft}>
+                  <SelectTrigger className="w-64 bg-card border-border z-50">
+                    <SelectValue placeholder="Select capable aircraft" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-card border-border shadow-lg z-50">
+                    {getCapableAircraft().length === 0 ? (
+                      <SelectItem value="none" disabled>No aircraft can complete this trip nonstop</SelectItem>
+                    ) : (
+                      getCapableAircraft().map(aircraft => 
+                        aircraft.examples.map(example => (
+                          <SelectItem key={`${aircraft.category}-${example}`} value={`${aircraft.category}-${example}`}>
+                            <div className="flex items-center gap-2">
+                              <Plane className="h-3 w-3" />
+                              <span className="font-medium">{example}</span>
+                              <Badge variant="outline" className="text-xs">{aircraft.category}</Badge>
+                            </div>
+                          </SelectItem>
+                        ))
+                      )
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            
             <div className="text-sm text-muted-foreground">
               Total weight: <span className="font-medium text-foreground">{passengers * 230} lbs</span>
               <span className="text-xs block mt-1">180 lbs per passenger + 50 lbs luggage</span>
