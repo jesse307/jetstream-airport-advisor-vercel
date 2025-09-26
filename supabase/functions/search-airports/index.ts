@@ -61,7 +61,13 @@ serve(async (req) => {
               arrival_airport: arrival,
               aircraft: mapAircraftName(aircraftType),
               pax: 4,
-              airway_time: true
+              aircraft_custom_payload: (4 * 230), // 4 passengers + luggage (230 lbs each = ~104 kg each)
+              airway_time: true,
+              airway_fuel: true,
+              airway_distance: true,
+              advise_techstops: true, // This will advise fuel stops if needed!
+              great_circle_fuel: true,
+              arrival_datetime: true
             }),
             signal: AbortSignal.timeout(15000)
           }

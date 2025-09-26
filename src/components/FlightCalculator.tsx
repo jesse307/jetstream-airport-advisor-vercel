@@ -636,6 +636,24 @@ export function FlightCalculator({ departure, arrival }: FlightCalculatorProps) 
                             <div className="font-medium">{aviapagesResult.fuel.airway} lbs</div>
                           </div>
                         )}
+                        {aviapagesResult.warnings && aviapagesResult.warnings.length > 0 && (
+                          <div className="col-span-2">
+                            <span className="text-muted-foreground">⚠️ Warnings:</span>
+                            <div className="text-sm text-amber-600 mt-1">
+                              {aviapagesResult.warnings.map((warning: any, index: number) => (
+                                <div key={index}>{warning.message}</div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        {aviapagesResult.techstops && aviapagesResult.techstops.length > 0 && (
+                          <div className="col-span-2">
+                            <span className="text-destructive font-medium">🛑 Fuel Stop Required:</span>
+                            <div className="text-sm text-destructive mt-1">
+                              Recommended fuel stop airports: {aviapagesResult.techstops.join(', ')}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
                   </>
