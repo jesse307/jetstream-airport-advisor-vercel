@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
-import { Calculator, Clock, Plane, MapPin, Route, DollarSign } from "lucide-react";
+import { Calculator, Clock, Plane, MapPin, Route, DollarSign, Users } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 interface Airport {
   code: string;
@@ -84,6 +86,7 @@ interface FlightCalculatorProps {
 
 export function FlightCalculator({ departure, arrival }: FlightCalculatorProps) {
   const [distance, setDistance] = useState<number>(0);
+  const [passengers, setPassengers] = useState<number>(1);
 
   // Use coordinates from airport data if available, otherwise lookup table
   const getCoordinates = (airport: Airport) => {
@@ -281,6 +284,29 @@ export function FlightCalculator({ departure, arrival }: FlightCalculatorProps) 
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6 pt-6">
+        {/* Number of Passengers */}
+        <div className="space-y-3">
+          <Label htmlFor="passengers" className="text-sm font-medium flex items-center gap-2">
+            <Users className="h-4 w-4 text-primary" />
+            Number of Passengers
+          </Label>
+          <div className="flex items-center gap-4">
+            <Input
+              id="passengers"
+              type="number"
+              min="1"
+              max="20"
+              value={passengers}
+              onChange={(e) => setPassengers(Math.max(1, Math.min(20, parseInt(e.target.value) || 1)))}
+              className="w-24 bg-card shadow-card-custom"
+            />
+            <div className="text-sm text-muted-foreground">
+              Total passenger weight: <span className="font-medium text-foreground">{passengers * 180} lbs</span>
+              <span className="text-xs block mt-1">Assuming 180 lbs per passenger</span>
+            </div>
+          </div>
+        </div>
+
         {/* Flight Route */}
         {departure && arrival && (
           <div className="space-y-6">
