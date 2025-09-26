@@ -636,6 +636,12 @@ export function FlightCalculator({ departure, arrival }: FlightCalculatorProps) 
                             <div className="font-medium">{aviapagesResult.fuel.airway} lbs</div>
                           </div>
                         )}
+                        <div>
+                          <span className="text-muted-foreground">Fuel Stop Needed:</span>
+                          <div className={`font-medium ${(aviapagesResult.airport?.techstop && aviapagesResult.airport.techstop.length > 0) ? 'text-destructive' : 'text-green-600'}`}>
+                            {(aviapagesResult.airport?.techstop && aviapagesResult.airport.techstop.length > 0) ? 'Yes' : 'No'}
+                          </div>
+                        </div>
                         {aviapagesResult.warnings && aviapagesResult.warnings.length > 0 && (
                           <div className="col-span-2">
                             <span className="text-muted-foreground">⚠️ Warnings:</span>
@@ -646,11 +652,11 @@ export function FlightCalculator({ departure, arrival }: FlightCalculatorProps) 
                             </div>
                           </div>
                         )}
-                        {aviapagesResult.techstops && aviapagesResult.techstops.length > 0 && (
+                        {aviapagesResult.airport?.techstop && aviapagesResult.airport.techstop.length > 0 && (
                           <div className="col-span-2">
-                            <span className="text-destructive font-medium">🛑 Fuel Stop Required:</span>
-                            <div className="text-sm text-destructive mt-1">
-                              Recommended fuel stop airports: {aviapagesResult.techstops.join(', ')}
+                            <span className="text-muted-foreground">📍 Suggested Fuel Stops:</span>
+                            <div className="text-sm font-medium mt-1">
+                              {aviapagesResult.airport.techstop.join(', ')}
                             </div>
                           </div>
                         )}
