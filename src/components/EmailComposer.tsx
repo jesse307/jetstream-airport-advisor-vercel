@@ -230,28 +230,69 @@ export function EmailComposer({ isOpen, onClose, leadData }: EmailComposerProps)
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    <Label className="text-sm font-medium mb-2 block">Available Variables</Label>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-48 overflow-y-auto">
-                      {availableVariables.map((variable) => (
-                        <div
-                          key={variable.key}
-                          className="flex items-center justify-between p-2 bg-muted/30 rounded border hover:bg-muted/50 transition-colors"
-                        >
-                          <div className="flex-1 min-w-0">
-                            <div className="font-mono text-sm text-primary">{variable.key}</div>
-                            <div className="text-xs text-muted-foreground truncate">{variable.description}</div>
-                            <div className="text-xs text-muted-foreground font-medium">→ {variable.value}</div>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => copyVariable(variable.key)}
-                            className="flex-shrink-0 ml-2"
-                          >
-                            <Copy className="h-3 w-3" />
-                          </Button>
+                    <Label className="text-sm font-medium mb-2 block">Available Variables & Conditional Logic</Label>
+                    
+                    <div className="space-y-4">
+                      {/* Basic Variables */}
+                      <div>
+                        <h4 className="text-sm font-semibold mb-2">Basic Variables</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-48 overflow-y-auto">
+                          {availableVariables.map((variable) => (
+                            <div
+                              key={variable.key}
+                              className="flex items-center justify-between p-2 bg-muted/30 rounded border hover:bg-muted/50 transition-colors"
+                            >
+                              <div className="flex-1 min-w-0">
+                                <div className="font-mono text-sm text-primary">{variable.key}</div>
+                                <div className="text-xs text-muted-foreground truncate">{variable.description}</div>
+                                <div className="text-xs text-muted-foreground font-medium">→ {variable.value}</div>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => copyVariable(variable.key)}
+                                className="flex-shrink-0 ml-2"
+                              >
+                                <Copy className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          ))}
                         </div>
-                      ))}
+                      </div>
+
+                      {/* Conditional Logic */}
+                      <div>
+                        <h4 className="text-sm font-semibold mb-2">Conditional Logic Examples</h4>
+                        <div className="space-y-2 text-xs bg-muted/20 p-3 rounded">
+                          <div className="font-mono">
+                            <span className="text-primary">{"{{IF missing_departure_time}}"}</span><br/>
+                            Please let me know what time you'd prefer to depart.<br/>
+                            <span className="text-primary">{"{{ENDIF}}"}</span>
+                          </div>
+                          <div className="font-mono">
+                            <span className="text-primary">{"{{IF passengers_gt_8}}"}</span><br/>
+                            For your large group, I recommend a spacious heavy jet.<br/>
+                            <span className="text-primary">{"{{ELSE}}"}</span><br/>
+                            A light jet would be perfect for your group size.<br/>
+                            <span className="text-primary">{"{{ENDIF}}"}</span>
+                          </div>
+                          <div className="font-mono">
+                            <span className="text-primary">{"{{IF notes_contains_business}}"}</span><br/>
+                            I'll ensure you have wifi and workspace capabilities.<br/>
+                            <span className="text-primary">{"{{ENDIF}}"}</span>
+                          </div>
+                        </div>
+                        
+                        <div className="mt-2">
+                          <p className="text-xs text-muted-foreground mb-1">Available conditions:</p>
+                          <ul className="text-xs text-muted-foreground space-y-1">
+                            <li>• <code>missing_departure_time</code>, <code>missing_return_time_roundtrip</code></li>
+                            <li>• <code>passengers_gt_8</code>, <code>passengers_lt_4</code>, <code>passengers_eq_1</code></li>
+                            <li>• <code>is_roundtrip</code>, <code>is_oneway</code></li>
+                            <li>• <code>has_notes</code>, <code>notes_contains_business</code>, <code>notes_contains_leisure</code></li>
+                          </ul>
+                        </div>
+                      </div>
                     </div>
                   </div>
 
@@ -265,10 +306,30 @@ export function EmailComposer({ isOpen, onClose, leadData }: EmailComposerProps)
 
 Thank you for your interest in private jet charter for your {{trip_type}} flight from {{departure_airport}} to {{arrival_airport}} on {{departure_date}}.
 
-We are excited to provide you with a personalized quote for {{passengers}} passengers...
+{{IF missing_departure_time}}
+I'd be happy to help you select the perfect departure time for your schedule. What time would work best for you?
+{{ENDIF}}
+
+{{IF passengers_gt_8}}
+For your group of {{passengers}} passengers, I recommend a spacious heavy jet that will ensure everyone travels comfortably together.
+{{ELSE}}
+With {{passengers}} passenger{{IF passengers_gt_1}}s{{ENDIF}}, a light jet would be the perfect efficient option for your trip.
+{{ENDIF}}
+
+{{IF notes_contains_business}}
+I understand this is for business purposes, so I'll ensure your aircraft has full wifi connectivity and workspace capabilities so you can stay productive during the flight.
+{{ENDIF}}
+
+{{IF notes_contains_leisure}}
+Since this is for leisure travel, I'll focus on comfort and luxury amenities to make your vacation start the moment you step aboard.
+{{ENDIF}}
+
+We are excited to provide you with a personalized quote and make this journey exceptional.
 
 Best regards,
-Your Charter Team"
+Your Charter Team
+
+P.S. The AI will add professional styling, dynamic prompts based on flight range/analysis, and compelling copy to make this template shine!"
                       className="min-h-[200px] font-mono text-sm"
                     />
                     <p className="text-xs text-muted-foreground">
