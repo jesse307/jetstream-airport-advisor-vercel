@@ -1,0 +1,277 @@
+import { useState, useEffect } from "react";
+import { useParams, Link } from "react-router-dom";
+import { ArrowLeft, User, Phone, Mail, Calendar, Clock, Plane, Users, MapPin } from "lucide-react";
+import { format } from "date-fns";
+
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import { FlightCalculator } from "@/components/FlightCalculator";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+
+interface Lead {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone: string;
+  trip_type: "one-way" | "round-trip";
+  departure_airport: string;
+  arrival_airport: string;
+  departure_date: string;
+  departure_time: string;
+  return_date?: string;
+  return_time?: string;
+  passengers: number;
+  status: string;
+  notes?: string;
+  analysis_data: any;
+  created_at: string;
+  updated_at: string;
+}
+
+export default function LeadAnalysis() {
+  const { id } = useParams<{ id: string }>();
+  const [lead, setLead] = useState<Lead | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (id) {
+      fetchLead(id);
+    }
+  }, [id]);
+
+  const fetchLead = async (leadId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from("leads")
+        .select("*")
+        .eq("id", leadId)
+        .single();
+
+      if (error) {
+        console.error("Error fetching lead:", error);
+        toast.error("Failed to load lead information");
+        return;
+      }
+
+      setLead(data as Lead);
+    } catch (error) {
+      console.error("Error:", error);
+      toast.error("An error occurred while loading the lead");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "new": return "bg-blue-100 text-blue-800";
+      case "contacted": return "bg-yellow-100 text-yellow-800";
+      case "quoted": return "bg-purple-100 text-purple-800";
+      case "booked": return "bg-green-100 text-green-800";
+      case "cancelled": return "bg-red-100 text-red-800";
+      default: return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading lead information...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!lead) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold mb-2">Lead Not Found</h2>
+          <p className="text-muted-foreground mb-4">The requested lead could not be found.</p>
+          <Button asChild>
+            <Link to="/">Return to Calculator</Link>
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <header className="border-b border-border/40 bg-background/95 supports-[backdrop-filter]:bg-background/60">
+        <div className="container flex h-14 items-center">
+          <Link to="/" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+            <ArrowLeft className="h-4 w-4" />
+            Back to Calculator
+          </Link>
+          <div className="ml-auto flex items-center gap-2">
+            <Badge className={getStatusColor(lead.status)}>
+              {lead.status.charAt(0).toUpperCase() + lead.status.slice(1)}
+            </Badge>
+            <span className="text-sm text-muted-foreground">
+              Lead #{lead.id.slice(0, 8)}
+            </span>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="container py-8">
+        <div className="space-y-8">
+          {/* Lead Information */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Contact Information */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <User className="h-5 w-5 text-primary" />
+                  Contact Information
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <p className="font-semibold text-lg">
+                    {lead.first_name} {lead.last_name}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <Mail className="h-4 w-4 text-muted-foreground" />
+                  <a href={`mailto:${lead.email}`} className="hover:underline">
+                    {lead.email}
+                  </a>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <Phone className="h-4 w-4 text-muted-foreground" />
+                  <a href={`tel:${lead.phone}`} className="hover:underline">
+                    {lead.phone}
+                  </a>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                  <span>{lead.passengers} passenger{lead.passengers !== 1 ? 's' : ''}</span>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Flight Information */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Plane className="h-5 w-5 text-primary" />
+                  Flight Details
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Badge variant="outline" className="mb-2">
+                    {lead.trip_type === "round-trip" ? "Round Trip" : "One Way"}
+                  </Badge>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm">
+                    <MapPin className="h-4 w-4 text-muted-foreground" />
+                    <span className="font-medium">From:</span>
+                    <span>{lead.departure_airport}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <MapPin className="h-4 w-4 text-muted-foreground" />
+                    <span className="font-medium">To:</span>
+                    <span>{lead.arrival_airport}</span>
+                  </div>
+                </div>
+                <Separator />
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm">
+                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                    <span className="font-medium">Departure:</span>
+                    <span>{format(new Date(lead.departure_date), "MMM dd, yyyy")}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <Clock className="h-4 w-4 text-muted-foreground" />
+                    <span className="font-medium">Time:</span>
+                    <span>{lead.departure_time}</span>
+                  </div>
+                </div>
+                {lead.trip_type === "round-trip" && lead.return_date && (
+                  <>
+                    <Separator />
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 text-sm">
+                        <Calendar className="h-4 w-4 text-muted-foreground" />
+                        <span className="font-medium">Return:</span>
+                        <span>{format(new Date(lead.return_date), "MMM dd, yyyy")}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm">
+                        <Clock className="h-4 w-4 text-muted-foreground" />
+                        <span className="font-medium">Time:</span>
+                        <span>{lead.return_time}</span>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Lead Status & Actions */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Lead Management</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <p className="text-sm text-muted-foreground mb-2">Created</p>
+                  <p className="text-sm">
+                    {format(new Date(lead.created_at), "MMM dd, yyyy 'at' h:mm a")}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground mb-2">Status</p>
+                  <Badge className={getStatusColor(lead.status)}>
+                    {lead.status.charAt(0).toUpperCase() + lead.status.slice(1)}
+                  </Badge>
+                </div>
+                {lead.notes && (
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-2">Notes</p>
+                    <p className="text-sm">{lead.notes}</p>
+                  </div>
+                )}
+                <div className="pt-4 space-y-2">
+                  <Button className="w-full" variant="aviation">
+                    Send Quote
+                  </Button>
+                  <Button className="w-full" variant="outline">
+                    Update Status
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Flight Analysis */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Flight Analysis & Aircraft Recommendations</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Based on the route and passenger requirements
+              </p>
+            </CardHeader>
+            <CardContent>
+              <FlightCalculator 
+                departure={lead.departure_airport} 
+                arrival={lead.arrival_airport}
+              />
+            </CardContent>
+          </Card>
+        </div>
+      </main>
+    </div>
+  );
+}

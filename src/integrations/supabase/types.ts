@@ -14,7 +14,69 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      leads: {
+        Row: {
+          analysis_data: Json | null
+          arrival_airport: string
+          created_at: string
+          departure_airport: string
+          departure_date: string
+          departure_time: string | null
+          email: string
+          first_name: string
+          id: string
+          last_name: string
+          notes: string | null
+          passengers: number
+          phone: string | null
+          return_date: string | null
+          return_time: string | null
+          status: string
+          trip_type: string
+          updated_at: string
+        }
+        Insert: {
+          analysis_data?: Json | null
+          arrival_airport: string
+          created_at?: string
+          departure_airport: string
+          departure_date: string
+          departure_time?: string | null
+          email: string
+          first_name: string
+          id?: string
+          last_name: string
+          notes?: string | null
+          passengers?: number
+          phone?: string | null
+          return_date?: string | null
+          return_time?: string | null
+          status?: string
+          trip_type: string
+          updated_at?: string
+        }
+        Update: {
+          analysis_data?: Json | null
+          arrival_airport?: string
+          created_at?: string
+          departure_airport?: string
+          departure_date?: string
+          departure_time?: string | null
+          email?: string
+          first_name?: string
+          id?: string
+          last_name?: string
+          notes?: string | null
+          passengers?: number
+          phone?: string | null
+          return_date?: string | null
+          return_time?: string | null
+          status?: string
+          trip_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Plane, MapPin, Navigation, Settings, TestTube } from "lucide-react";
+import { Plane, MapPin, Navigation, Settings, TestTube, UserPlus } from "lucide-react";
+import { Link } from "react-router-dom";
 import { AirportSearch } from "@/components/AirportSearch";
 import { FlightCalculator } from "@/components/FlightCalculator";
 import { ApiTest } from "@/components/ApiTest";
@@ -32,6 +33,12 @@ const Index = () => {
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <Button asChild variant="aviation" size="sm">
+                <Link to="/leads/new">
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  New Lead
+                </Link>
+              </Button>
               <Button variant="professional" size="sm">
                 <Settings className="h-4 w-4 mr-2" />
                 Settings
