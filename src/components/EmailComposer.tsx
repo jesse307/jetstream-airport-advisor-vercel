@@ -50,11 +50,10 @@ Thank you for your interest in Stratos Jets. In order for me to be the most effi
 FLIGHT DETAILS
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ✈️  **Route**: {{departure_airport}} → {{arrival_airport}}
-📅  **Departure**: {{departure_date}} at {{departure_time}}
-{{IF is_roundtrip}}
-📅  **Return**: {{return_date}} at {{return_time}}
-{{ENDIF}}
+🔄  **Trip Type**: {{trip_type}}
 👥  **Passengers**: {{passengers}} passenger{{IF passengers_gt_1}}s{{ENDIF}}
+📅  **Departure**: {{departure_date}} at {{departure_time}}{{IF is_roundtrip}}
+📅  **Return**: {{return_date}} at {{return_time}}{{ENDIF}}
 
 {{AI: Add flight distance, estimated flight time, and any interesting facts about this specific route}}
 
@@ -121,21 +120,22 @@ Jesse`);
     populated = populated.replace(/\{\{last_name\}\}/g, data.last_name);
     populated = populated.replace(/\{\{departure_airport\}\}/g, data.departure_airport);
     populated = populated.replace(/\{\{arrival_airport\}\}/g, data.arrival_airport);
+    populated = populated.replace(/\{\{trip_type\}\}/g, data.trip_type);
     
     // Format and replace date/time variables
     populated = populated.replace(/\{\{departure_date\}\}/g, formatToUSDate(data.departure_date));
     populated = populated.replace(/\{\{departure_time\}\}/g, formatToAMPM(data.departure_time));
     populated = populated.replace(/\{\{passengers\}\}/g, data.passengers.toString());
     
-    // Handle conditional logic
+    // Handle conditional logic for round-trip
     if (data.trip_type === 'round-trip' && data.return_date && data.return_time) {
       populated = populated.replace(/\{\{IF is_roundtrip\}\}/g, '');
       populated = populated.replace(/\{\{ENDIF\}\}/g, '');
       populated = populated.replace(/\{\{return_date\}\}/g, formatToUSDate(data.return_date));
       populated = populated.replace(/\{\{return_time\}\}/g, formatToAMPM(data.return_time));
     } else {
-      // Remove round trip section and extra line break for one-way trips
-      populated = populated.replace(/\{\{IF is_roundtrip\}\}[\s\S]*?\{\{ENDIF\}\}\n/g, '');
+      // Remove return line for one-way trips
+      populated = populated.replace(/\{\{IF is_roundtrip\}\}[\s\S]*?\{\{ENDIF\}\}/g, '');
     }
     
     // Handle passenger pluralization
@@ -408,11 +408,10 @@ Thank you for your interest in Stratos Jets. In order for me to be the most effi
 FLIGHT DETAILS
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ✈️  **Route**: {{departure_airport}} → {{arrival_airport}}
-📅  **Departure**: {{departure_date}} at {{departure_time}}
-{{IF is_roundtrip}}
-📅  **Return**: {{return_date}} at {{return_time}}
-{{ENDIF}}
+🔄  **Trip Type**: {{trip_type}}
 👥  **Passengers**: {{passengers}} passenger{{IF passengers_gt_1}}s{{ENDIF}}
+📅  **Departure**: {{departure_date}} at {{departure_time}}{{IF is_roundtrip}}
+📅  **Return**: {{return_date}} at {{return_time}}{{ENDIF}}
 
 {{AI: Add flight distance, estimated flight time, and any interesting facts about this specific route}}
 
