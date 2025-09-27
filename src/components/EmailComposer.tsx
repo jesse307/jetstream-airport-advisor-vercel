@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { X, Send, Wand2, Loader2, FileText, Copy, Eye } from "lucide-react";
+import { X, Send, Wand2, Loader2, FileText, Copy, Eye, Code, Type } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,6 +9,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import ReactQuill from "react-quill";
+import "react-quill/dist/quill.snow.css";
 
 interface EmailComposerProps {
   isOpen: boolean;
@@ -38,6 +40,7 @@ export function EmailComposer({ isOpen, onClose, leadData }: EmailComposerProps)
   const [isShowingTemplate, setIsShowingTemplate] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  const [isHtmlEditor, setIsHtmlEditor] = useState(false);
   const [emailTemplate, setEmailTemplate] = useState(`Subject: Stratos Jets - Confirming Flight Details
 
 Hi {{first_name}},
@@ -369,21 +372,73 @@ Jesse`);
             {isShowingTemplate && (
               <Card className="border-dashed">
                 <CardHeader>
-                  <CardTitle className="text-sm">Email Template</CardTitle>
+                  <CardTitle className="text-sm flex items-center justify-between">
+                    Email Template
+                    <div className="flex gap-1">
+                      <Button
+                        size="sm"
+                        variant={!isHtmlEditor ? "default" : "outline"}
+                        onClick={() => setIsHtmlEditor(false)}
+                        className="h-7 px-2"
+                      >
+                        <Type className="h-3 w-3 mr-1" />
+                        Text
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant={isHtmlEditor ? "default" : "outline"}
+                        onClick={() => setIsHtmlEditor(true)}
+                        className="h-7 px-2"
+                      >
+                        <Code className="h-3 w-3 mr-1" />
+                        HTML
+                      </Button>
+                    </div>
+                  </CardTitle>
                   <CardDescription className="text-xs">
                     Modify the template and the compose area will update automatically
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Textarea
-                    value={emailTemplate}
-                    onChange={(e) => {
-                      setEmailTemplate(e.target.value);
-                      const newContent = populateTemplate(e.target.value, leadData);
-                      setEmailContent(newContent);
-                    }}
-                    className="min-h-[200px] font-mono text-sm"
-                  />
+                  {isHtmlEditor ? (
+                    <div className="border rounded-md">
+                      <ReactQuill
+                        value={emailTemplate}
+                        onChange={(value) => {
+                          setEmailTemplate(value);
+                          const newContent = populateTemplate(value, leadData);
+                          setEmailContent(newContent);
+                        }}
+                        theme="snow"
+                        style={{ minHeight: "200px" }}
+                        modules={{
+                          toolbar: [
+                            [{ 'header': [1, 2, 3, false] }],
+                            ['bold', 'italic', 'underline', 'strike'],
+                            [{ 'color': [] }, { 'background': [] }],
+                            [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                            [{ 'align': [] }],
+                            ['link'],
+                            ['clean']
+                          ],
+                        }}
+                        formats={[
+                          'header', 'bold', 'italic', 'underline', 'strike',
+                          'color', 'background', 'list', 'bullet', 'align', 'link'
+                        ]}
+                      />
+                    </div>
+                  ) : (
+                    <Textarea
+                      value={emailTemplate}
+                      onChange={(e) => {
+                        setEmailTemplate(e.target.value);
+                        const newContent = populateTemplate(e.target.value, leadData);
+                        setEmailContent(newContent);
+                      }}
+                      className="min-h-[200px] font-mono text-sm"
+                    />
+                  )}
                 </CardContent>
               </Card>
             )}
