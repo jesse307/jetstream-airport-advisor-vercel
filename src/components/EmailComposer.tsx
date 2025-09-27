@@ -540,7 +540,7 @@ Jesse`;
                   id="content"
                   value={emailContent}
                   onChange={(e) => setEmailContent(e.target.value)}
-                  className="min-h-[400px] font-mono text-sm"
+                  className="min-h-[400px] font-mono text-lg"
                   placeholder="Email content will appear here..."
                 />
                 <p className="text-xs text-muted-foreground">
