@@ -170,11 +170,11 @@ export function FlightCalculator({ departure, arrival }: FlightCalculatorProps) 
   const getCoordinates = (airport: Airport) => {
     // First try to use coordinates from airport data
     if (airport.latitude && airport.longitude) {
-      console.log(`Using airport data coordinates for ${airport.code}: [${airport.latitude}, ${airport.longitude}]`);
+      console.log(`Using API coordinates for ${airport.code}: [${airport.latitude}, ${airport.longitude}]`);
       return [airport.latitude, airport.longitude];
     }
     
-    // Extended coordinate lookup table for major airports (both IATA and ICAO codes)
+    // Fallback to coordinate lookup table for major airports (both IATA and ICAO codes)
     const coords: { [key: string]: [number, number] } = {
         // Major US Hubs - ICAO Codes
         'KJFK': [40.6413, -73.7781], // JFK
@@ -197,11 +197,11 @@ export function FlightCalculator({ departure, arrival }: FlightCalculatorProps) 
         'KDCA': [38.8512, -77.0402], // DCA Reagan National
         'KIAD': [38.9445, -77.4558], // IAD Dulles
         'KMSP': [44.8848, -93.2223], // MSP Minneapolis
-        'KSTL': [38.7487, -90.3700], // STL St. Louis
-        'KCVG': [39.0488, -84.6678], // CVG Cincinnati
-        'KCLE': [41.4117, -81.8498], // CLE Cleveland
-        'KPIT': [40.4915, -80.2329], // PIT Pittsburgh
-        'KPDX': [45.5898, -122.5951], // PDX Portland
+        'KSTL': [38.7487, -90.3700], // St. Louis
+        'KCVG': [39.0488, -84.6678], // Cincinnati
+        'KCLE': [41.4117, -81.8498], // Cleveland
+        'KPIT': [40.4915, -80.2329], // Pittsburgh
+        'KPDX': [45.5898, -122.5951], // Portland
         'KEWR': [40.6925, -74.1687], // Newark Liberty
         
         // Major US Hubs - IATA Codes
@@ -313,7 +313,7 @@ export function FlightCalculator({ departure, arrival }: FlightCalculatorProps) 
       
       const coords_result = coords[airport.code];
       if (coords_result) {
-        console.log(`Using lookup coordinates for ${airport.code}: [${coords_result[0]}, ${coords_result[1]}]`);
+        console.log(`Using fallback coordinates for ${airport.code}: [${coords_result[0]}, ${coords_result[1]}]`);
         return coords_result;
       } else {
         console.warn(`No coordinates found for airport ${airport.code}, using JFK default`);

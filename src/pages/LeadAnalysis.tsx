@@ -32,9 +32,24 @@ interface Lead {
   updated_at: string;
 }
 
+interface Airport {
+  code: string;
+  name: string;
+  city: string;
+  state?: string;
+  country?: string;
+  type: string;
+  runwayLength?: number | null;
+  fbo?: string[] | string | null;
+  latitude?: number;
+  longitude?: number;
+}
+
 export default function LeadAnalysis() {
   const { id } = useParams<{ id: string }>();
   const [lead, setLead] = useState<Lead | null>(null);
+  const [departureAirportData, setDepartureAirportData] = useState<Airport | null>(null);
+  const [arrivalAirportData, setArrivalAirportData] = useState<Airport | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -42,6 +57,35 @@ export default function LeadAnalysis() {
       fetchLead(id);
     }
   }, [id]);
+
+  const fetchAirportData = async (airportString: string): Promise<Airport | null> => {
+    try {
+      // Extract airport code from format "TEB - Teterboro, Teterboro"
+      const airportCode = airportString.split(' - ')[0].trim();
+      
+      const { data, error } = await supabase.functions.invoke('search-airports', {
+        body: { query: airportCode }
+      });
+
+      if (error) {
+        console.error('Error fetching airport data:', error);
+        return null;
+      }
+
+      // Find the matching airport from results
+      const airports = data.airports || [];
+      const matchingAirport = airports.find((airport: Airport) => 
+        airport.code === airportCode || 
+        airport.code === `K${airportCode}` ||
+        airport.code.replace('K', '') === airportCode
+      );
+
+      return matchingAirport || null;
+    } catch (error) {
+      console.error('Error fetching airport data:', error);
+      return null;
+    }
+  };
 
   const fetchLead = async (leadId: string) => {
     try {
@@ -58,6 +102,22 @@ export default function LeadAnalysis() {
       }
 
       setLead(data as Lead);
+
+      // Fetch airport data with coordinates
+      if (data.departure_airport) {
+        const depAirport = await fetchAirportData(data.departure_airport);
+        if (depAirport) {
+          setDepartureAirportData(depAirport);
+        }
+      }
+
+      if (data.arrival_airport) {
+        const arrAirport = await fetchAirportData(data.arrival_airport);
+        if (arrAirport) {
+          setArrivalAirportData(arrAirport);
+        }
+      }
+
     } catch (error) {
       console.error("Error:", error);
       toast.error("An error occurred while loading the lead");
@@ -264,10 +324,17 @@ export default function LeadAnalysis() {
               </p>
             </CardHeader>
             <CardContent>
-              <FlightCalculator 
-                departure={lead.departure_airport} 
-                arrival={lead.arrival_airport}
-              />
+              {departureAirportData && arrivalAirportData ? (
+                <FlightCalculator 
+                  departure={lead.departure_airport} 
+                  arrival={lead.arrival_airport}
+                />
+              ) : (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                  <p className="text-muted-foreground">Loading airport data for analysis...</p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>

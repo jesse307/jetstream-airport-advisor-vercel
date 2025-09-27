@@ -357,7 +357,9 @@ serve(async (req) => {
                 state: airport.country?.code || airport.regionName || 'N/A',
                 country: airport.country?.name || airport.countryName || 'Unknown',
                 type: 'Commercial',
-                runwayLength: runwayLength
+                runwayLength: runwayLength,
+                latitude: airport.location?.lat || null,
+                longitude: airport.location?.lon || null
               });
             }
           } else if (aeroData && typeof aeroData === 'object') {
@@ -378,7 +380,9 @@ serve(async (req) => {
                   state: airport.countryCode || airport.regionName || 'N/A',
                   country: airport.countryCode || airport.countryName || 'Unknown',
                   type: 'Commercial',
-                  runwayLength: runwayLength
+                  runwayLength: runwayLength,
+                  latitude: airport.location?.lat || null,
+                  longitude: airport.location?.lon || null
                 });
               }
             } else {
@@ -393,7 +397,9 @@ serve(async (req) => {
                 state: aeroData.country?.code || aeroData.regionName || 'N/A',
                 country: aeroData.country?.name || aeroData.countryName || 'Unknown',
                 type: 'Commercial',
-                runwayLength: runwayLength
+                runwayLength: runwayLength,
+                latitude: aeroData.location?.lat || null,
+                longitude: aeroData.location?.lon || null
               });
             }
           }
