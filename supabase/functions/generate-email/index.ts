@@ -232,38 +232,58 @@ IMPORTANT:
 Context: This is for a ${leadData.trip_type} flight from ${leadData.departure_airport} to ${leadData.arrival_airport} for ${leadData.passengers} passenger${leadData.passengers > 1 ? 's' : ''}.`;
         
         try {
+          console.log('Processing AI block:', block.instruction);
+          console.log('OpenAI API Key available:', !!openAIApiKey);
+          
+          const requestBody = {
+            model: 'gpt-5-mini-2025-08-07',
+            messages: [
+              { role: 'system', content: systemPrompt },
+              { role: 'user', content: userPrompt }
+            ],
+            max_completion_tokens: 300,
+          };
+          
+          console.log('Making OpenAI API request with:', JSON.stringify(requestBody));
+          
           const response = await fetch('https://api.openai.com/v1/chat/completions', {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${openAIApiKey}`,
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-              model: 'gpt-5-mini-2025-08-07',
-              messages: [
-                { role: 'system', content: systemPrompt },
-                { role: 'user', content: userPrompt }
-              ],
-              max_completion_tokens: 300,
-            }),
+            body: JSON.stringify(requestBody),
           });
+
+          console.log('OpenAI response status:', response.status);
 
           if (!response.ok) {
             const errorText = await response.text();
             console.error('OpenAI API error:', response.status, errorText);
             // Replace with placeholder if API fails
-            processedTemplate = processedTemplate.replace(block.fullMatch, `[AI content for: ${block.instruction}]`);
+            processedTemplate = processedTemplate.replace(block.fullMatch, `[AI content failed for: ${block.instruction}]`);
             continue;
           }
 
           const data = await response.json();
-          const aiContent = data.choices[0].message.content.trim();
+          console.log('OpenAI response data:', JSON.stringify(data));
+          
+          const aiContent = data.choices?.[0]?.message?.content?.trim();
+          console.log('AI Content generated:', aiContent);
+          
+          if (!aiContent) {
+            console.error('No content in OpenAI response');
+            processedTemplate = processedTemplate.replace(block.fullMatch, `[No content generated for: ${block.instruction}]`);
+            continue;
+          }
           
           // Replace the AI block with the generated content
           processedTemplate = processedTemplate.replace(block.fullMatch, aiContent);
+          console.log('Replaced AI block successfully');
         } catch (error) {
           console.error('Error processing AI block:', error);
-          processedTemplate = processedTemplate.replace(block.fullMatch, `[Error generating content for: ${block.instruction}]`);
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          processedTemplate = processedTemplate.replace(block.fullMatch, `[Error: ${errorMessage}]`);
         }
       }
       
