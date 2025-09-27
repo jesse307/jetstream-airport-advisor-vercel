@@ -71,13 +71,13 @@ Best,
 Jesse`);
   const [makeWebhookUrl] = useState("https://hook.us2.make.com/ywmt9116r48viqppk2lqhhf9s7x57q4w");
 
-  // Initialize email content with populated template
+  // Reset email content when dialog opens
   React.useEffect(() => {
-    if (!emailContent && isOpen) {
+    if (isOpen) {
       const populatedTemplate = populateTemplate(emailTemplate, leadData);
       setEmailContent(populatedTemplate);
     }
-  }, [isOpen, emailTemplate, leadData, emailContent]);
+  }, [isOpen]); // Reset content every time dialog opens
 
   const populateTemplate = (template: string, data: any) => {
     let populated = template;
