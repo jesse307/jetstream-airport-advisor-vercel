@@ -132,7 +132,12 @@ Senior Charter Specialist
 ---
 *This quote is valid for 48 hours. Aircraft availability and pricing subject to confirmation.*`);
   const [makeWebhookUrl, setMakeWebhookUrl] = useState("");
-  const handleSendEmail = async () => {
+  const handleCreateDraft = async () => {
+    if (!makeWebhookUrl) {
+      toast.error("Please enter your Make.com webhook URL");
+      return;
+    }
+
     if (!emailContent.trim()) {
       toast.error("Please generate email content first");
       return;
@@ -140,21 +145,27 @@ Senior Charter Specialist
 
     setIsSending(true);
     try {
-      const { data, error } = await supabase.functions.invoke('send-email', {
-        body: {
+      // Send to Make.com webhook to create Gmail draft
+      const response = await fetch(makeWebhookUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        mode: "no-cors",
+        body: JSON.stringify({
           to: leadData.email,
           subject: subject,
-          html: emailContent.replace(/\n/g, '<br>'),
-        }
+          body: emailContent,
+          leadData: leadData,
+          action: "create_draft", // Specify this is for draft creation
+          timestamp: new Date().toISOString(),
+        }),
       });
 
-      if (error) throw error;
-
-      toast.success(`Email sent successfully to ${leadData.email}!`);
-      onClose();
+      toast.success("Gmail draft creation request sent! Check your Gmail drafts folder.");
     } catch (error) {
-      console.error('Error sending email:', error);
-      toast.error("Failed to send email. Please try again.");
+      console.error('Error creating draft:', error);
+      toast.error("Failed to create draft. Please check your webhook URL.");
     } finally {
       setIsSending(false);
     }
@@ -688,7 +699,7 @@ Best regards,
                   placeholder="https://hook.us1.make.com/your-webhook-url"
                 />
                 <p className="text-xs text-muted-foreground">
-                  Enter your Make.com webhook URL that connects to Gmail. The email will be sent through your Gmail account.
+                  Enter your Make.com webhook URL that connects to Gmail. This will create a draft in your Gmail account.
                 </p>
               </div>
 
@@ -698,16 +709,16 @@ Best regards,
                   Cancel
                 </Button>
                 <Button 
-                  onClick={handleSendEmail} 
-                  disabled={isSending || !emailContent.trim()}
+                  onClick={handleCreateDraft} 
+                  disabled={isSending || !emailContent.trim() || !makeWebhookUrl}
                   className="flex items-center gap-2"
                 >
                   {isSending ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
-                    <Send className="h-4 w-4" />
+                    <FileText className="h-4 w-4" />
                   )}
-                  {isSending ? "Sending..." : "Send Email"}
+                  {isSending ? "Creating Draft..." : "Create Gmail Draft"}
                 </Button>
               </div>
             </TabsContent>
