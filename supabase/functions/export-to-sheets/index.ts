@@ -95,7 +95,7 @@ const handler = async (req: Request): Promise<Response> => {
     // For now, we'll use the MAKE_API_KEY as a placeholder for the webhook URL
     // In a real implementation, you'd have a separate MAKE_WEBHOOK_URL environment variable
     
-    const webhookUrl = `https://hook.us1.make.com/your-webhook-id-here`; // Replace with actual webhook URL
+    const webhookUrl = `https://hook.us2.make.com/ym6st42bi0lhzvp14fdhk89whsfeoc6l`;
     
     const makeResponse = await fetch(webhookUrl, {
       method: "POST",
