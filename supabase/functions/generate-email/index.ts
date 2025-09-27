@@ -24,6 +24,7 @@ interface EmailGenerationRequest {
     passengers: number;
     notes?: string;
   };
+  template?: string;
   flightAnalysis?: {
     distance: number;
     recommendedAircraft: string[];
@@ -39,12 +40,66 @@ serve(async (req) => {
   }
 
   try {
-    const { leadData, flightAnalysis }: EmailGenerationRequest = await req.json();
+    const { leadData, template, flightAnalysis }: EmailGenerationRequest = await req.json();
     
     console.log('Generating email for lead:', leadData.first_name, leadData.last_name);
 
-    // Create dynamic email template based on lead data
-    const systemPrompt = `You are an expert private jet charter broker with 15+ years of experience. Generate a professional, personalized email quote for a charter flight request.
+    // Function to replace template variables
+    const replaceVariables = (text: string) => {
+      return text
+        .replace(/\{\{first_name\}\}/g, leadData.first_name)
+        .replace(/\{\{last_name\}\}/g, leadData.last_name)
+        .replace(/\{\{full_name\}\}/g, `${leadData.first_name} ${leadData.last_name}`)
+        .replace(/\{\{email\}\}/g, leadData.email)
+        .replace(/\{\{phone\}\}/g, leadData.phone)
+        .replace(/\{\{trip_type\}\}/g, leadData.trip_type)
+        .replace(/\{\{departure_airport\}\}/g, leadData.departure_airport)
+        .replace(/\{\{arrival_airport\}\}/g, leadData.arrival_airport)
+        .replace(/\{\{route\}\}/g, `${leadData.departure_airport} → ${leadData.arrival_airport}`)
+        .replace(/\{\{departure_date\}\}/g, leadData.departure_date)
+        .replace(/\{\{departure_time\}\}/g, leadData.departure_time)
+        .replace(/\{\{return_date\}\}/g, leadData.return_date || 'N/A')
+        .replace(/\{\{return_time\}\}/g, leadData.return_time || 'N/A')
+        .replace(/\{\{passengers\}\}/g, leadData.passengers.toString())
+        .replace(/\{\{notes\}\}/g, leadData.notes || 'No special notes');
+    };
+
+    let systemPrompt: string;
+    let userPrompt: string;
+
+    if (template) {
+      // Use the provided template with AI enhancement
+      const processedTemplate = replaceVariables(template);
+      
+      systemPrompt = `You are an expert private jet charter broker with 15+ years of experience. Take the provided email template and enhance it with professional pizazz while maintaining the original structure and personalization.
+
+IMPORTANT GUIDELINES:
+- Keep all the original personalized content and structure
+- Add professional formatting with HTML
+- Enhance the language to be more compelling and persuasive
+- Add elegant styling while keeping it clean and readable
+- Include appropriate paragraph breaks and formatting
+- Make it sound more premium and luxury-focused
+- Add subtle urgency and call-to-action elements
+- Ensure it sounds personal, not template-like
+
+The template has already been personalized with the customer's information. Your job is to make it shine with professional polish and compelling copy.`;
+
+      userPrompt = `Please enhance this email template with professional pizazz and HTML formatting:
+
+ORIGINAL TEMPLATE:
+${processedTemplate}
+
+${flightAnalysis ? `FLIGHT ANALYSIS (incorporate if relevant):
+- Distance: ${flightAnalysis.distance} nautical miles
+- Recommended Aircraft: ${flightAnalysis.recommendedAircraft.join(', ')}
+- Estimated Flight Time: ${flightAnalysis.flightTime}
+- Estimated Cost Range: ${flightAnalysis.estimatedCost}` : ''}
+
+Transform this into a compelling, professionally formatted email that will convert this lead into a booking.`;
+    } else {
+      // Original AI generation logic
+      systemPrompt = `You are an expert private jet charter broker with 15+ years of experience. Generate a professional, personalized email quote for a charter flight request.
 
 IMPORTANT GUIDELINES:
 - Use a warm, professional tone that builds trust
@@ -76,7 +131,7 @@ EMAIL STRUCTURE:
 
 Keep the tone conversational but expert. Avoid generic template language.`;
 
-    const userPrompt = `Generate a charter flight quote email for:
+      userPrompt = `Generate a charter flight quote email for:
 
 CLIENT: ${leadData.first_name} ${leadData.last_name}
 EMAIL: ${leadData.email}
@@ -97,6 +152,7 @@ ${flightAnalysis ? `FLIGHT ANALYSIS:
 - Estimated Cost Range: ${flightAnalysis.estimatedCost}` : ''}
 
 Generate a compelling, personalized email that will convert this lead into a booking. Use HTML formatting for a professional appearance.`;
+    }
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',

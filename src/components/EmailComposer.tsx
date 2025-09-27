@@ -1,10 +1,13 @@
 import { useState } from "react";
-import { X, Send, Wand2, Loader2 } from "lucide-react";
+import { X, Send, Wand2, Loader2, FileText, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -32,16 +35,47 @@ interface EmailComposerProps {
 export function EmailComposer({ isOpen, onClose, leadData }: EmailComposerProps) {
   const [subject, setSubject] = useState(`Private Jet Charter Quote - ${leadData.departure_airport} to ${leadData.arrival_airport}`);
   const [emailContent, setEmailContent] = useState("");
+  const [emailTemplate, setEmailTemplate] = useState("");
   const [makeWebhookUrl, setMakeWebhookUrl] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  const [activeTab, setActiveTab] = useState("template");
+
+  const availableVariables = [
+    { key: "{{first_name}}", value: leadData.first_name, description: "Customer's first name" },
+    { key: "{{last_name}}", value: leadData.last_name, description: "Customer's last name" },
+    { key: "{{full_name}}", value: `${leadData.first_name} ${leadData.last_name}`, description: "Customer's full name" },
+    { key: "{{email}}", value: leadData.email, description: "Customer's email address" },
+    { key: "{{phone}}", value: leadData.phone, description: "Customer's phone number" },
+    { key: "{{trip_type}}", value: leadData.trip_type, description: "Trip type (one-way/round-trip)" },
+    { key: "{{departure_airport}}", value: leadData.departure_airport, description: "Departure airport code" },
+    { key: "{{arrival_airport}}", value: leadData.arrival_airport, description: "Arrival airport code" },
+    { key: "{{route}}", value: `${leadData.departure_airport} → ${leadData.arrival_airport}`, description: "Flight route" },
+    { key: "{{departure_date}}", value: leadData.departure_date, description: "Departure date" },
+    { key: "{{departure_time}}", value: leadData.departure_time, description: "Departure time" },
+    { key: "{{return_date}}", value: leadData.return_date || "N/A", description: "Return date (if applicable)" },
+    { key: "{{return_time}}", value: leadData.return_time || "N/A", description: "Return time (if applicable)" },
+    { key: "{{passengers}}", value: leadData.passengers.toString(), description: "Number of passengers" },
+    { key: "{{notes}}", value: leadData.notes || "No special notes", description: "Special requests or notes" }
+  ];
+
+  const copyVariable = (variable: string) => {
+    navigator.clipboard.writeText(variable);
+    toast.success("Variable copied to clipboard!");
+  };
 
   const generateEmail = async () => {
+    if (!emailTemplate.trim()) {
+      toast.error("Please create a template first");
+      return;
+    }
+
     setIsGenerating(true);
     try {
       const { data, error } = await supabase.functions.invoke('generate-email', {
         body: {
           leadData,
+          template: emailTemplate,
           flightAnalysis: {
             distance: 0, // Would come from actual calculator
             recommendedAircraft: ["Citation CJ3+", "Phenom 300"],
@@ -60,6 +94,7 @@ export function EmailComposer({ isOpen, onClose, leadData }: EmailComposerProps)
       if (data.success) {
         setEmailContent(data.email);
         setSubject(data.subject);
+        setActiveTab("compose");
         toast.success("Email generated successfully!");
       } else {
         throw new Error(data.error || 'Unknown error');
@@ -170,82 +205,155 @@ export function EmailComposer({ isOpen, onClose, leadData }: EmailComposerProps)
             </div>
           </div>
 
-          {/* Email Generation */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="subject">Email Subject</Label>
-              <Button
-                onClick={generateEmail}
-                disabled={isGenerating}
-                variant="outline"
-                size="sm"
-                className="flex items-center gap-2"
-              >
-                {isGenerating ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Wand2 className="h-4 w-4" />
-                )}
-                {isGenerating ? "Generating..." : "Generate with AI"}
-              </Button>
-            </div>
-            
-            <Input
-              id="subject"
-              value={subject}
-              onChange={(e) => setSubject(e.target.value)}
-              placeholder="Email subject line"
-            />
-          </div>
-
-          {/* Email Content Editor */}
-          <div className="space-y-2">
-            <Label htmlFor="content">Email Content</Label>
-            <Textarea
-              id="content"
-              value={emailContent}
-              onChange={(e) => setEmailContent(e.target.value)}
-              placeholder="Email content will appear here after generation, or write your own..."
-              className="min-h-[300px] font-mono text-sm"
-            />
-            <p className="text-xs text-muted-foreground">
-              HTML formatting is supported. The AI will generate a professional email with your branding.
-            </p>
-          </div>
-
-          {/* Make.com Integration */}
-          <div className="space-y-2">
-            <Label htmlFor="webhook">Make.com Webhook URL</Label>
-            <Input
-              id="webhook"
-              type="url"
-              value={makeWebhookUrl}
-              onChange={(e) => setMakeWebhookUrl(e.target.value)}
-              placeholder="https://hook.us1.make.com/your-webhook-url"
-            />
-            <p className="text-xs text-muted-foreground">
-              Enter your Make.com webhook URL that connects to Gmail. The email will be sent through your Gmail account.
-            </p>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex justify-end gap-3 pt-4 border-t">
-            <Button variant="outline" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button 
-              onClick={sendEmail} 
-              disabled={isSending || !emailContent.trim()}
-              className="flex items-center gap-2"
-            >
-              {isSending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="template" className="flex items-center gap-2">
+                <FileText className="h-4 w-4" />
+                Template
+              </TabsTrigger>
+              <TabsTrigger value="compose" className="flex items-center gap-2">
                 <Send className="h-4 w-4" />
-              )}
-              {isSending ? "Sending..." : "Send Email"}
-            </Button>
-          </div>
+                Compose
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="template" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <FileText className="h-5 w-5" />
+                    Email Template Maker
+                  </CardTitle>
+                  <CardDescription>
+                    Create your email template using the available variables, then let AI add the pizazz!
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label className="text-sm font-medium mb-2 block">Available Variables</Label>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-48 overflow-y-auto">
+                      {availableVariables.map((variable) => (
+                        <div
+                          key={variable.key}
+                          className="flex items-center justify-between p-2 bg-muted/30 rounded border hover:bg-muted/50 transition-colors"
+                        >
+                          <div className="flex-1 min-w-0">
+                            <div className="font-mono text-sm text-primary">{variable.key}</div>
+                            <div className="text-xs text-muted-foreground truncate">{variable.description}</div>
+                            <div className="text-xs text-muted-foreground font-medium">→ {variable.value}</div>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => copyVariable(variable.key)}
+                            className="flex-shrink-0 ml-2"
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="template">Your Email Template</Label>
+                    <Textarea
+                      id="template"
+                      value={emailTemplate}
+                      onChange={(e) => setEmailTemplate(e.target.value)}
+                      placeholder="Dear {{first_name}},
+
+Thank you for your interest in private jet charter for your {{trip_type}} flight from {{departure_airport}} to {{arrival_airport}} on {{departure_date}}.
+
+We are excited to provide you with a personalized quote for {{passengers}} passengers...
+
+Best regards,
+Your Charter Team"
+                      className="min-h-[200px] font-mono text-sm"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Use the variables above to personalize your template. Click the copy button to add them easily.
+                    </p>
+                  </div>
+
+                  <Button
+                    onClick={generateEmail}
+                    disabled={isGenerating || !emailTemplate.trim()}
+                    className="w-full flex items-center gap-2"
+                  >
+                    {isGenerating ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Wand2 className="h-4 w-4" />
+                    )}
+                    {isGenerating ? "Adding AI Pizazz..." : "Generate Email with AI Pizazz"}
+                  </Button>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="compose" className="space-y-4">
+              {/* Email Subject */}
+              <div className="space-y-2">
+                <Label htmlFor="subject">Email Subject</Label>
+                <Input
+                  id="subject"
+                  value={subject}
+                  onChange={(e) => setSubject(e.target.value)}
+                  placeholder="Email subject line"
+                />
+              </div>
+
+              {/* Email Content Editor */}
+              <div className="space-y-2">
+                <Label htmlFor="content">Email Content</Label>
+                <Textarea
+                  id="content"
+                  value={emailContent}
+                  onChange={(e) => setEmailContent(e.target.value)}
+                  placeholder="Generated email content will appear here..."
+                  className="min-h-[300px] font-mono text-sm"
+                />
+                <p className="text-xs text-muted-foreground">
+                  HTML formatting is supported. The AI will enhance your template with professional styling.
+                </p>
+              </div>
+
+              {/* Make.com Integration */}
+              <div className="space-y-2">
+                <Label htmlFor="webhook">Make.com Webhook URL</Label>
+                <Input
+                  id="webhook"
+                  type="url"
+                  value={makeWebhookUrl}
+                  onChange={(e) => setMakeWebhookUrl(e.target.value)}
+                  placeholder="https://hook.us1.make.com/your-webhook-url"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Enter your Make.com webhook URL that connects to Gmail. The email will be sent through your Gmail account.
+                </p>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex justify-end gap-3 pt-4 border-t">
+                <Button variant="outline" onClick={onClose}>
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={sendEmail} 
+                  disabled={isSending || !emailContent.trim()}
+                  className="flex items-center gap-2"
+                >
+                  {isSending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Send className="h-4 w-4" />
+                  )}
+                  {isSending ? "Sending..." : "Send Email"}
+                </Button>
+              </div>
+            </TabsContent>
+          </Tabs>
         </div>
       </DialogContent>
     </Dialog>
