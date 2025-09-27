@@ -37,11 +37,107 @@ interface EmailComposerProps {
 export function EmailComposer({ isOpen, onClose, leadData }: EmailComposerProps) {
   const [subject, setSubject] = useState(`Private Jet Charter Quote - ${leadData.departure_airport} to ${leadData.arrival_airport}`);
   const [emailContent, setEmailContent] = useState("");
-  const [emailTemplate, setEmailTemplate] = useState("");
+  const [emailTemplate, setEmailTemplate] = useState(`Subject: Private Jet Charter Quote - {{departure_airport}} to {{arrival_airport}}
+
+Dear {{first_name}},
+
+Thank you for your interest in private jet charter! I'm excited to provide you with a personalized quote for your {{trip_type}} flight.
+
+**FLIGHT DETAILS**
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✈️  **Route**: {{departure_airport}} → {{arrival_airport}}
+📅  **Departure**: {{departure_date}} at {{departure_time}}
+{{IF is_roundtrip}}
+📅  **Return**: {{return_date}} at {{return_time}}
+{{ENDIF}}
+👥  **Passengers**: {{passengers}} passenger{{IF passengers_gt_1}}s{{ENDIF}}
+
+**AIRPORT INFORMATION**
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🛫  **Departure**: Premium FBO services available at {{departure_airport}}
+🛬  **Arrival**: {{arrival_airport}} offers excellent private aviation facilities
+
+{{IF missing_departure_time}}
+**SCHEDULING NOTE**
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⏰  I noticed you didn't specify a departure time. What time would work best for your schedule? Private jet travel offers complete flexibility!
+{{ENDIF}}
+
+**AIRCRAFT RECOMMENDATIONS**
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{{IF passengers_lte_6}}
+🎯  **Perfect Match**: Super Light Jet (Citation CJ4, Phenom 300E)
+    • Ideal for {{passengers}} passengers
+    • 2,400nm range - perfect for cross-country flights
+    • Estimated flight time: 4h 45m
+    • Premium cabin comfort with full stand-up headroom
+{{ELSE}}
+🎯  **Recommended**: Mid-Size Jet for your group of {{passengers}}
+    • Spacious cabin for comfortable cross-country travel
+    • Extended range capabilities
+    • Enhanced luggage capacity
+{{ENDIF}}
+
+**ESTIMATED INVESTMENT**
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+💰  **Range**: $42,000 - $48,000
+    • All-inclusive pricing (no hidden fees)
+    • Covers aircraft, crew, fuel, and handling
+    • Price varies based on final aircraft selection
+
+**WHY CHOOSE PRIVATE**
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🏆  **Time Savings**: Skip 2+ hours of commercial airport hassles
+⏰  **Schedule Control**: Depart exactly when YOU want
+🎯  **Direct Flight**: No connections or delays
+🛡️  **Privacy & Comfort**: Your own private cabin
+🧳  **Baggage Freedom**: No weight restrictions or fees
+
+{{IF notes_contains_business}}
+**BUSINESS TRAVEL BENEFITS**
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📶  **Connectivity**: High-speed WiFi throughout the flight
+💼  **Mobile Office**: Spacious work environment with power outlets
+📞  **Communication**: Make calls and conduct meetings in-flight
+⚡  **Productivity**: Arrive refreshed and ready for business
+{{ENDIF}}
+
+{{IF notes_contains_leisure}}
+**LUXURY TRAVEL EXPERIENCE**
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🥂  **Premium Service**: Dedicated flight attendant and catering
+🛋️  **Comfort**: Spacious leather seating and climate control  
+🎵  **Entertainment**: Premium audio/video systems
+✨  **Luxury**: Make your vacation start the moment you board
+{{ENDIF}}
+
+**NEXT STEPS**
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1️⃣  **Reply** to confirm your preferred departure time and aircraft
+2️⃣  **Review** final pricing and contract details
+3️⃣  **Secure** your aircraft with a deposit
+4️⃣  **Fly** in luxury and comfort!
+
+I'm standing by to finalize the details and get you airborne. With your departure coming up, I recommend securing your aircraft promptly to ensure availability.
+
+**Ready to book or have questions?**
+📞 Call/Text: (555) 123-4567
+📧 Email: charter@yourcompany.com
+⚡ **Response Time**: Within 1 hour during business hours
+
+Looking forward to making your journey exceptional!
+
+Best regards,
+[Your Name]
+Senior Charter Specialist
+[Your Company Name]
+
+---
+*This quote is valid for 48 hours. Aircraft availability and pricing subject to confirmation.*`);
   const [makeWebhookUrl, setMakeWebhookUrl] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSending, setIsSending] = useState(false);
-  const [activeTab, setActiveTab] = useState("template");
+  const [activeTab, setActiveTab] = useState("preview");
 
   const availableVariables = [
     { key: "{{first_name}}", value: leadData.first_name, description: "Customer's first name" },
