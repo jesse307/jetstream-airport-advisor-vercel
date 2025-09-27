@@ -40,7 +40,7 @@ interface AircraftType {
 
 const AIRCRAFT_TYPES: AircraftType[] = [
   {
-    category: "Super Light Jet",
+    category: "Very Light Jet",
     speed: 290,
     examples: ["Eclipse 550", "Phenom 100", "Citation M2"],
     minRunway: 3200,
@@ -80,6 +80,20 @@ const AIRCRAFT_TYPES: AircraftType[] = [
     fuelConsumption: 230,
     emptyWeight: 11500,
     maxTakeoffWeight: 17110
+  },
+  {
+    category: "Super Light Jet",
+    speed: 350,
+    examples: ["Citation CJ4", "Phenom 300E", "Learjet 45XR"],
+    minRunway: 4500,
+    passengers: "7-9",
+    hourlyRate: 9200,
+    maxRange: 2400,
+    maxPayload: 2600,
+    fuelCapacity: 6800,
+    fuelConsumption: 270,
+    emptyWeight: 13000,
+    maxTakeoffWeight: 19500
   },
   {
     category: "Mid Jet",
