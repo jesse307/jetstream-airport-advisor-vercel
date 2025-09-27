@@ -144,28 +144,61 @@ Senior Charter Specialist
     }
 
     setIsSending(true);
+    
+    const webhookData = {
+      to: leadData.email,
+      subject: subject,
+      body: emailContent,
+      leadData: leadData,
+      action: "create_draft",
+      timestamp: new Date().toISOString(),
+    };
+
+    console.log("Sending to Make.com webhook:", {
+      url: makeWebhookUrl,
+      dataSize: JSON.stringify(webhookData).length
+    });
+
     try {
-      // Send to Make.com webhook to create Gmail draft
       const response = await fetch(makeWebhookUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        mode: "no-cors",
-        body: JSON.stringify({
-          to: leadData.email,
-          subject: subject,
-          body: emailContent,
-          leadData: leadData,
-          action: "create_draft", // Specify this is for draft creation
-          timestamp: new Date().toISOString(),
-        }),
+        body: JSON.stringify(webhookData),
       });
 
-      toast.success("Gmail draft creation request sent! Check your Gmail drafts folder.");
+      console.log("Webhook response:", {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok
+      });
+
+      if (response.ok) {
+        toast.success("Gmail draft created successfully! Check your Gmail drafts folder.");
+      } else {
+        console.error("Webhook returned error status:", response.status);
+        toast.error(`Webhook returned status ${response.status}. Check your Make.com scenario.`);
+      }
     } catch (error) {
-      console.error('Error creating draft:', error);
-      toast.error("Failed to create draft. Please check your webhook URL.");
+      console.error('Error sending to webhook:', error);
+      
+      // Try with no-cors as fallback
+      try {
+        console.log("Retrying with no-cors mode...");
+        await fetch(makeWebhookUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          mode: "no-cors",
+          body: JSON.stringify(webhookData),
+        });
+        toast.success("Request sent to Make.com (no-cors mode). Check your Gmail drafts folder and Make.com execution history.");
+      } catch (fallbackError) {
+        console.error('Fallback request also failed:', fallbackError);
+        toast.error("Failed to send request. Please check your webhook URL and Make.com scenario.");
+      }
     } finally {
       setIsSending(false);
     }
