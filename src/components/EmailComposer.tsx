@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { X, Send, Wand2, Loader2, FileText, Copy, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,8 +7,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { EmailPreview } from "@/components/EmailPreview";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -35,8 +33,9 @@ interface EmailComposerProps {
 }
 
 export function EmailComposer({ isOpen, onClose, leadData }: EmailComposerProps) {
-  const [subject, setSubject] = useState(`Private Jet Charter Quote - ${leadData.departure_airport} to ${leadData.arrival_airport}`);
+  const [subject, setSubject] = useState("Stratos Jets - Confirming Flight Details");
   const [emailContent, setEmailContent] = useState("");
+  const [isShowingTemplate, setIsShowingTemplate] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [emailTemplate, setEmailTemplate] = useState(`Subject: Stratos Jets - Confirming Flight Details
@@ -68,6 +67,47 @@ Once I have your details, I can provide some additional guidance around which pl
 Best,
 Jesse`);
   const [makeWebhookUrl] = useState("https://hook.us2.make.com/ywmt9116r48viqppk2lqhhf9s7x57q4w");
+
+  // Initialize email content with populated template
+  React.useEffect(() => {
+    if (!emailContent && isOpen) {
+      const populatedTemplate = populateTemplate(emailTemplate, leadData);
+      setEmailContent(populatedTemplate);
+    }
+  }, [isOpen, emailTemplate, leadData, emailContent]);
+
+  const populateTemplate = (template: string, data: any) => {
+    let populated = template;
+    
+    // Replace basic variables
+    populated = populated.replace(/\{\{first_name\}\}/g, data.first_name);
+    populated = populated.replace(/\{\{last_name\}\}/g, data.last_name);
+    populated = populated.replace(/\{\{departure_airport\}\}/g, data.departure_airport);
+    populated = populated.replace(/\{\{arrival_airport\}\}/g, data.arrival_airport);
+    populated = populated.replace(/\{\{departure_date\}\}/g, data.departure_date);
+    populated = populated.replace(/\{\{departure_time\}\}/g, data.departure_time);
+    populated = populated.replace(/\{\{passengers\}\}/g, data.passengers.toString());
+    
+    // Handle conditional logic
+    if (data.trip_type === 'round-trip' && data.return_date && data.return_time) {
+      populated = populated.replace(/\{\{IF is_roundtrip\}\}/g, '');
+      populated = populated.replace(/\{\{ENDIF\}\}/g, '');
+      populated = populated.replace(/\{\{return_date\}\}/g, data.return_date);
+      populated = populated.replace(/\{\{return_time\}\}/g, data.return_time);
+    } else {
+      // Remove round trip section
+      populated = populated.replace(/\{\{IF is_roundtrip\}\}[\s\S]*?\{\{ENDIF\}\}/g, '');
+    }
+    
+    // Handle passenger pluralization
+    populated = populated.replace(/\{\{IF passengers_gt_1\}\}s\{\{ENDIF\}\}/g, data.passengers > 1 ? 's' : '');
+    
+    // Remove remaining AI placeholders for clean initial display
+    populated = populated.replace(/\{\{AI:.*?\}\}/g, '[AI will enhance this section]');
+    
+    return populated;
+  };
+
   const handleCreateDraft = async () => {
     if (!emailContent.trim()) {
       toast.error("Please generate email content first");
@@ -76,10 +116,16 @@ Jesse`);
 
     setIsSending(true);
     
+    // Convert plain text to HTML for Gmail
+    const htmlContent = emailContent
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\n/g, '<br>')
+      .replace(/━{10,}/g, '<hr style="border: none; border-top: 1px solid #ccc; margin: 15px 0;">');
+    
     const webhookData = {
       to: leadData.email,
       subject: subject,
-      body: emailContent,
+      body: htmlContent,
       leadData: leadData,
       action: "create_draft",
       timestamp: new Date().toISOString(),
@@ -144,30 +190,6 @@ Jesse`);
     } finally {
       setIsSending(false);
     }
-  };
-  const [activeTab, setActiveTab] = useState("preview");
-
-  const availableVariables = [
-    { key: "{{first_name}}", value: leadData.first_name, description: "Customer's first name" },
-    { key: "{{last_name}}", value: leadData.last_name, description: "Customer's last name" },
-    { key: "{{full_name}}", value: `${leadData.first_name} ${leadData.last_name}`, description: "Customer's full name" },
-    { key: "{{email}}", value: leadData.email, description: "Customer's email address" },
-    { key: "{{phone}}", value: leadData.phone, description: "Customer's phone number" },
-    { key: "{{trip_type}}", value: leadData.trip_type, description: "Trip type (one-way/round-trip)" },
-    { key: "{{departure_airport}}", value: leadData.departure_airport, description: "Departure airport code" },
-    { key: "{{arrival_airport}}", value: leadData.arrival_airport, description: "Arrival airport code" },
-    { key: "{{route}}", value: `${leadData.departure_airport} → ${leadData.arrival_airport}`, description: "Flight route" },
-    { key: "{{departure_date}}", value: leadData.departure_date, description: "Departure date" },
-    { key: "{{departure_time}}", value: leadData.departure_time, description: "Departure time" },
-    { key: "{{return_date}}", value: leadData.return_date || "N/A", description: "Return date (if applicable)" },
-    { key: "{{return_time}}", value: leadData.return_time || "N/A", description: "Return time (if applicable)" },
-    { key: "{{passengers}}", value: leadData.passengers.toString(), description: "Number of passengers" },
-    { key: "{{notes}}", value: leadData.notes || "No special notes", description: "Special requests or notes" }
-  ];
-
-  const copyVariable = (variable: string) => {
-    navigator.clipboard.writeText(variable);
-    toast.success("Variable copied to clipboard!");
   };
 
   const generateEmail = async () => {
@@ -283,9 +305,7 @@ Jesse`);
 
       if (data.success) {
         setEmailContent(data.email);
-        setSubject(data.subject);
-        setActiveTab("compose");
-        toast.success("Email generated successfully!");
+        toast.success("AI has enhanced your email!");
       } else {
         throw new Error(data.error || 'Unknown error');
       }
@@ -297,71 +317,13 @@ Jesse`);
     }
   };
 
-  const sendEmail = async () => {
-    if (!emailContent.trim()) {
-      toast.error("Please generate or write email content");
-      return;
-    }
-
-    setIsSending(true);
-    try {
-      // Send to Make.com webhook for Gmail integration
-      const response = await fetch(makeWebhookUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        mode: "no-cors",
-        body: JSON.stringify({
-          to: leadData.email,
-          subject: subject,
-          body: emailContent,
-          leadData: {
-            id: leadData.id,
-            name: `${leadData.first_name} ${leadData.last_name}`,
-            phone: leadData.phone,
-            trip_details: {
-              type: leadData.trip_type,
-              route: `${leadData.departure_airport} → ${leadData.arrival_airport}`,
-              departure: `${leadData.departure_date} at ${leadData.departure_time}`,
-              return: leadData.return_date ? `${leadData.return_date} at ${leadData.return_time}` : null,
-              passengers: leadData.passengers
-            }
-          },
-          timestamp: new Date().toISOString(),
-          source: "Charter Pro Lead System"
-        }),
-      });
-
-      // Since we're using no-cors, we won't get response status
-      toast.success("Email sent to Make.com! Check your Gmail and Make.com logs to confirm delivery.");
-      
-      // Update lead status to 'contacted'
-      const { error: updateError } = await supabase
-        .from('leads')
-        .update({ status: 'contacted' })
-        .eq('id', leadData.id);
-
-      if (updateError) {
-        console.error('Error updating lead status:', updateError);
-      }
-
-      onClose();
-    } catch (error) {
-      console.error("Error sending email:", error);
-      toast.error("Failed to send email to Make.com. Please check your webhook URL.");
-    } finally {
-      setIsSending(false);
-    }
-  };
-
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Send className="h-5 w-5 text-primary" />
-            Generate & Send Email Quote
+            Compose Email
           </DialogTitle>
         </DialogHeader>
 
@@ -390,295 +352,107 @@ Jesse`);
             </div>
           </div>
 
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="template" className="flex items-center gap-2">
-                <FileText className="h-4 w-4" />
-                Template
-              </TabsTrigger>
-              <TabsTrigger value="preview" className="flex items-center gap-2">
-                <Eye className="h-4 w-4" />
-                Preview
-              </TabsTrigger>
-              <TabsTrigger value="compose" className="flex items-center gap-2">
-                <Send className="h-4 w-4" />
-                Compose
-              </TabsTrigger>
-            </TabsList>
+          <div className="space-y-4">
+            {/* Change Template Button */}
+            <div className="flex justify-end">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setIsShowingTemplate(!isShowingTemplate)}
+                className="text-sm"
+              >
+                {isShowingTemplate ? "Hide Template" : "Change Template"}
+              </Button>
+            </div>
 
-            <TabsContent value="template" className="space-y-4">
-              <Card>
+            {/* Template Editor (conditionally shown) */}
+            {isShowingTemplate && (
+              <Card className="border-dashed">
                 <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <FileText className="h-5 w-5" />
-                    Email Template Maker
-                  </CardTitle>
-                  <CardDescription>
-                    Create your email template using the available variables, then let AI add the pizazz!
+                  <CardTitle className="text-sm">Email Template</CardTitle>
+                  <CardDescription className="text-xs">
+                    Modify the template and the compose area will update automatically
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <Label className="text-sm font-medium mb-2 block">Available Variables & Conditional Logic</Label>
-                    
-                    <div className="space-y-4">
-                      {/* Basic Variables */}
-                      <div>
-                        <h4 className="text-sm font-semibold mb-2">Basic Variables</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-48 overflow-y-auto">
-                          {availableVariables.map((variable) => (
-                            <div
-                              key={variable.key}
-                              className="flex items-center justify-between p-2 bg-muted/30 rounded border hover:bg-muted/50 transition-colors"
-                            >
-                              <div className="flex-1 min-w-0">
-                                <div className="font-mono text-sm text-primary">{variable.key}</div>
-                                <div className="text-xs text-muted-foreground truncate">{variable.description}</div>
-                                <div className="text-xs text-muted-foreground font-medium">→ {variable.value}</div>
-                              </div>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => copyVariable(variable.key)}
-                                className="flex-shrink-0 ml-2"
-                              >
-                                <Copy className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Conditional Logic */}
-                      <div>
-                        <h4 className="text-sm font-semibold mb-2">Conditional Logic Examples</h4>
-                        <div className="space-y-2 text-xs bg-muted/20 p-3 rounded">
-                          <div className="font-mono">
-                            <span className="text-primary">{"{{IF missing_departure_time}}"}</span><br/>
-                            ⏰ I noticed you didn't specify a departure time...<br/>
-                            <span className="text-primary">{"{{ENDIF}}"}</span>
-                          </div>
-                          <div className="font-mono">
-                            <span className="text-primary">{"{{IF passengers_lte_6}}"}</span><br/>
-                            🎯 Perfect Match: Super Light Jet for {"{{passengers}}"} passengers<br/>
-                            <span className="text-primary">{"{{ELSE}}"}</span><br/>
-                            🎯 Recommended: Mid-Size Jet for larger groups<br/>
-                            <span className="text-primary">{"{{ENDIF}}"}</span>
-                          </div>
-                          <div className="font-mono">
-                            <span className="text-primary">{"{{IF notes_contains_business}}"}</span><br/>
-                            📶 Business Travel Benefits: WiFi, mobile office setup<br/>
-                            <span className="text-primary">{"{{ENDIF}}"}</span>
-                          </div>
-                        </div>
-                        
-                        <div className="mt-2">
-                          <p className="text-xs text-muted-foreground mb-1">Available conditions:</p>
-                          <ul className="text-xs text-muted-foreground space-y-1">
-                            <li>• <code>missing_departure_time</code>, <code>missing_return_time_roundtrip</code></li>
-                            <li>• <code>passengers_gt_8</code>, <code>passengers_lte_6</code>, <code>passengers_eq_1</code></li>
-                            <li>• <code>is_roundtrip</code>, <code>is_oneway</code></li>
-                            <li>• <code>has_notes</code>, <code>notes_contains_business</code>, <code>notes_contains_leisure</code></li>
-                          </ul>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="template">Your Email Template</Label>
-                    <Textarea
-                      id="template"
-                      value={emailTemplate}
-                      onChange={(e) => setEmailTemplate(e.target.value)}
-                      placeholder="Subject: Private Jet Charter Quote - {{departure_airport}} to {{arrival_airport}}
-
-Dear {{first_name}},
-
-Thank you for your interest in private jet charter! I'm excited to provide you with a personalized quote for your {{trip_type}} flight.
-
-**FLIGHT DETAILS**
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-✈️  **Route**: {{departure_airport}} → {{arrival_airport}}
-📅  **Departure**: {{departure_date}} at {{departure_time}}
-{{IF is_roundtrip}}
-📅  **Return**: {{return_date}} at {{return_time}}
-{{ENDIF}}
-👥  **Passengers**: {{passengers}} passenger{{IF passengers_gt_1}}s{{ENDIF}}
-
-**AIRPORT INFORMATION**
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-🛫  **Departure**: Premium FBO services available at Newark Liberty
-🛬  **Arrival**: Las Vegas offers multiple FBO options with luxury amenities
-
-**AIRCRAFT RECOMMENDATIONS**
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-{{IF passengers_lte_6}}
-🎯  **Perfect Match**: Super Light Jet (Citation CJ4, Phenom 300E)
-    • Ideal for {{passengers}} passengers
-    • 2,400nm range - perfect for cross-country flights
-    • Estimated flight time: 4h 45m
-    • Premium cabin comfort with full stand-up headroom
-{{ENDIF}}
-
-{{IF passengers_gt_6}}
-🎯  **Recommended**: Mid-Size Jet for your group of {{passengers}}
-    • Spacious cabin for comfortable cross-country travel
-    • Extended range capabilities
-    • Enhanced luggage capacity
-{{ENDIF}}
-
-**ESTIMATED INVESTMENT**
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-💰  **Range**: $42,000 - $48,000
-    • All-inclusive pricing (no hidden fees)
-    • Covers aircraft, crew, fuel, and handling
-    • Price varies based on final aircraft selection
-
-**WHY CHOOSE PRIVATE**
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-🏆  **Time Savings**: Skip 2+ hours of commercial airport hassles
-⏰  **Schedule Control**: Depart exactly when YOU want
-🎯  **Direct Flight**: No connections or delays
-🛡️  **Privacy & Comfort**: Your own private cabin
-🧳  **Baggage Freedom**: No weight restrictions or fees
-
-{{IF missing_departure_time}}
-**SCHEDULING NOTE**
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-⏰  I noticed you didn't specify a departure time. What time would work best for your schedule? Private jet travel offers complete flexibility!
-{{ENDIF}}
-
-{{IF notes_contains_business}}
-**BUSINESS TRAVEL BENEFITS**
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📶  **Connectivity**: High-speed WiFi throughout the flight
-💼  **Mobile Office**: Spacious work environment with power outlets
-📞  **Communication**: Make calls and conduct meetings in-flight
-⚡  **Productivity**: Arrive refreshed and ready for business
-{{ENDIF}}
-
-**NEXT STEPS**
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-1️⃣  **Reply** to confirm your preferred departure time
-2️⃣  **Review** aircraft options and select your preference  
-3️⃣  **Book** with a simple deposit to secure your aircraft
-4️⃣  **Fly** in luxury and comfort!
-
-I'm standing by to finalize the details and get you airborne. With your departure just days away, I recommend securing your aircraft today to ensure availability.
-
-**Ready to book or have questions?**
-📞 Call/Text: [Your Phone]
-📧 Email: [Your Email]
-⚡ **Response Time**: Within 1 hour during business hours
-
-Looking forward to making your journey exceptional!
-
-Best regards,
-[Your Name]
-[Your Title]
-[Company Name]
-
----
-*This quote is valid for 48 hours. Aircraft availability and pricing subject to confirmation.*"
-                      className="min-h-[200px] font-mono text-sm"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Use the variables above to personalize your template. Click the copy button to add them easily.
-                    </p>
-                  </div>
-
-                  <Button
-                    onClick={generateEmail}
-                    disabled={isGenerating || !emailTemplate.trim()}
-                    className="w-full flex items-center gap-2"
-                  >
-                    {isGenerating ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Wand2 className="h-4 w-4" />
-                    )}
-                    {isGenerating ? "Adding AI Pizazz..." : "Generate Email with AI Pizazz"}
-                  </Button>
+                <CardContent>
+                  <Textarea
+                    value={emailTemplate}
+                    onChange={(e) => {
+                      setEmailTemplate(e.target.value);
+                      const newContent = populateTemplate(e.target.value, leadData);
+                      setEmailContent(newContent);
+                    }}
+                    className="min-h-[200px] font-mono text-sm"
+                  />
                 </CardContent>
               </Card>
-            </TabsContent>
+            )}
 
-            <TabsContent value="preview" className="space-y-4">
-              <EmailPreview 
-                subject={subject || `Private Jet Charter Quote - ${leadData.departure_airport} to ${leadData.arrival_airport}`}
-                content={emailTemplate || "Please create a template first to see the preview."}
-                isTemplate={true}
-              />
-              
-              {!emailTemplate.trim() && (
-                <Card className="border-dashed border-2">
-                  <CardContent className="flex flex-col items-center justify-center py-8 text-center">
-                    <Eye className="h-12 w-12 text-muted-foreground mb-4" />
-                    <h3 className="font-heading font-semibold text-lg mb-2">No Template to Preview</h3>
-                    <p className="text-muted-foreground mb-4">
-                      Create a template in the Template tab to see how your email will look with the new professional fonts.
-                    </p>
-                    <Button 
-                      variant="outline" 
-                      onClick={() => setActiveTab("template")}
-                      className="font-display"
-                    >
-                      Create Template
-                    </Button>
-                  </CardContent>
-                </Card>
-              )}
-            </TabsContent>
-
-            <TabsContent value="compose" className="space-y-4">
-              {/* Email Subject */}
+            {/* Email Compose Area */}
+            <div className="space-y-4">
+              {/* Subject Line */}
               <div className="space-y-2">
-                <Label htmlFor="subject">Email Subject</Label>
+                <Label htmlFor="subject">Subject</Label>
                 <Input
                   id="subject"
                   value={subject}
                   onChange={(e) => setSubject(e.target.value)}
-                  placeholder="Email subject line"
+                  className="font-medium"
                 />
               </div>
 
-              {/* Email Content Editor */}
+              {/* Email Content */}
               <div className="space-y-2">
                 <Label htmlFor="content">Email Content</Label>
                 <Textarea
                   id="content"
                   value={emailContent}
                   onChange={(e) => setEmailContent(e.target.value)}
-                  placeholder="Generated email content will appear here..."
-                  className="min-h-[300px] font-mono text-sm"
+                  className="min-h-[400px] font-mono text-sm"
+                  placeholder="Email content will appear here..."
                 />
                 <p className="text-xs text-muted-foreground">
-                  HTML formatting is supported. The AI will enhance your template with professional styling.
+                  Plain text format - will be converted to HTML when sent to Gmail
                 </p>
               </div>
 
-
               {/* Action Buttons */}
-              <div className="flex justify-end gap-3 pt-4 border-t">
+              <div className="flex justify-between items-center pt-4 border-t">
                 <Button variant="outline" onClick={onClose}>
                   Cancel
                 </Button>
-                <Button 
-                  onClick={handleCreateDraft} 
-                  disabled={isSending || !emailContent.trim() || !makeWebhookUrl}
-                  className="flex items-center gap-2"
-                >
-                  {isSending ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <FileText className="h-4 w-4" />
-                  )}
-                  {isSending ? "Creating Draft..." : "Create Gmail Draft"}
-                </Button>
+                
+                <div className="flex gap-2">
+                  <Button
+                    onClick={generateEmail}
+                    disabled={isGenerating}
+                    variant="outline"
+                    className="flex items-center gap-2"
+                  >
+                    {isGenerating ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Wand2 className="h-4 w-4" />
+                    )}
+                    {isGenerating ? "Using AI..." : "Use AI"}
+                  </Button>
+                  
+                  <Button 
+                    onClick={handleCreateDraft} 
+                    disabled={isSending || !emailContent.trim()}
+                    className="flex items-center gap-2"
+                  >
+                    {isSending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Send className="h-4 w-4" />
+                    )}
+                    {isSending ? "Pushing to Gmail..." : "Push to Gmail"}
+                  </Button>
+                </div>
               </div>
-            </TabsContent>
-          </Tabs>
+            </div>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
