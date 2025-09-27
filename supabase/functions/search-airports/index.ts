@@ -221,8 +221,18 @@ serve(async (req) => {
           console.log('IATA response status:', aeroResponse.status);
           console.log('IATA response headers:', JSON.stringify([...aeroResponse.headers.entries()]));
           
-          if (!aeroResponse.ok) {
-            const errorText = await aeroResponse.text();
+          if (!aeroResponse.ok || aeroResponse.status === 204) {
+            // Handle 204 (No Content) and other errors gracefully
+            let errorText = 'No content returned';
+            try {
+              if (aeroResponse.status !== 204) {
+                errorText = await aeroResponse.text();
+              }
+            } catch (textError) {
+              console.log('Could not read error text:', textError);
+              errorText = `Status ${aeroResponse.status} - Could not read response`;
+            }
+            
             console.log('IATA failed - Status:', aeroResponse.status, 'Body:', errorText);
             
             // Store the error details
@@ -301,9 +311,18 @@ serve(async (req) => {
         
         // Process successful response
         if (aeroResponse && aeroResponse.ok) {
-          const aeroData = await aeroResponse.json();
-          console.log('AeroDataBox response type:', Array.isArray(aeroData) ? 'array' : typeof aeroData);
-          console.log('AeroDataBox FULL response:', JSON.stringify(aeroData, null, 2));
+          let aeroData;
+          try {
+            aeroData = await aeroResponse.json();
+          } catch (jsonError) {
+            console.log('Failed to parse JSON response:', jsonError);
+            // Skip processing if JSON parsing fails
+            aeroData = null;
+          }
+          
+          if (aeroData) {
+            console.log('AeroDataBox response type:', Array.isArray(aeroData) ? 'array' : typeof aeroData);
+            console.log('AeroDataBox FULL response:', JSON.stringify(aeroData, null, 2));
           
           // Function to get runway data for an airport
           const getRunwayData = async (airportCode: string): Promise<number> => {
@@ -402,6 +421,7 @@ serve(async (req) => {
                 longitude: aeroData.location?.lon || null
               });
             }
+          }
           }
           
           console.log('AeroDataBox processed', airports.length, 'airports');
