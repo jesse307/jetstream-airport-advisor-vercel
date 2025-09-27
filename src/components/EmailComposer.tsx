@@ -155,11 +155,13 @@ Jesse`);
 
     setIsSending(true);
     
-    // Convert plain text to HTML for Gmail
-    const htmlContent = emailContent
-      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-      .replace(/\n/g, '<br>')
-      .replace(/━{10,}/g, '<hr style="border: none; border-top: 1px solid #ccc; margin: 15px 0;">');
+    // Convert plain text to HTML for Gmail with larger font size
+    const htmlContent = `<div style="font-size: 16px; line-height: 1.5; font-family: Arial, sans-serif;">` + 
+      emailContent
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\n/g, '<br>')
+        .replace(/━{10,}/g, '<hr style="border: none; border-top: 1px solid #ccc; margin: 15px 0;">') +
+      `</div>`;
     
     const webhookData = {
       to: leadData.email,
