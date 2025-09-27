@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { FlightCalculator } from "@/components/FlightCalculator";
-import { EmailComposer } from "@/components/EmailComposer";
+
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -52,7 +52,56 @@ export default function LeadAnalysis() {
   const [departureAirportData, setDepartureAirportData] = useState<Airport | null>(null);
   const [arrivalAirportData, setArrivalAirportData] = useState<Airport | null>(null);
   const [loading, setLoading] = useState(true);
-  const [showEmailComposer, setShowEmailComposer] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExportToSheets = async () => {
+    if (!lead) return;
+    
+    setIsExporting(true);
+    try {
+      // Prepare data for Google Sheets
+      const exportData = {
+        // Contact Information
+        firstName: lead.first_name,
+        lastName: lead.last_name,
+        email: lead.email,
+        phone: lead.phone || '',
+        
+        // Flight Details
+        tripType: lead.trip_type,
+        departureAirport: lead.departure_airport,
+        arrivalAirport: lead.arrival_airport,
+        departureDate: format(new Date(lead.departure_date), "MM/dd/yyyy"),
+        departureTime: lead.departure_time,
+        returnDate: lead.return_date ? format(new Date(lead.return_date), "MM/dd/yyyy") : '',
+        returnTime: lead.return_time || '',
+        passengers: lead.passengers,
+        notes: lead.notes || '',
+        
+        // Meta Information
+        leadId: lead.id,
+        createdAt: format(new Date(lead.created_at), "MM/dd/yyyy hh:mm a"),
+        status: lead.status
+      };
+
+      const { data, error } = await supabase.functions.invoke('export-to-sheets', {
+        body: { leadData: exportData }
+      });
+
+      if (error) {
+        console.error('Export error:', error);
+        toast.error('Failed to export to Google Sheets');
+        return;
+      }
+
+      toast.success('Successfully exported to Google Sheets!');
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error('Failed to export to Google Sheets');
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   useEffect(() => {
     if (id) {
@@ -309,9 +358,10 @@ export default function LeadAnalysis() {
                   <Button 
                     className="w-full" 
                     variant="aviation"
-                    onClick={() => setShowEmailComposer(true)}
+                    onClick={handleExportToSheets}
+                    disabled={isExporting}
                   >
-                    Generate Email
+                    {isExporting ? 'Exporting...' : 'Export to Google Sheets'}
                   </Button>
                   <Button className="w-full" variant="outline">
                     Update Status
@@ -347,14 +397,6 @@ export default function LeadAnalysis() {
         </div>
       </main>
 
-      {/* Email Composer Modal */}
-      {lead && (
-        <EmailComposer
-          isOpen={showEmailComposer}
-          onClose={() => setShowEmailComposer(false)}
-          leadData={lead}
-        />
-      )}
     </div>
   );
 }
