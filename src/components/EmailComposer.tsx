@@ -39,13 +39,13 @@ export function EmailComposer({ isOpen, onClose, leadData }: EmailComposerProps)
   const [emailContent, setEmailContent] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSending, setIsSending] = useState(false);
-  const [emailTemplate, setEmailTemplate] = useState(`Subject: {{AI: Create an engaging subject line for a private jet quote from {{departure_airport}} to {{arrival_airport}}}}
+  const [emailTemplate, setEmailTemplate] = useState(`Subject: Stratos Jets - Confirming Flight Details
 
-Dear {{first_name}},
+Hi {{first_name}},
 
-{{AI: Write a warm, personalized greeting that references their specific trip details and shows excitement about helping them}}
+Thank you for your interest in Stratos Jets. In order for me to be the most efficient in providing guidance, please confirm the details below and answer any additional questions.
 
-**FLIGHT DETAILS**
+FLIGHT DETAILS
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ✈️  **Route**: {{departure_airport}} → {{arrival_airport}}
 📅  **Departure**: {{departure_date}} at {{departure_time}}
@@ -56,88 +56,19 @@ Dear {{first_name}},
 
 {{AI: Add flight distance, estimated flight time, and any interesting facts about this specific route}}
 
-**AIRPORT INFORMATION**
+Do you have a specific aircraft that you've flown this route with before? {{AI: ONLY recommend aircraft from the capableAircraft data that can actually complete this route nonstop. Include specific model names, passenger capacity, flight times, and key features. Be accurate about capabilities. Use language like "For this mission, our clients typically fly on" and "of course if you want more space, we're happy to source something larger"}}
+
+Why Stratos Jets
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-{{AI: Provide specific details about FBO services, amenities, and private aviation facilities at {{departure_airport}} and {{arrival_airport}}}}
+{{AI: provide 4 or 5 bullet points about why Stratos Jets is better than other charter brokers}}
 
-{{IF missing_departure_time}}
-**SCHEDULING NOTE**
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-⏰  I noticed you didn't specify a departure time. {{AI: Write a friendly message about scheduling flexibility and ask what time works best}}
-{{ENDIF}}
+Once I have your details, I can provide some additional guidance around which planes could be best and their associated costs. From there, I can obtain hard quotes from our operators and get you booked.
 
-**AIRCRAFT RECOMMENDATIONS**
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-{{AI: ONLY recommend aircraft from the capableAircraft data that can actually complete this route nonstop. Include specific model names, passenger capacity, flight times, and key features. Be accurate about capabilities.}}
-
-{{IF passengers_lte_4}}
-{{AI: Focus on light jets and super light jets, emphasizing efficiency and cost-effectiveness}}
-{{ELSIF passengers_lte_8}}
-{{AI: Recommend mid-size jets, highlighting comfort and range for this group size}}
-{{ELSE}}
-{{AI: Suggest heavy jets or large cabin aircraft, emphasizing space and luxury}}
-{{ENDIF}}
-
-**ESTIMATED INVESTMENT**
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-{{AI: Provide accurate pricing based on the actual flight analysis data. Include what's covered and mention price factors. Use the estimatedCost from capableAircraft data.}}
-
-**WHY CHOOSE PRIVATE**
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-🏆  **Time Savings**: Skip 2+ hours of commercial airport hassles
-⏰  **Schedule Control**: Depart exactly when YOU want
-🎯  **Direct Flight**: No connections or delays
-🛡️  **Privacy & Comfort**: Your own private cabin
-🧳  **Baggage Freedom**: No weight restrictions or fees
-
-{{IF notes_contains_business}}
-**BUSINESS TRAVEL BENEFITS**
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📶  **Connectivity**: High-speed WiFi throughout the flight
-💼  **Mobile Office**: Spacious work environment with power outlets
-📞  **Communication**: Make calls and conduct meetings in-flight
-⚡  **Productivity**: Arrive refreshed and ready for business
-{{ENDIF}}
-
-{{IF notes_contains_leisure}}
-**LUXURY TRAVEL EXPERIENCE**
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-🥂  **Premium Service**: Dedicated flight attendant and catering
-🛋️  **Comfort**: Spacious leather seating and climate control  
-🎵  **Entertainment**: Premium audio/video systems
-✨  **Luxury**: Make your vacation start the moment you board
-{{ENDIF}}
-
-**NEXT STEPS**
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-1️⃣  **Reply** to confirm your preferred departure time and aircraft
-2️⃣  **Review** final pricing and contract details
-3️⃣  **Secure** your aircraft with a deposit
-4️⃣  **Fly** in luxury and comfort!
-
-I'm standing by to finalize the details and get you airborne. With your departure coming up, I recommend securing your aircraft promptly to ensure availability.
-
-**Ready to book or have questions?**
-📞 Call/Text: (555) 123-4567
-📧 Email: charter@yourcompany.com
-⚡ **Response Time**: Within 1 hour during business hours
-
-Looking forward to making your journey exceptional!
-
-Best regards,
-[Your Name]
-Senior Charter Specialist
-[Your Company Name]
-
----
-*This quote is valid for 48 hours. Aircraft availability and pricing subject to confirmation.*`);
-  const [makeWebhookUrl, setMakeWebhookUrl] = useState("");
+--
+Best,
+Jesse`);
+  const [makeWebhookUrl] = useState("https://hook.us2.make.com/ywmt9116r48viqppk2lqhhf9s7x57q4w");
   const handleCreateDraft = async () => {
-    if (!makeWebhookUrl) {
-      toast.error("Please enter your Make.com webhook URL");
-      return;
-    }
-
     if (!emailContent.trim()) {
       toast.error("Please generate email content first");
       return;
@@ -367,11 +298,6 @@ Senior Charter Specialist
   };
 
   const sendEmail = async () => {
-    if (!makeWebhookUrl) {
-      toast.error("Please enter your Make.com webhook URL");
-      return;
-    }
-
     if (!emailContent.trim()) {
       toast.error("Please generate or write email content");
       return;
@@ -732,20 +658,6 @@ Best regards,
                 </p>
               </div>
 
-              {/* Make.com Integration */}
-              <div className="space-y-2">
-                <Label htmlFor="webhook">Make.com Webhook URL</Label>
-                <Input
-                  id="webhook"
-                  type="url"
-                  value={makeWebhookUrl}
-                  onChange={(e) => setMakeWebhookUrl(e.target.value)}
-                  placeholder="https://hook.us1.make.com/your-webhook-url"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Enter your Make.com webhook URL that connects to Gmail. This will create a draft in your Gmail account.
-                </p>
-              </div>
 
               {/* Action Buttons */}
               <div className="flex justify-end gap-3 pt-4 border-t">
