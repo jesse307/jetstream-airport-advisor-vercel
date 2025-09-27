@@ -345,7 +345,9 @@ Jesse`);
       }
 
       if (data.success) {
-        setEmailContent(data.email);
+        // Apply date/time formatting to the AI-generated template
+        const formattedEmail = populateTemplate(data.email, leadData);
+        setEmailContent(formattedEmail);
         toast.success("AI has enhanced your email!");
       } else {
         throw new Error(data.error || 'Unknown error');
