@@ -101,7 +101,6 @@ const handler = async (req: Request): Promise<Response> => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${makeApiKey}`, // If your webhook requires auth
       },
       body: JSON.stringify(makeData),
     });
