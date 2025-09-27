@@ -37,11 +37,11 @@ interface EmailComposerProps {
 export function EmailComposer({ isOpen, onClose, leadData }: EmailComposerProps) {
   const [subject, setSubject] = useState(`Private Jet Charter Quote - ${leadData.departure_airport} to ${leadData.arrival_airport}`);
   const [emailContent, setEmailContent] = useState("");
-  const [emailTemplate, setEmailTemplate] = useState(`Subject: Private Jet Charter Quote - {{departure_airport}} to {{arrival_airport}}
+  const [emailTemplate, setEmailTemplate] = useState(`Subject: {{AI: Create an engaging subject line for a private jet quote from {{departure_airport}} to {{arrival_airport}}}}
 
 Dear {{first_name}},
 
-Thank you for your interest in private jet charter! I'm excited to provide you with a personalized quote for your {{trip_type}} flight.
+{{AI: Write a warm, personalized greeting that references their specific trip details and shows excitement about helping them}}
 
 **FLIGHT DETAILS**
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -52,38 +52,33 @@ Thank you for your interest in private jet charter! I'm excited to provide you w
 {{ENDIF}}
 👥  **Passengers**: {{passengers}} passenger{{IF passengers_gt_1}}s{{ENDIF}}
 
+{{AI: Add flight distance, estimated flight time, and any interesting facts about this specific route}}
+
 **AIRPORT INFORMATION**
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-🛫  **Departure**: Premium FBO services available at {{departure_airport}}
-🛬  **Arrival**: {{arrival_airport}} offers excellent private aviation facilities
+{{AI: Provide specific details about FBO services, amenities, and private aviation facilities at {{departure_airport}} and {{arrival_airport}}}}
 
 {{IF missing_departure_time}}
 **SCHEDULING NOTE**
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-⏰  I noticed you didn't specify a departure time. What time would work best for your schedule? Private jet travel offers complete flexibility!
+⏰  I noticed you didn't specify a departure time. {{AI: Write a friendly message about scheduling flexibility and ask what time works best}}
 {{ENDIF}}
 
 **AIRCRAFT RECOMMENDATIONS**
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-{{IF passengers_lte_6}}
-🎯  **Perfect Match**: Super Light Jet (Citation CJ4, Phenom 300E)
-    • Ideal for {{passengers}} passengers
-    • 2,400nm range - perfect for cross-country flights
-    • Estimated flight time: 4h 45m
-    • Premium cabin comfort with full stand-up headroom
+{{AI: ONLY recommend aircraft from the capableAircraft data that can actually complete this route nonstop. Include specific model names, passenger capacity, flight times, and key features. Be accurate about capabilities.}}
+
+{{IF passengers_lte_4}}
+{{AI: Focus on light jets and super light jets, emphasizing efficiency and cost-effectiveness}}
+{{ELSIF passengers_lte_8}}
+{{AI: Recommend mid-size jets, highlighting comfort and range for this group size}}
 {{ELSE}}
-🎯  **Recommended**: Mid-Size Jet for your group of {{passengers}}
-    • Spacious cabin for comfortable cross-country travel
-    • Extended range capabilities
-    • Enhanced luggage capacity
+{{AI: Suggest heavy jets or large cabin aircraft, emphasizing space and luxury}}
 {{ENDIF}}
 
 **ESTIMATED INVESTMENT**
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-💰  **Range**: $42,000 - $48,000
-    • All-inclusive pricing (no hidden fees)
-    • Covers aircraft, crew, fuel, and handling
-    • Price varies based on final aircraft selection
+{{AI: Provide accurate pricing based on the actual flight analysis data. Include what's covered and mention price factors. Use the estimatedCost from capableAircraft data.}}
 
 **WHY CHOOSE PRIVATE**
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
