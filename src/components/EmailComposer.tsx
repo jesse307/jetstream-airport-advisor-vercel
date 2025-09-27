@@ -159,11 +159,21 @@ Senior Charter Specialist
       dataSize: JSON.stringify(webhookData).length
     });
 
+    // Get Make.com API key from Supabase secrets
+    let makeApiKey: string | undefined;
+    try {
+      const { data: secretData } = await supabase.functions.invoke('get-make-api-key');
+      makeApiKey = secretData?.apiKey;
+    } catch (error) {
+      console.error("Error fetching Make.com API key:", error);
+    }
+
     try {
       const response = await fetch(makeWebhookUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          ...(makeApiKey && { "Authorization": `Bearer ${makeApiKey}` }),
         },
         body: JSON.stringify(webhookData),
       });
@@ -190,6 +200,7 @@ Senior Charter Specialist
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            ...(makeApiKey && { "Authorization": `Bearer ${makeApiKey}` }),
           },
           mode: "no-cors",
           body: JSON.stringify(webhookData),
