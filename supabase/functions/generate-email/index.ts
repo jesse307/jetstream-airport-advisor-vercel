@@ -236,12 +236,12 @@ Context: This is for a ${leadData.trip_type} flight from ${leadData.departure_ai
           console.log('OpenAI API Key available:', !!openAIApiKey);
           
           const requestBody = {
-            model: 'gpt-5-mini-2025-08-07',
+            model: 'gpt-4o-mini',
             messages: [
               { role: 'system', content: systemPrompt },
               { role: 'user', content: userPrompt }
             ],
-            max_completion_tokens: 300,
+            max_tokens: 300,
           };
           
           console.log('Making OpenAI API request with:', JSON.stringify(requestBody));
