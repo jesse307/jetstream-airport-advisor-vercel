@@ -120,7 +120,12 @@ Jesse`);
     populated = populated.replace(/\{\{last_name\}\}/g, data.last_name);
     populated = populated.replace(/\{\{departure_airport\}\}/g, data.departure_airport);
     populated = populated.replace(/\{\{arrival_airport\}\}/g, data.arrival_airport);
-    populated = populated.replace(/\{\{trip_type\}\}/g, data.trip_type);
+    
+    // Capitalize trip type (One-way, Round-trip)
+    const capitalizedTripType = data.trip_type.split('-').map(word => 
+      word.charAt(0).toUpperCase() + word.slice(1)
+    ).join('-');
+    populated = populated.replace(/\{\{trip_type\}\}/g, capitalizedTripType);
     
     // Format and replace date/time variables
     populated = populated.replace(/\{\{departure_date\}\}/g, formatToUSDate(data.departure_date));
