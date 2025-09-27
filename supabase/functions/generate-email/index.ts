@@ -163,16 +163,20 @@ serve(async (req) => {
         const aircraft = flightAnalysis.recommendedAircraft;
         if (aircraft.some(a => a.toLowerCase().includes('heavy') || a.toLowerCase().includes('gulfstream') || a.toLowerCase().includes('falcon'))) {
           prompts.push("HEAVY_JET: Recommended aircraft includes heavy jets. Emphasize luxury amenities, spacious cabins, long-range capabilities, and premium service.");
-        } else if (aircraft.some(a => a.toLowerCase().includes('citation') || a.toLowerCase().includes('phenom'))) {
+        } else if (aircraft.some(a => a.toLowerCase().includes('super-light') || a.toLowerCase().includes('very light') || a.toLowerCase().includes('vlj'))) {
+          prompts.push("SUPER_LIGHT_JET: Recommended aircraft includes super-light jets. Focus on exceptional efficiency, cost-effectiveness, perfect for short trips, and ideal for 1-4 passengers. Emphasize speed of booking and minimal airport requirements.");
+        } else if (aircraft.some(a => a.toLowerCase().includes('citation') || a.toLowerCase().includes('phenom') || a.toLowerCase().includes('light'))) {
           prompts.push("LIGHT_JET: Recommended aircraft includes light jets. Focus on efficiency, cost-effectiveness, and perfect size for smaller groups.");
         }
       }
 
       // Passenger-based prompts
-      if (leadData.passengers > 8) {
+      if (leadData.passengers >= 1 && leadData.passengers <= 4) {
+        prompts.push("SUPER_LIGHT_IDEAL: This passenger count (1-4) is ideal for super-light jets. Emphasize the cost efficiency, quick turnarounds, and access to smaller airports that larger aircraft cannot reach.");
+      } else if (leadData.passengers > 8) {
         prompts.push("LARGE_GROUP: This is a large group (8+ passengers). Emphasize group travel benefits, spacious cabins, and the ability to keep the team together. Mention cost-per-person advantages.");
       } else if (leadData.passengers <= 2) {
-        prompts.push("SMALL_GROUP: This is a small group (1-2 passengers). Focus on intimacy, efficiency, and cost-effectiveness of smaller aircraft options.");
+        prompts.push("SMALL_GROUP: This is a small group (1-2 passengers). Focus on intimacy, efficiency, and cost-effectiveness of smaller aircraft options including super-light jets.");
       }
 
       // Urgency-based prompts
