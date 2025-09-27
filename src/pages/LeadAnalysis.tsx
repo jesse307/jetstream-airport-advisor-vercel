@@ -328,6 +328,7 @@ export default function LeadAnalysis() {
                 <FlightCalculator 
                   departure={lead.departure_airport} 
                   arrival={lead.arrival_airport}
+                  initialPassengers={lead.passengers}
                 />
               ) : (
                 <div className="text-center py-8">

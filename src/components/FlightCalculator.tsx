@@ -128,11 +128,12 @@ const AIRCRAFT_TYPES: AircraftType[] = [
 interface FlightCalculatorProps {
   departure: string;
   arrival: string;
+  initialPassengers?: number;
 }
 
-export function FlightCalculator({ departure, arrival }: FlightCalculatorProps) {
+export function FlightCalculator({ departure, arrival, initialPassengers }: FlightCalculatorProps) {
   const [distance, setDistance] = useState<number>(0);
-  const [passengers, setPassengers] = useState<number>(1);
+  const [passengers, setPassengers] = useState<number>(initialPassengers || 1);
   const [selectedAircraft, setSelectedAircraft] = useState<string>("");
   const [aviapagesResult, setAviapagesResult] = useState<any>(null);
   const [isLoadingAviapages, setIsLoadingAviapages] = useState(false);
