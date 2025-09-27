@@ -357,7 +357,49 @@ Jesse`);
 
           <div className="space-y-4">
             {/* Change Template Button */}
-            <div className="flex justify-end">
+            <div className="flex justify-between items-center">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => {
+                  // Reset template to original formatting
+                  const originalTemplate = `Subject: Stratos Jets - Confirming Flight Details
+
+Hi {{first_name}},
+
+Thank you for your interest in Stratos Jets. In order for me to be the most efficient in providing guidance, please confirm the details below and answer any additional questions.
+
+FLIGHT DETAILS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✈️  **Route**: {{departure_airport}} → {{arrival_airport}}
+📅  **Departure**: {{departure_date}} at {{departure_time}}
+{{IF is_roundtrip}}
+📅  **Return**: {{return_date}} at {{return_time}}
+{{ENDIF}}
+👥  **Passengers**: {{passengers}} passenger{{IF passengers_gt_1}}s{{ENDIF}}
+
+{{AI: Add flight distance, estimated flight time, and any interesting facts about this specific route}}
+
+Do you have a specific aircraft that you've flown this route with before? {{AI: ONLY recommend aircraft from the capableAircraft data that can actually complete this route nonstop. Include specific model names, passenger capacity, flight times, and key features. Be accurate about capabilities. Use language like "For this mission, our clients typically fly on" and "of course if you want more space, we're happy to source something larger"}}
+
+Why Stratos Jets
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{{AI: provide 4 or 5 bullet points about why Stratos Jets is better than other charter brokers}}
+
+Once I have your details, I can provide some additional guidance around which planes could be best and their associated costs. From there, I can obtain hard quotes from our operators and get you booked.
+
+--
+Best,
+Jesse`;
+                  setEmailTemplate(originalTemplate);
+                  const newContent = populateTemplate(originalTemplate, leadData);
+                  setEmailContent(newContent);
+                  toast.success("Template formatting restored");
+                }}
+                className="text-sm"
+              >
+                Reset Formatting
+              </Button>
               <Button 
                 variant="outline" 
                 size="sm"
