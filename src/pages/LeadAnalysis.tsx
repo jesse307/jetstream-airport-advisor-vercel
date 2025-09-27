@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { FlightCalculator } from "@/components/FlightCalculator";
+import { EmailComposer } from "@/components/EmailComposer";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -51,6 +52,7 @@ export default function LeadAnalysis() {
   const [departureAirportData, setDepartureAirportData] = useState<Airport | null>(null);
   const [arrivalAirportData, setArrivalAirportData] = useState<Airport | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showEmailComposer, setShowEmailComposer] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -304,8 +306,12 @@ export default function LeadAnalysis() {
                   </div>
                 )}
                 <div className="pt-4 space-y-2">
-                  <Button className="w-full" variant="aviation">
-                    Send Quote
+                  <Button 
+                    className="w-full" 
+                    variant="aviation"
+                    onClick={() => setShowEmailComposer(true)}
+                  >
+                    Generate Email
                   </Button>
                   <Button className="w-full" variant="outline">
                     Update Status
@@ -340,6 +346,15 @@ export default function LeadAnalysis() {
           </Card>
         </div>
       </main>
+
+      {/* Email Composer Modal */}
+      {lead && (
+        <EmailComposer
+          isOpen={showEmailComposer}
+          onClose={() => setShowEmailComposer(false)}
+          leadData={lead}
+        />
+      )}
     </div>
   );
 }
