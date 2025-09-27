@@ -43,22 +43,10 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Get Make.com API key
-    const makeApiKey = Deno.env.get("MAKE_API_KEY");
-    
-    if (!makeApiKey) {
-      console.error("Make.com API key not configured");
-      return new Response(
-        JSON.stringify({ error: "Make.com integration not configured" }),
-        {
-          status: 500,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        }
-      );
-    }
+    // Zapier webhook doesn't require API key authentication
 
-    // Prepare data for Make.com webhook
-    const makeData = {
+    // Prepare data for Zapier webhook
+    const zapierData = {
       // Contact Information
       first_name: leadData.firstName,
       last_name: leadData.lastName,
@@ -83,43 +71,38 @@ const handler = async (req: Request): Promise<Response> => {
       created_at: leadData.createdAt,
       status: leadData.status,
       
-      // Timestamp for Make.com
+      // Timestamp for Zapier
       exported_at: new Date().toISOString(),
       source: "Charter Flight Lead App"
     };
 
-    console.log("Sending data to Make.com:", JSON.stringify(makeData, null, 2));
+    console.log("Sending data to Zapier:", JSON.stringify(zapierData, null, 2));
 
-    // Send to Make.com webhook
-    // Note: You'll need to provide your Make.com webhook URL
-    // For now, we'll use the MAKE_API_KEY as a placeholder for the webhook URL
-    // In a real implementation, you'd have a separate MAKE_WEBHOOK_URL environment variable
+    // Send to Zapier webhook
+    const webhookUrl = `https://hooks.zapier.com/hooks/catch/24529303/u1091p8/`;
     
-    const webhookUrl = `https://hook.us2.make.com/ym6st42bi0lhzvp14fdhk89whsfeoc6l`;
-    
-    const makeResponse = await fetch(webhookUrl, {
+    const zapierResponse = await fetch(webhookUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-make-apikey": makeApiKey,
       },
-      body: JSON.stringify(makeData),
+      body: JSON.stringify(zapierData),
     });
 
-    if (!makeResponse.ok) {
-      const errorText = await makeResponse.text();
-      console.error("Make.com webhook failed:", makeResponse.status, errorText);
-      throw new Error(`Make.com webhook failed: ${makeResponse.status}`);
+    if (!zapierResponse.ok) {
+      const errorText = await zapierResponse.text();
+      console.error("Zapier webhook failed:", zapierResponse.status, errorText);
+      throw new Error(`Zapier webhook failed: ${zapierResponse.status}`);
     }
 
-    const result = await makeResponse.json();
-    console.log("Make.com response:", result);
+    const result = await zapierResponse.json();
+    console.log("Zapier response:", result);
 
     return new Response(
       JSON.stringify({ 
         success: true, 
         message: "Lead exported to Google Sheets successfully",
-        makeResponse: result 
+        zapierResponse: result 
       }),
       {
         status: 200,
