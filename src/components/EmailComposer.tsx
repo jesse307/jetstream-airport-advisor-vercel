@@ -37,6 +37,8 @@ interface EmailComposerProps {
 export function EmailComposer({ isOpen, onClose, leadData }: EmailComposerProps) {
   const [subject, setSubject] = useState(`Private Jet Charter Quote - ${leadData.departure_airport} to ${leadData.arrival_airport}`);
   const [emailContent, setEmailContent] = useState("");
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [isSending, setIsSending] = useState(false);
   const [emailTemplate, setEmailTemplate] = useState(`Subject: {{AI: Create an engaging subject line for a private jet quote from {{departure_airport}} to {{arrival_airport}}}}
 
 Dear {{first_name}},
@@ -130,8 +132,33 @@ Senior Charter Specialist
 ---
 *This quote is valid for 48 hours. Aircraft availability and pricing subject to confirmation.*`);
   const [makeWebhookUrl, setMakeWebhookUrl] = useState("");
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [isSending, setIsSending] = useState(false);
+  const handleSendEmail = async () => {
+    if (!emailContent.trim()) {
+      toast.error("Please generate email content first");
+      return;
+    }
+
+    setIsSending(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('send-email', {
+        body: {
+          to: leadData.email,
+          subject: subject,
+          html: emailContent.replace(/\n/g, '<br>'),
+        }
+      });
+
+      if (error) throw error;
+
+      toast.success(`Email sent successfully to ${leadData.email}!`);
+      onClose();
+    } catch (error) {
+      console.error('Error sending email:', error);
+      toast.error("Failed to send email. Please try again.");
+    } finally {
+      setIsSending(false);
+    }
+  };
   const [activeTab, setActiveTab] = useState("preview");
 
   const availableVariables = [
@@ -671,7 +698,7 @@ Best regards,
                   Cancel
                 </Button>
                 <Button 
-                  onClick={sendEmail} 
+                  onClick={handleSendEmail} 
                   disabled={isSending || !emailContent.trim()}
                   className="flex items-center gap-2"
                 >
