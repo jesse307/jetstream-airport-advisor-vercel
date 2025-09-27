@@ -101,6 +101,7 @@ const handler = async (req: Request): Promise<Response> => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        "Authorization": `Bearer ${makeApiKey}`,
       },
       body: JSON.stringify(makeData),
     });
