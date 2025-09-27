@@ -256,10 +256,12 @@ export function FlightCalculator({ departure, arrival }: FlightCalculatorProps) 
         
         // Business Aviation Airports
         'KTEB': [40.8501, -74.0606], // Teterboro
+        'TEB': [40.8501, -74.0606], // Teterboro
         'KHPN': [41.0674, -73.7063], // Westchester
         'KCDW': [40.8752, -74.2816], // Caldwell Essex County
         'KPDK': [33.8756, -84.3020], // DeKalb-Peachtree
         'KVNY': [34.2198, -118.4898], // Van Nuys
+        'VNY': [34.2198, -118.4898], // Van Nuys
         'KBUR': [34.2007, -118.3591], // Burbank
         'KSMO': [34.0158, -118.4513], // Santa Monica
         'KSNA': [33.6757, -117.8681], // John Wayne Orange County
@@ -281,6 +283,32 @@ export function FlightCalculator({ departure, arrival }: FlightCalculatorProps) 
         'KLGB': [33.8177, -118.1516], // Long Beach
         'KBHB': [44.4497, -68.3616], // Bar Harbor, Maine
         'KHOU': [29.6465, -95.2789], // Houston Hobby
+        
+        // Additional Business Aviation Airports  
+        'HPN': [41.0674, -73.7063], // Westchester County
+        'CDW': [40.8752, -74.2816], // Caldwell Essex County
+        'PDK': [33.8756, -84.3020], // DeKalb-Peachtree
+        'BUR': [34.2007, -118.3591], // Burbank
+        'SMO': [34.0158, -118.4513], // Santa Monica
+        'SNA': [33.6757, -117.8681], // John Wayne Orange County
+        'ORL': [28.5455, -81.3339], // Orlando Executive
+        'OPF': [25.9077, -80.2784], // Miami-Opa Locka Executive
+        'TMB': [25.6479, -80.4328], // Tamiami Executive
+        'PBI': [26.6832, -80.0956], // West Palm Beach
+        'FLL': [26.0742, -80.1506], // Fort Lauderdale
+        'TPA': [27.9755, -82.5332], // Tampa
+        'DAL': [32.8471, -96.8518], // Dallas Love Field
+        'ADS': [32.9686, -96.8364], // Addison
+        'AUS': [30.1945, -97.6699], // Austin-Bergstrom
+        'PWK': [42.1142, -87.9015], // Chicago Executive Palwaukee
+        'DPA': [41.9077, -88.2484], // DuPage
+        'MDW': [41.7868, -87.7524], // Chicago Midway
+        'FTY': [33.7791, -84.5214], // Fulton County Atlanta
+        'SDL': [33.6228, -111.9105], // Scottsdale
+        'BDR': [41.1635, -73.1261], // Igor I. Sikorsky Memorial
+        'LGB': [33.8177, -118.1516], // Long Beach
+        'BHB': [44.4497, -68.3616], // Bar Harbor, Maine
+        'HOU': [29.6465, -95.2789], // Houston Hobby
       };
       
       const coords_result = coords[airport.code];
