@@ -192,14 +192,14 @@ export default function LeadAnalysis() {
             {/* Contact Information */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2 font-heading">
                   <User className="h-5 w-5 text-primary" />
                   Contact Information
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <p className="font-semibold text-lg">
+                  <p className="font-heading font-semibold text-xl text-primary">
                     {lead.first_name} {lead.last_name}
                   </p>
                 </div>

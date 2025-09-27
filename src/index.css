@@ -116,6 +116,63 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-body;
+    font-feature-settings: 'rlig' 1, 'calt' 1;
+  }
+
+  /* Professional Typography Hierarchy */
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-heading;
+    font-feature-settings: 'lnum' 1;
+  }
+
+  h1 {
+    @apply text-4xl font-semibold tracking-tight;
+  }
+
+  h2 {
+    @apply text-3xl font-semibold tracking-tight;
+  }
+
+  h3 {
+    @apply text-2xl font-medium tracking-tight;
+  }
+
+  h4 {
+    @apply text-xl font-medium;
+  }
+
+  h5 {
+    @apply text-lg font-medium;
+  }
+
+  h6 {
+    @apply text-base font-medium;
+  }
+
+  /* Enhanced button styling */
+  .btn-luxury {
+    @apply font-display font-medium tracking-wide;
+  }
+
+  /* Email preview styling */
+  .email-preview {
+    @apply font-body leading-relaxed;
+  }
+
+  .email-preview h1,
+  .email-preview h2,
+  .email-preview h3 {
+    @apply font-heading;
+  }
+
+  /* Professional form styling */
+  input, textarea, select {
+    @apply font-body;
+  }
+
+  /* Code elements (for template variables) */
+  code {
+    @apply font-mono text-sm;
   }
 }

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X, Send, Wand2, Loader2, FileText, Copy } from "lucide-react";
+import { X, Send, Wand2, Loader2, FileText, Copy, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { EmailPreview } from "@/components/EmailPreview";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -291,10 +292,14 @@ export function EmailComposer({ isOpen, onClose, leadData }: EmailComposerProps)
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="template" className="flex items-center gap-2">
                 <FileText className="h-4 w-4" />
                 Template
+              </TabsTrigger>
+              <TabsTrigger value="preview" className="flex items-center gap-2">
+                <Eye className="h-4 w-4" />
+                Preview
               </TabsTrigger>
               <TabsTrigger value="compose" className="flex items-center gap-2">
                 <Send className="h-4 w-4" />
@@ -498,6 +503,33 @@ Best regards,
                   </Button>
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            <TabsContent value="preview" className="space-y-4">
+              <EmailPreview 
+                subject={subject || `Private Jet Charter Quote - ${leadData.departure_airport} to ${leadData.arrival_airport}`}
+                content={emailTemplate || "Please create a template first to see the preview."}
+                isTemplate={true}
+              />
+              
+              {!emailTemplate.trim() && (
+                <Card className="border-dashed border-2">
+                  <CardContent className="flex flex-col items-center justify-center py-8 text-center">
+                    <Eye className="h-12 w-12 text-muted-foreground mb-4" />
+                    <h3 className="font-heading font-semibold text-lg mb-2">No Template to Preview</h3>
+                    <p className="text-muted-foreground mb-4">
+                      Create a template in the Template tab to see how your email will look with the new professional fonts.
+                    </p>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setActiveTab("template")}
+                      className="font-display"
+                    >
+                      Create Template
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
             </TabsContent>
 
             <TabsContent value="compose" className="space-y-4">
