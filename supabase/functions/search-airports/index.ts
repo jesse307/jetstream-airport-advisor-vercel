@@ -362,19 +362,40 @@ serve(async (req) => {
             }
           } else if (aeroData && typeof aeroData === 'object') {
             console.log('Processing single object response:', JSON.stringify(aeroData, null, 2));
-            const airportCode = aeroData.iata || aeroData.icao;
-            const runwayLength = airportCode ? await getRunwayData(airportCode) : 0;
             
-            // Single airport response
-            airports.push({
-              code: aeroData.iata || aeroData.icao || 'N/A',
-              name: aeroData.fullName || aeroData.shortName || aeroData.name || 'Unknown',
-              city: aeroData.municipalityName || aeroData.city || 'Unknown',
-              state: aeroData.country?.code || aeroData.regionName || 'N/A',
-              country: aeroData.country?.name || aeroData.countryName || 'Unknown',
-              type: 'Commercial',
-              runwayLength: runwayLength
-            });
+            // Check if this is a search response with items array
+            if (aeroData.items && Array.isArray(aeroData.items)) {
+              console.log('Found items array with', aeroData.items.length, 'airports');
+              for (const airport of aeroData.items) {
+                console.log('Processing airport from items:', JSON.stringify(airport, null, 2));
+                const airportCode = airport.iata || airport.icao;
+                const runwayLength = airportCode ? await getRunwayData(airportCode) : 0;
+                
+                airports.push({
+                  code: airport.iata || airport.icao || 'N/A',
+                  name: airport.name || airport.shortName || airport.fullName || 'Unknown',
+                  city: airport.municipalityName || airport.city || 'Unknown',
+                  state: airport.countryCode || airport.regionName || 'N/A',
+                  country: airport.countryCode || airport.countryName || 'Unknown',
+                  type: 'Commercial',
+                  runwayLength: runwayLength
+                });
+              }
+            } else {
+              // Single airport response
+              const airportCode = aeroData.iata || aeroData.icao;
+              const runwayLength = airportCode ? await getRunwayData(airportCode) : 0;
+              
+              airports.push({
+                code: aeroData.iata || aeroData.icao || 'N/A',
+                name: aeroData.fullName || aeroData.shortName || aeroData.name || 'Unknown',
+                city: aeroData.municipalityName || aeroData.city || 'Unknown',
+                state: aeroData.country?.code || aeroData.regionName || 'N/A',
+                country: aeroData.country?.name || aeroData.countryName || 'Unknown',
+                type: 'Commercial',
+                runwayLength: runwayLength
+              });
+            }
           }
           
           console.log('AeroDataBox processed', airports.length, 'airports');
