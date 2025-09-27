@@ -47,7 +47,7 @@ Hi {{first_name}},
 
 Thank you for your interest in Stratos Jets. In order for me to be the most efficient in providing guidance, please confirm the details below and answer any additional questions.
 
-FLIGHT DETAILS
+**FLIGHT DETAILS**
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ✈️  **Route**: {{departure_airport}} → {{arrival_airport}}
 🔄  **Trip Type**: {{trip_type}}
@@ -59,7 +59,7 @@ FLIGHT DETAILS
 
 Do you have a specific aircraft that you've flown this route with before? {{AI: ONLY recommend aircraft from the capableAircraft data that can actually complete this route nonstop. Include specific model names, passenger capacity, flight times, and key features. Be accurate about capabilities. Use language like "For this mission, our clients typically fly on" and "of course if you want more space, we're happy to source something larger"}}
 
-Why Stratos Jets
+**Why Stratos Jets**
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 {{AI: provide 4 or 5 bullet points about why Stratos Jets is better than other charter brokers}}
 
@@ -414,7 +414,7 @@ Hi {{first_name}},
 
 Thank you for your interest in Stratos Jets. In order for me to be the most efficient in providing guidance, please confirm the details below and answer any additional questions.
 
-FLIGHT DETAILS
+**FLIGHT DETAILS**
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ✈️  **Route**: {{departure_airport}} → {{arrival_airport}}
 🔄  **Trip Type**: {{trip_type}}
@@ -426,7 +426,7 @@ FLIGHT DETAILS
 
 Do you have a specific aircraft that you've flown this route with before? {{AI: ONLY recommend aircraft from the capableAircraft data that can actually complete this route nonstop. Include specific model names, passenger capacity, flight times, and key features. Be accurate about capabilities. Use language like "For this mission, our clients typically fly on" and "of course if you want more space, we're happy to source something larger"}}
 
-Why Stratos Jets
+**Why Stratos Jets**
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 {{AI: provide 4 or 5 bullet points about why Stratos Jets is better than other charter brokers}}
 
