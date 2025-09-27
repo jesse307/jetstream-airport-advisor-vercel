@@ -266,19 +266,19 @@ export function EmailComposer({ isOpen, onClose, leadData }: EmailComposerProps)
                         <div className="space-y-2 text-xs bg-muted/20 p-3 rounded">
                           <div className="font-mono">
                             <span className="text-primary">{"{{IF missing_departure_time}}"}</span><br/>
-                            Please let me know what time you'd prefer to depart.<br/>
+                            ⏰ I noticed you didn't specify a departure time...<br/>
                             <span className="text-primary">{"{{ENDIF}}"}</span>
                           </div>
                           <div className="font-mono">
-                            <span className="text-primary">{"{{IF passengers_gt_8}}"}</span><br/>
-                            For your large group, I recommend a spacious heavy jet.<br/>
+                            <span className="text-primary">{"{{IF passengers_lte_6}}"}</span><br/>
+                            🎯 Perfect Match: Super Light Jet for {"{{passengers}}"} passengers<br/>
                             <span className="text-primary">{"{{ELSE}}"}</span><br/>
-                            A light jet would be perfect for your group size.<br/>
+                            🎯 Recommended: Mid-Size Jet for larger groups<br/>
                             <span className="text-primary">{"{{ENDIF}}"}</span>
                           </div>
                           <div className="font-mono">
                             <span className="text-primary">{"{{IF notes_contains_business}}"}</span><br/>
-                            I'll ensure you have wifi and workspace capabilities.<br/>
+                            📶 Business Travel Benefits: WiFi, mobile office setup<br/>
                             <span className="text-primary">{"{{ENDIF}}"}</span>
                           </div>
                         </div>
@@ -287,7 +287,7 @@ export function EmailComposer({ isOpen, onClose, leadData }: EmailComposerProps)
                           <p className="text-xs text-muted-foreground mb-1">Available conditions:</p>
                           <ul className="text-xs text-muted-foreground space-y-1">
                             <li>• <code>missing_departure_time</code>, <code>missing_return_time_roundtrip</code></li>
-                            <li>• <code>passengers_gt_8</code>, <code>passengers_lt_4</code>, <code>passengers_eq_1</code></li>
+                            <li>• <code>passengers_gt_8</code>, <code>passengers_lte_6</code>, <code>passengers_eq_1</code></li>
                             <li>• <code>is_roundtrip</code>, <code>is_oneway</code></li>
                             <li>• <code>has_notes</code>, <code>notes_contains_business</code>, <code>notes_contains_leisure</code></li>
                           </ul>
@@ -302,34 +302,96 @@ export function EmailComposer({ isOpen, onClose, leadData }: EmailComposerProps)
                       id="template"
                       value={emailTemplate}
                       onChange={(e) => setEmailTemplate(e.target.value)}
-                      placeholder="Dear {{first_name}},
+                      placeholder="Subject: Private Jet Charter Quote - {{departure_airport}} to {{arrival_airport}}
 
-Thank you for your interest in private jet charter for your {{trip_type}} flight from {{departure_airport}} to {{arrival_airport}} on {{departure_date}}.
+Dear {{first_name}},
 
-{{IF missing_departure_time}}
-I'd be happy to help you select the perfect departure time for your schedule. What time would work best for you?
+Thank you for your interest in private jet charter! I'm excited to provide you with a personalized quote for your {{trip_type}} flight.
+
+**FLIGHT DETAILS**
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✈️  **Route**: {{departure_airport}} → {{arrival_airport}}
+📅  **Departure**: {{departure_date}} at {{departure_time}}
+{{IF is_roundtrip}}
+📅  **Return**: {{return_date}} at {{return_time}}
+{{ENDIF}}
+👥  **Passengers**: {{passengers}} passenger{{IF passengers_gt_1}}s{{ENDIF}}
+
+**AIRPORT INFORMATION**
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🛫  **Departure**: Premium FBO services available at Newark Liberty
+🛬  **Arrival**: Las Vegas offers multiple FBO options with luxury amenities
+
+**AIRCRAFT RECOMMENDATIONS**
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{{IF passengers_lte_6}}
+🎯  **Perfect Match**: Super Light Jet (Citation CJ4, Phenom 300E)
+    • Ideal for {{passengers}} passengers
+    • 2,400nm range - perfect for cross-country flights
+    • Estimated flight time: 4h 45m
+    • Premium cabin comfort with full stand-up headroom
 {{ENDIF}}
 
-{{IF passengers_gt_8}}
-For your group of {{passengers}} passengers, I recommend a spacious heavy jet that will ensure everyone travels comfortably together.
-{{ELSE}}
-With {{passengers}} passenger{{IF passengers_gt_1}}s{{ENDIF}}, a light jet would be the perfect efficient option for your trip.
+{{IF passengers_gt_6}}
+🎯  **Recommended**: Mid-Size Jet for your group of {{passengers}}
+    • Spacious cabin for comfortable cross-country travel
+    • Extended range capabilities
+    • Enhanced luggage capacity
+{{ENDIF}}
+
+**ESTIMATED INVESTMENT**
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+💰  **Range**: $42,000 - $48,000
+    • All-inclusive pricing (no hidden fees)
+    • Covers aircraft, crew, fuel, and handling
+    • Price varies based on final aircraft selection
+
+**WHY CHOOSE PRIVATE**
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🏆  **Time Savings**: Skip 2+ hours of commercial airport hassles
+⏰  **Schedule Control**: Depart exactly when YOU want
+🎯  **Direct Flight**: No connections or delays
+🛡️  **Privacy & Comfort**: Your own private cabin
+🧳  **Baggage Freedom**: No weight restrictions or fees
+
+{{IF missing_departure_time}}
+**SCHEDULING NOTE**
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⏰  I noticed you didn't specify a departure time. What time would work best for your schedule? Private jet travel offers complete flexibility!
 {{ENDIF}}
 
 {{IF notes_contains_business}}
-I understand this is for business purposes, so I'll ensure your aircraft has full wifi connectivity and workspace capabilities so you can stay productive during the flight.
+**BUSINESS TRAVEL BENEFITS**
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📶  **Connectivity**: High-speed WiFi throughout the flight
+💼  **Mobile Office**: Spacious work environment with power outlets
+📞  **Communication**: Make calls and conduct meetings in-flight
+⚡  **Productivity**: Arrive refreshed and ready for business
 {{ENDIF}}
 
-{{IF notes_contains_leisure}}
-Since this is for leisure travel, I'll focus on comfort and luxury amenities to make your vacation start the moment you step aboard.
-{{ENDIF}}
+**NEXT STEPS**
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1️⃣  **Reply** to confirm your preferred departure time
+2️⃣  **Review** aircraft options and select your preference  
+3️⃣  **Book** with a simple deposit to secure your aircraft
+4️⃣  **Fly** in luxury and comfort!
 
-We are excited to provide you with a personalized quote and make this journey exceptional.
+I'm standing by to finalize the details and get you airborne. With your departure just days away, I recommend securing your aircraft today to ensure availability.
+
+**Ready to book or have questions?**
+📞 Call/Text: [Your Phone]
+📧 Email: [Your Email]
+⚡ **Response Time**: Within 1 hour during business hours
+
+Looking forward to making your journey exceptional!
 
 Best regards,
-Your Charter Team
+[Your Name]
+[Your Title]
+[Company Name]
 
-P.S. The AI will add professional styling, dynamic prompts based on flight range/analysis, and compelling copy to make this template shine!"
+---
+*This quote is valid for 48 hours. Aircraft availability and pricing subject to confirmation.*"
                       className="min-h-[200px] font-mono text-sm"
                     />
                     <p className="text-xs text-muted-foreground">
