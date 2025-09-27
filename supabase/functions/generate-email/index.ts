@@ -30,6 +30,14 @@ interface EmailGenerationRequest {
     recommendedAircraft: string[];
     estimatedCost: string;
     flightTime: string;
+    capableAircraft?: Array<{
+      category: string;
+      examples: string[];
+      hourlyRate: number;
+      flightTime: string;
+      estimatedCost: string;
+      capable: boolean;
+    }>;
   };
 }
 
@@ -158,8 +166,34 @@ serve(async (req) => {
         }
       }
 
-      // Aircraft-specific prompts
-      if (flightAnalysis && flightAnalysis.recommendedAircraft) {
+      // Aircraft capability-based prompts
+      if (flightAnalysis && flightAnalysis.capableAircraft) {
+        const capableAircraft = flightAnalysis.capableAircraft;
+        
+        if (capableAircraft.length === 0) {
+          prompts.push("NO_NONSTOP_OPTIONS: This route cannot be completed nonstop by smaller aircraft. Recommend fuel stops or larger aircraft. Emphasize the planning expertise required for complex routing.");
+        } else if (capableAircraft.length === 1) {
+          const aircraft = capableAircraft[0];
+          prompts.push(`SINGLE_OPTION: Only ${aircraft.category} aircraft can complete this route nonstop. Emphasize the precise aircraft selection based on route requirements and the expertise in matching aircraft to mission.`);
+        } else {
+          const categories = capableAircraft.map(a => a.category).join(', ');
+          prompts.push(`MULTIPLE_OPTIONS: Several aircraft categories can complete this nonstop: ${categories}. Present options from most cost-effective to most luxurious, highlighting the sweet spot for their needs.`);
+        }
+
+        // Specific aircraft recommendations
+        const bestMatch = capableAircraft.find(aircraft => {
+          if (leadData.passengers <= 6) return aircraft.category.includes('Super Light') || aircraft.category.includes('Light');
+          if (leadData.passengers <= 9) return aircraft.category.includes('Super Mid') || aircraft.category.includes('Mid');
+          return aircraft.category.includes('Heavy') || aircraft.category.includes('Ultra');
+        }) || capableAircraft[0];
+
+        if (bestMatch) {
+          prompts.push(`RECOMMENDED_AIRCRAFT: ${bestMatch.category} (${bestMatch.examples.join(', ')}) is the optimal choice. Flight time: ${bestMatch.flightTime}, estimated cost: ${bestMatch.estimatedCost}. This aircraft perfectly matches the route requirements and passenger count.`);
+        }
+      }
+
+      // Aircraft-specific prompts (fallback for when no capableAircraft data)
+      if (flightAnalysis && flightAnalysis.recommendedAircraft && !flightAnalysis.capableAircraft) {
         const aircraft = flightAnalysis.recommendedAircraft;
         if (aircraft.some(a => a.toLowerCase().includes('heavy') || a.toLowerCase().includes('gulfstream') || a.toLowerCase().includes('falcon'))) {
           prompts.push("HEAVY_JET: Recommended aircraft includes heavy jets. Emphasize luxury amenities, spacious cabins, long-range capabilities, and premium service.");
