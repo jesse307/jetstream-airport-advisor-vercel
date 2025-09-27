@@ -82,24 +82,60 @@ Jesse`);
   const populateTemplate = (template: string, data: any) => {
     let populated = template;
     
+    // Format date to US format (MM/DD/YYYY)
+    const formatToUSDate = (dateString: string) => {
+      try {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-US');
+      } catch {
+        return dateString;
+      }
+    };
+    
+    // Format time to AM/PM format
+    const formatToAMPM = (timeString: string) => {
+      try {
+        if (!timeString || timeString.trim() === '') return timeString;
+        // Handle different time formats
+        let time = timeString.trim();
+        
+        // If already in AM/PM format, return as is
+        if (time.toLowerCase().includes('am') || time.toLowerCase().includes('pm')) {
+          return time;
+        }
+        
+        // Parse 24-hour format (HH:MM)
+        const [hours, minutes] = time.split(':').map(Number);
+        if (isNaN(hours) || isNaN(minutes)) return timeString;
+        
+        const period = hours >= 12 ? 'PM' : 'AM';
+        const displayHours = hours % 12 || 12;
+        return `${displayHours}:${minutes.toString().padStart(2, '0')} ${period}`;
+      } catch {
+        return timeString;
+      }
+    };
+    
     // Replace basic variables
     populated = populated.replace(/\{\{first_name\}\}/g, data.first_name);
     populated = populated.replace(/\{\{last_name\}\}/g, data.last_name);
     populated = populated.replace(/\{\{departure_airport\}\}/g, data.departure_airport);
     populated = populated.replace(/\{\{arrival_airport\}\}/g, data.arrival_airport);
-    populated = populated.replace(/\{\{departure_date\}\}/g, data.departure_date);
-    populated = populated.replace(/\{\{departure_time\}\}/g, data.departure_time);
+    
+    // Format and replace date/time variables
+    populated = populated.replace(/\{\{departure_date\}\}/g, formatToUSDate(data.departure_date));
+    populated = populated.replace(/\{\{departure_time\}\}/g, formatToAMPM(data.departure_time));
     populated = populated.replace(/\{\{passengers\}\}/g, data.passengers.toString());
     
     // Handle conditional logic
     if (data.trip_type === 'round-trip' && data.return_date && data.return_time) {
       populated = populated.replace(/\{\{IF is_roundtrip\}\}/g, '');
       populated = populated.replace(/\{\{ENDIF\}\}/g, '');
-      populated = populated.replace(/\{\{return_date\}\}/g, data.return_date);
-      populated = populated.replace(/\{\{return_time\}\}/g, data.return_time);
+      populated = populated.replace(/\{\{return_date\}\}/g, formatToUSDate(data.return_date));
+      populated = populated.replace(/\{\{return_time\}\}/g, formatToAMPM(data.return_time));
     } else {
-      // Remove round trip section
-      populated = populated.replace(/\{\{IF is_roundtrip\}\}[\s\S]*?\{\{ENDIF\}\}/g, '');
+      // Remove round trip section and extra line break for one-way trips
+      populated = populated.replace(/\{\{IF is_roundtrip\}\}[\s\S]*?\{\{ENDIF\}\}\n/g, '');
     }
     
     // Handle passenger pluralization
