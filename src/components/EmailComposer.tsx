@@ -173,7 +173,7 @@ Senior Charter Specialist
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...(makeApiKey && { "Authorization": `Bearer ${makeApiKey}` }),
+          ...(makeApiKey && { "x-make-apikey": makeApiKey }),
         },
         body: JSON.stringify(webhookData),
       });
@@ -200,7 +200,7 @@ Senior Charter Specialist
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            ...(makeApiKey && { "Authorization": `Bearer ${makeApiKey}` }),
+            ...(makeApiKey && { "x-make-apikey": makeApiKey }),
           },
           mode: "no-cors",
           body: JSON.stringify(webhookData),
