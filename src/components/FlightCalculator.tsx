@@ -466,35 +466,61 @@ export function FlightCalculator({ departure, arrival, initialPassengers }: Flig
     const passengerWeight = passengers * 230; // 180 lbs + 50 lbs luggage per passenger
     const totalPersonWeight = pilotWeight + passengerWeight;
     
-    // Calculate fuel needed (with 45 min reserve)
+    // Calculate maximum fuel we can carry given weight constraints
+    const maxFuelByWeight = Math.max(0, aircraft.maxTakeoffWeight - aircraft.emptyWeight - totalPersonWeight);
+    const maxFuelByPayload = Math.max(0, aircraft.fuelCapacity); // fuel tank limit
+    const availableFuel = Math.min(maxFuelByWeight, maxFuelByPayload, aircraft.fuelCapacity);
+    
+    // Calculate fuel consumption rate (increases with weight)
+    const currentWeight = aircraft.emptyWeight + totalPersonWeight;
+    const weightFactor = Math.max(1.0, currentWeight / (aircraft.emptyWeight + (aircraft.maxPayload * 0.5))); // Weight penalty
+    const adjustedConsumption = aircraft.fuelConsumption * weightFactor;
+    
+    // Calculate flight time
     const flightTimeHours = calculateFlightTimeInHours(distance, aircraft.speed, departureAirport, arrivalAirport);
-    const fuelNeeded = (flightTimeHours + 0.75) * aircraft.fuelConsumption; // +45 min reserve
+    
+    // Calculate fuel needed (with 45 min reserve) - now accounts for weight
+    const baseFuelNeeded = (flightTimeHours + 0.75) * adjustedConsumption;
+    
+    // Calculate actual range with available fuel (accounting for weight)
+    const maxFlightTimeWithFuel = (availableFuel / adjustedConsumption) - 0.75; // minus 45min reserve
+    const effectiveSpeed = aircraft.speed + (departureAirport && arrivalAirport ? getWindComponent(departureAirport, arrivalAirport) : 0);
+    const actualRange = Math.max(0, maxFlightTimeWithFuel * effectiveSpeed);
     
     // Calculate total weight
-    const totalWeight = aircraft.emptyWeight + totalPersonWeight + fuelNeeded;
+    const fuelToCarry = Math.min(baseFuelNeeded, availableFuel);
+    const totalWeight = aircraft.emptyWeight + totalPersonWeight + fuelToCarry;
     
     // Debug logging for capability checks
     console.log(`${aircraft.category} capability check:`, {
       distance,
+      actualRange: Math.round(actualRange),
       maxRange: aircraft.maxRange,
-      fuelNeeded: Math.round(fuelNeeded),
+      fuelNeeded: Math.round(baseFuelNeeded),
+      availableFuel: Math.round(availableFuel),
       fuelCapacity: aircraft.fuelCapacity,
-      flightTimeHours: flightTimeHours.toFixed(2)
+      flightTimeHours: flightTimeHours.toFixed(2),
+      weightFactor: weightFactor.toFixed(2),
+      adjustedConsumption: Math.round(adjustedConsumption)
     });
     
-    // Check all capabilities
-    const rangeCapable = distance <= aircraft.maxRange;
+    // Check all capabilities - now using actual range based on fuel/weight
+    const rangeCapable = distance <= Math.min(actualRange, aircraft.maxRange);
     const weightCapable = totalWeight <= aircraft.maxTakeoffWeight;
     const payloadCapable = totalPersonWeight <= aircraft.maxPayload;
-    const fuelCapable = fuelNeeded <= aircraft.fuelCapacity;
+    const fuelCapable = baseFuelNeeded <= availableFuel;
     
     return {
       capable: rangeCapable && weightCapable && payloadCapable && fuelCapable,
       pilotWeight,
       passengerWeight,
       totalPersonWeight,
-      fuelNeeded: Math.round(fuelNeeded),
+      fuelNeeded: Math.round(baseFuelNeeded),
+      availableFuel: Math.round(availableFuel),
+      actualRange: Math.round(actualRange),
       totalWeight: Math.round(totalWeight),
+      adjustedConsumption: Math.round(adjustedConsumption),
+      weightFactor: weightFactor,
       rangeCapable,
       weightCapable,
       payloadCapable,
