@@ -41,7 +41,7 @@ interface AircraftType {
 const AIRCRAFT_TYPES: AircraftType[] = [
   {
     category: "Very Light Jet",
-    speed: 290,
+    speed: 340, // Updated: Eclipse 550, Phenom 100, Citation M2
     examples: ["Eclipse 550", "Phenom 100", "Citation M2"],
     minRunway: 3200,
     passengers: "4-6",
@@ -55,7 +55,7 @@ const AIRCRAFT_TYPES: AircraftType[] = [
   },
   {
     category: "Turboprop",
-    speed: 220,
+    speed: 280, // Updated: King Air 350, TBM 940, PC-12
     examples: ["King Air 350", "TBM 940", "PC-12"],
     minRunway: 3000,
     passengers: "6-10",
@@ -69,7 +69,7 @@ const AIRCRAFT_TYPES: AircraftType[] = [
   },
   {
     category: "Light Jet", 
-    speed: 320,
+    speed: 464, // Updated: Citation CJ3+, Phenom 300, Learjet 75
     examples: ["Citation CJ3+", "Phenom 300", "Learjet 75"],
     minRunway: 4000,
     passengers: "6-8",
@@ -83,7 +83,7 @@ const AIRCRAFT_TYPES: AircraftType[] = [
   },
   {
     category: "Super Light Jet",
-    speed: 350,
+    speed: 451, // Updated: Citation CJ4, Phenom 300E, Learjet 45XR
     examples: ["Citation CJ4", "Phenom 300E", "Learjet 45XR"],
     minRunway: 4500,
     passengers: "7-9",
@@ -97,7 +97,7 @@ const AIRCRAFT_TYPES: AircraftType[] = [
   },
   {
     category: "Mid Jet",
-    speed: 360,
+    speed: 460, // Updated: Citation XLS+, Hawker 900XP, Learjet 60XR
     examples: ["Citation XLS+", "Hawker 900XP", "Learjet 60XR"],
     minRunway: 5000,
     passengers: "8-10",
@@ -111,7 +111,7 @@ const AIRCRAFT_TYPES: AircraftType[] = [
   },
   {
     category: "Super Mid Jet",
-    speed: 390,
+    speed: 525, // Updated: Citation X+ cruises at 525 knots!
     examples: ["Citation X+", "Challenger 350", "G280"],
     minRunway: 5500,
     passengers: "9-12",
@@ -125,7 +125,7 @@ const AIRCRAFT_TYPES: AircraftType[] = [
   },
   {
     category: "Heavy Jet",
-    speed: 410,
+    speed: 516, // Updated: Falcon 7X, G650, Global 6000
     examples: ["Falcon 7X", "G650", "Global 6000"],
     minRunway: 6000,
     passengers: "12-16",
@@ -139,7 +139,7 @@ const AIRCRAFT_TYPES: AircraftType[] = [
   },
   {
     category: "Ultra Long Range",
-    speed: 430,
+    speed: 520, // Updated: G700, Global 7500, Falcon 8X
     examples: ["G700", "Global 7500", "Falcon 8X"],
     minRunway: 6500,
     passengers: "14-19",
