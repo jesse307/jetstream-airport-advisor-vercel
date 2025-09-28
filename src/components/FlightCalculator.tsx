@@ -165,6 +165,7 @@ export function FlightCalculator({ departure, arrival, initialPassengers }: Flig
   const [selectedAircraft, setSelectedAircraft] = useState<string>("");
   const [aviapagesResult, setAviapagesResult] = useState<any>(null);
   const [isLoadingAviapages, setIsLoadingAviapages] = useState(false);
+  const [showMath, setShowMath] = useState(false);
 
   // Parse airport string to extract code and create minimal Airport object
   const parseAirportString = (airportString: string): Airport | null => {
@@ -956,6 +957,164 @@ export function FlightCalculator({ departure, arrival, initialPassengers }: Flig
                   <p className="text-sm text-muted-foreground">
                     Click "Calculate with Aviapages" to get professional flight time, distance, and fuel calculations using real airway routing.
                   </p>
+                )}
+                
+                {/* Show Math Button - only show when aircraft is selected */}
+                {departureAirport && arrivalAirport && selectedAircraft && (
+                  <div className="mt-4 pt-3 border-t border-border">
+                    <Button
+                      onClick={() => setShowMath(!showMath)}
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                    >
+                      {showMath ? "Hide Math" : "Show Math"}
+                    </Button>
+                    
+                    {showMath && (() => {
+                      // Find the selected aircraft type for detailed analysis
+                      const aircraftCategory = selectedAircraft.split('-')[0];
+                      const aircraft = AIRCRAFT_TYPES.find(a => a.category === aircraftCategory);
+                      if (!aircraft) return null;
+                      
+                      const capability = calculateAircraftCapability(aircraft, distance, passengers);
+                      const flightTimeHours = calculateFlightTimeInHours(distance, aircraft.speed, departureAirport, arrivalAirport);
+                      const windComponent = getWindComponent(departureAirport, arrivalAirport);
+                      const effectiveSpeed = aircraft.speed + windComponent;
+                      
+                      return (
+                        <div className="mt-4 p-4 bg-secondary/20 rounded-lg border">
+                          <h4 className="font-medium mb-3 flex items-center gap-2">
+                            <Calculator className="h-4 w-4" />
+                            Detailed Flight Calculations
+                          </h4>
+                          
+                          <div className="space-y-4">
+                            {/* Basic Flight Parameters */}
+                            <div className="grid grid-cols-2 gap-4 text-sm">
+                              <div className="p-3 bg-background rounded border">
+                                <div className="font-medium text-primary mb-2">Flight Parameters</div>
+                                <div className="space-y-1">
+                                  <div className="flex justify-between">
+                                    <span>Distance:</span>
+                                    <span className="font-mono">{distance} NM</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span>Aircraft Speed:</span>
+                                    <span className="font-mono">{aircraft.speed} kts</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span>Wind Component:</span>
+                                    <span className="font-mono">{windComponent > 0 ? '+' : ''}{windComponent.toFixed(1)} kts</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span>Effective Speed:</span>
+                                    <span className="font-mono">{effectiveSpeed.toFixed(1)} kts</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span>Flight Time:</span>
+                                    <span className="font-mono">{flightTimeHours.toFixed(2)} hrs</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span>+ Reserve (45min):</span>
+                                    <span className="font-mono">{(flightTimeHours + 0.75).toFixed(2)} hrs</span>
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              <div className="p-3 bg-background rounded border">
+                                <div className="font-medium text-primary mb-2">Weight Breakdown</div>
+                                <div className="space-y-1">
+                                  <div className="flex justify-between">
+                                    <span>Pilots (2x180 lbs):</span>
+                                    <span className="font-mono">{capability.pilotWeight} lbs</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span>Passengers ({passengers}x230 lbs):</span>
+                                    <span className="font-mono">{capability.passengerWeight} lbs</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span>Total People:</span>
+                                    <span className="font-mono">{capability.totalPersonWeight} lbs</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span>Empty Weight:</span>
+                                    <span className="font-mono">{aircraft.emptyWeight.toLocaleString()} lbs</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span>Fuel Needed:</span>
+                                    <span className="font-mono">{capability.fuelNeeded.toLocaleString()} lbs</span>
+                                  </div>
+                                  <div className="flex justify-between border-t pt-1">
+                                    <span className="font-medium">Total Weight:</span>
+                                    <span className="font-mono font-medium">{capability.totalWeight.toLocaleString()} lbs</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                            
+                            {/* Limits vs Actual */}
+                            <div className="p-3 bg-background rounded border">
+                              <div className="font-medium text-primary mb-2">Limits Analysis</div>
+                              <div className="grid grid-cols-4 gap-4 text-sm">
+                                {[
+                                  {
+                                    label: 'Range',
+                                    actual: distance,
+                                    limit: aircraft.maxRange,
+                                    unit: 'NM',
+                                    pass: distance <= aircraft.maxRange
+                                  },
+                                  {
+                                    label: 'Weight',
+                                    actual: capability.totalWeight,
+                                    limit: aircraft.maxTakeoffWeight,
+                                    unit: 'lbs',
+                                    pass: capability.totalWeight <= aircraft.maxTakeoffWeight
+                                  },
+                                  {
+                                    label: 'Payload',
+                                    actual: capability.totalPersonWeight,
+                                    limit: aircraft.maxPayload,
+                                    unit: 'lbs',
+                                    pass: capability.totalPersonWeight <= aircraft.maxPayload
+                                  },
+                                  {
+                                    label: 'Fuel',
+                                    actual: capability.fuelNeeded,
+                                    limit: aircraft.fuelCapacity,
+                                    unit: 'lbs',
+                                    pass: capability.fuelNeeded <= aircraft.fuelCapacity
+                                  }
+                                ].map((item, index) => {
+                                  const gap = item.limit - item.actual;
+                                  const percentage = (item.actual / item.limit) * 100;
+                                  
+                                  return (
+                                    <div key={index} className={`p-2 rounded text-xs ${item.pass ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
+                                      <div className={`font-medium ${item.pass ? 'text-green-700' : 'text-red-700'}`}>
+                                        {item.label}
+                                      </div>
+                                      <div className="mt-1 space-y-1">
+                                        <div>Actual: <span className="font-mono">{item.actual.toLocaleString()}</span></div>
+                                        <div>Limit: <span className="font-mono">{item.limit.toLocaleString()}</span></div>
+                                        <div className={`font-medium ${item.pass ? 'text-green-600' : 'text-red-600'}`}>
+                                          Gap: <span className="font-mono">{gap > 0 ? '+' : ''}{gap.toLocaleString()} {item.unit}</span>
+                                        </div>
+                                        <div className="text-xs opacity-70">
+                                          {percentage.toFixed(1)}% of limit
+                                        </div>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </div>
                 )}
               </div>
             )}
