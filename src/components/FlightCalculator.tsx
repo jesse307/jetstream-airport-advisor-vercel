@@ -802,6 +802,68 @@ export function FlightCalculator({ departure, arrival, initialPassengers }: Flig
                                     {error.message}
                                   </div>
                                 ))}
+                                
+                                {/* Detailed Weight Analysis */}
+                                {(() => {
+                                  // Find the selected aircraft type for detailed analysis
+                                  const aircraftCategory = selectedAircraft.split('-')[0];
+                                  const aircraft = AIRCRAFT_TYPES.find(a => a.category === aircraftCategory);
+                                  if (!aircraft) return null;
+                                  
+                                  const capability = calculateAircraftCapability(aircraft, distance, passengers);
+                                  const weightMargin = aircraft.maxTakeoffWeight - capability.totalWeight;
+                                  const fuelMargin = aircraft.fuelCapacity - capability.fuelNeeded;
+                                  const payloadMargin = aircraft.maxPayload - capability.totalPersonWeight;
+                                  
+                                  return (
+                                    <div className="mt-3 p-3 bg-background/50 rounded border">
+                                      <div className="text-sm font-medium mb-2">Weight Analysis:</div>
+                                      <div className="grid grid-cols-2 gap-3 text-xs">
+                                        <div className={`p-2 rounded ${weightMargin < 0 ? 'bg-destructive/20 text-destructive' : 'bg-secondary/50'}`}>
+                                          <div className="font-medium">Total Weight</div>
+                                          <div>{capability.totalWeight.toLocaleString()} lbs</div>
+                                          <div className="text-xs opacity-70">
+                                            Max: {aircraft.maxTakeoffWeight.toLocaleString()} lbs
+                                          </div>
+                                          <div className={`text-xs font-medium ${weightMargin < 0 ? 'text-destructive' : 'text-green-600'}`}>
+                                            {weightMargin < 0 ? `Over by ${Math.abs(weightMargin).toLocaleString()} lbs` : `${weightMargin.toLocaleString()} lbs under limit`}
+                                          </div>
+                                        </div>
+                                        
+                                        <div className={`p-2 rounded ${fuelMargin < 0 ? 'bg-destructive/20 text-destructive' : 'bg-secondary/50'}`}>
+                                          <div className="font-medium">Fuel Required</div>
+                                          <div>{capability.fuelNeeded.toLocaleString()} lbs</div>
+                                          <div className="text-xs opacity-70">
+                                            Capacity: {aircraft.fuelCapacity.toLocaleString()} lbs
+                                          </div>
+                                          <div className={`text-xs font-medium ${fuelMargin < 0 ? 'text-destructive' : 'text-green-600'}`}>
+                                            {fuelMargin < 0 ? `Over by ${Math.abs(fuelMargin).toLocaleString()} lbs` : `${fuelMargin.toLocaleString()} lbs remaining`}
+                                          </div>
+                                        </div>
+                                        
+                                        <div className={`p-2 rounded ${payloadMargin < 0 ? 'bg-destructive/20 text-destructive' : 'bg-secondary/50'}`}>
+                                          <div className="font-medium">Passenger Weight</div>
+                                          <div>{capability.totalPersonWeight.toLocaleString()} lbs</div>
+                                          <div className="text-xs opacity-70">
+                                            Max Payload: {aircraft.maxPayload.toLocaleString()} lbs
+                                          </div>
+                                          <div className={`text-xs font-medium ${payloadMargin < 0 ? 'text-destructive' : 'text-green-600'}`}>
+                                            {payloadMargin < 0 ? `Over by ${Math.abs(payloadMargin).toLocaleString()} lbs` : `${payloadMargin.toLocaleString()} lbs under limit`}
+                                          </div>
+                                        </div>
+                                        
+                                        <div className="p-2 rounded bg-secondary/50">
+                                          <div className="font-medium">Flight Time</div>
+                                          <div>{calculateFlightTime(distance, aircraft.speed, departureAirport, arrivalAirport)}</div>
+                                          <div className="text-xs opacity-70">
+                                            + 45min reserve fuel
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  );
+                                })()}
+                                
                                 <div className="mt-2">
                                   <span className="text-muted-foreground text-sm">Fuel Stop Needed:</span>
                                   <div className="font-medium text-destructive">Yes</div>
