@@ -716,6 +716,43 @@ export function FlightCalculator({ departure, arrival, initialPassengers }: Flig
                 
                 {aviapagesResult ? (
                   <>
+                    <div className="grid grid-cols-2 gap-4 text-sm mb-4">
+                      <div>
+                        <span className="text-muted-foreground">Aircraft:</span>
+                        <div className="font-medium">{aviapagesResult.aircraft || selectedAircraft}</div>
+                      </div>
+                      {aviapagesResult.distance?.great_circle && (
+                        <div>
+                          <span className="text-muted-foreground">Aviapages Distance:</span>
+                          <div className="font-bold text-primary">{Math.round(aviapagesResult.distance.great_circle * 0.539957)} NM</div>
+                        </div>
+                      )}
+                      {aviapagesResult.time?.great_circle && (
+                        <div>
+                          <span className="text-muted-foreground">Flight Time:</span>
+                          <div className="font-bold text-primary">{Math.floor(aviapagesResult.time.great_circle / 60)}h {aviapagesResult.time.great_circle % 60}m</div>
+                        </div>
+                      )}
+                      {aviapagesResult.time?.airway && (
+                        <div>
+                          <span className="text-muted-foreground">Airway Flight Time:</span>
+                          <div className="font-bold text-primary">{Math.floor(aviapagesResult.time.airway / 60)}h {aviapagesResult.time.airway % 60}m</div>
+                        </div>
+                      )}
+                      {aviapagesResult.fuel?.great_circle && (
+                        <div>
+                          <span className="text-muted-foreground">Fuel Required:</span>
+                          <div className="font-medium">{aviapagesResult.fuel.great_circle} lbs</div>
+                        </div>
+                      )}
+                      {aviapagesResult.fuel?.airway && (
+                        <div>
+                          <span className="text-muted-foreground">Airway Fuel:</span>
+                          <div className="font-medium">{aviapagesResult.fuel.airway} lbs</div>
+                        </div>
+                      )}
+                    </div>
+
                     {aviapagesResult.errors && aviapagesResult.errors.length > 0 ? (
                       (() => {
                         // Check if errors are fuel/weight related
@@ -735,18 +772,22 @@ export function FlightCalculator({ departure, arrival, initialPassengers }: Flig
                           <div className="space-y-4">
                             {/* Show fuel stops needed if fuel-related errors */}
                             {fuelErrors.length > 0 && (
-                              <div className="grid grid-cols-2 gap-4 text-sm">
-                                <div>
-                                  <span className="text-muted-foreground">Aircraft:</span>
-                                  <div className="font-medium">{aviapagesResult.aircraft || selectedAircraft}</div>
+                              <div className="bg-destructive/10 border border-destructive/20 rounded p-3">
+                                <div className="flex items-center gap-2 text-destructive mb-2">
+                                  <span className="text-sm font-medium">⚠️ Aircraft Limitations:</span>
                                 </div>
-                                <div>
-                                  <span className="text-muted-foreground">Fuel Stop Needed:</span>
+                                {fuelErrors.map((error: any, index: number) => (
+                                  <div key={index} className="text-sm text-destructive mb-1">
+                                    {error.message}
+                                  </div>
+                                ))}
+                                <div className="mt-2">
+                                  <span className="text-muted-foreground text-sm">Fuel Stop Needed:</span>
                                   <div className="font-medium text-destructive">Yes</div>
                                 </div>
                                 {aviapagesResult.airport?.techstop && aviapagesResult.airport.techstop.length > 0 && (
-                                  <div className="col-span-2">
-                                    <span className="text-muted-foreground">📍 Suggested Fuel Stop Options:</span>
+                                  <div className="mt-2">
+                                    <span className="text-muted-foreground text-sm">📍 Suggested Fuel Stop Options:</span>
                                     <div className="text-sm font-medium mt-1">
                                       {aviapagesResult.airport.techstop.join(', ')}
                                     </div>
@@ -762,7 +803,7 @@ export function FlightCalculator({ departure, arrival, initialPassengers }: Flig
                             {otherErrors.length > 0 && (
                               <div className="space-y-2">
                                 <div className="flex items-center gap-2 text-destructive">
-                                  <span className="text-sm font-medium">⚠️ Aviapages Errors:</span>
+                                  <span className="text-sm font-medium">⚠️ Other Aviapages Errors:</span>
                                 </div>
                                 {otherErrors.map((error: any, index: number) => (
                                   <div key={index} className="text-sm text-destructive bg-destructive/10 p-2 rounded">
