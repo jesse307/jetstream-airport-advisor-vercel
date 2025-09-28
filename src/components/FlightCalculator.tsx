@@ -472,6 +472,15 @@ export function FlightCalculator({ departure, arrival, initialPassengers }: Flig
     // Calculate total weight
     const totalWeight = aircraft.emptyWeight + totalPersonWeight + fuelNeeded;
     
+    // Debug logging for capability checks
+    console.log(`${aircraft.category} capability check:`, {
+      distance,
+      maxRange: aircraft.maxRange,
+      fuelNeeded: Math.round(fuelNeeded),
+      fuelCapacity: aircraft.fuelCapacity,
+      flightTimeHours: flightTimeHours.toFixed(2)
+    });
+    
     // Check all capabilities
     const rangeCapable = distance <= aircraft.maxRange;
     const weightCapable = totalWeight <= aircraft.maxTakeoffWeight;
