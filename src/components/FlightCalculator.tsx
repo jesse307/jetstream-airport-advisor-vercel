@@ -620,17 +620,24 @@ export function FlightCalculator({ departure, arrival, initialPassengers }: Flig
                     {getCapableAircraft().length === 0 ? (
                       <SelectItem value="none" disabled>No aircraft can complete this trip nonstop</SelectItem>
                     ) : (
-                      getCapableAircraft().map(aircraft => 
-                        aircraft.examples.map(example => (
-                          <SelectItem key={`${aircraft.category}-${example}`} value={`${aircraft.category}-${example}`}>
-                            <div className="flex items-center gap-2">
-                              <Plane className="h-3 w-3" />
-                              <span className="font-medium">{example}</span>
-                              <Badge variant="outline" className="text-xs">{aircraft.category}</Badge>
-                            </div>
-                          </SelectItem>
-                        ))
-                      )
+                      getCapableAircraft().flatMap(aircraft => 
+                        aircraft.examples.map(example => {
+                          // Double-check individual aircraft capability
+                          const limitation = getFlightLimitation(aircraft, distance, passengers, departureAirport, arrivalAirport);
+                          if (!limitation.compatible) return null;
+                          
+                          return (
+                            <SelectItem key={`${aircraft.category}-${example}`} value={`${aircraft.category}-${example}`}>
+                              <div className="flex items-center gap-2">
+                                <Plane className="h-3 w-3" />
+                                <span className="font-medium">{example}</span>
+                                <Badge variant="outline" className="text-xs">{aircraft.category}</Badge>
+                                <Badge variant="secondary" className="text-xs">{aircraft.maxRange} NM range</Badge>
+                              </div>
+                            </SelectItem>
+                          );
+                        })
+                      ).filter(Boolean)
                     )}
                   </SelectContent>
                 </Select>
