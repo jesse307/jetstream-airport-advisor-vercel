@@ -472,8 +472,9 @@ export function FlightCalculator({ departure, arrival, initialPassengers }: Flig
     const availableFuel = Math.min(maxFuelByWeight, maxFuelByPayload, aircraft.fuelCapacity);
     
     // Calculate fuel consumption rate (increases with weight)
+    const baselineWeight = aircraft.emptyWeight + (2 * 180) + (4 * 230); // Empty + pilots + 4 avg passengers
     const currentWeight = aircraft.emptyWeight + totalPersonWeight;
-    const weightFactor = Math.max(1.0, currentWeight / (aircraft.emptyWeight + (aircraft.maxPayload * 0.5))); // Weight penalty
+    const weightFactor = Math.max(1.0, currentWeight / baselineWeight); // More sensitive weight penalty
     const adjustedConsumption = aircraft.fuelConsumption * weightFactor;
     
     // Calculate flight time
