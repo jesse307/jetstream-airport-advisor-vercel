@@ -564,10 +564,24 @@ export function FlightCalculator({ departure, arrival, initialPassengers }: Flig
   const getCapableAircraft = () => {
     if (!departureAirport || !arrivalAirport || distance === 0) return [];
     
-    return AIRCRAFT_TYPES.filter(aircraft => {
+    const capable = AIRCRAFT_TYPES.filter(aircraft => {
       const limitation = getFlightLimitation(aircraft, distance, passengers, departureAirport, arrivalAirport);
+      const capability = calculateAircraftCapability(aircraft, distance, passengers);
+      
+      console.log(`${aircraft.category} dropdown filter:`, {
+        compatible: limitation.compatible,
+        reason: limitation.reason,
+        range: `${distance} NM / ${aircraft.maxRange} NM`,
+        weight: `${capability.totalWeight} lbs / ${aircraft.maxTakeoffWeight} lbs`,
+        payload: `${capability.totalPersonWeight} lbs / ${aircraft.maxPayload} lbs`,
+        fuel: `${capability.fuelNeeded} lbs / ${aircraft.fuelCapacity} lbs`
+      });
+      
       return limitation.compatible;
     });
+    
+    console.log(`Capable aircraft count: ${capable.length} out of ${AIRCRAFT_TYPES.length}`);
+    return capable;
   };
 
   useEffect(() => {
