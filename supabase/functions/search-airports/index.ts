@@ -196,7 +196,8 @@ serve(async (req) => {
                 longitude: parseFloat(airport.longitude_deg) || null,
                 elevation: airport.elevation_ft ? parseInt(airport.elevation_ft) : null,
                 runwayLength: runwayLength,
-                type: airport.type || 'airport'
+                type: airport.type || 'airport',
+                source: 'AirportDB.io'
               });
               console.log('AirportDB.io found airport:', airports[airports.length - 1]);
             }
@@ -238,7 +239,8 @@ serve(async (req) => {
                 state: airport.codeIso2Country || 'N/A',
                 country: airport.nameCountry || 'Unknown',
                 type: 'Commercial',
-                runwayLength: 0
+                runwayLength: 0,
+                source: 'Aviation Edge'
               });
             });
             console.log('Aviation Edge found', airports.length, 'airports');
@@ -424,7 +426,8 @@ serve(async (req) => {
                 type: 'Commercial',
                 runwayLength: runwayLength,
                 latitude: airport.location?.lat || null,
-                longitude: airport.location?.lon || null
+                longitude: airport.location?.lon || null,
+                source: 'AeroDataBox'
               });
             }
           } else if (aeroData && typeof aeroData === 'object') {
@@ -447,7 +450,8 @@ serve(async (req) => {
                   type: 'Commercial',
                   runwayLength: runwayLength,
                   latitude: airport.location?.lat || null,
-                  longitude: airport.location?.lon || null
+                  longitude: airport.location?.lon || null,
+                  source: 'AeroDataBox'
                 });
               }
             } else {
@@ -464,7 +468,8 @@ serve(async (req) => {
                 type: 'Commercial',
                 runwayLength: runwayLength,
                 latitude: aeroData.location?.lat || null,
-                longitude: aeroData.location?.lon || null
+                longitude: aeroData.location?.lon || null,
+                source: 'AeroDataBox'
               });
             }
           }
@@ -501,18 +506,18 @@ serve(async (req) => {
       
       // Fallback to hardcoded database
       const fallbackAirports = [
-        { code: 'EYW', name: 'Key West International Airport', city: 'Key West', state: 'FL', country: 'US', type: 'Commercial', runwayLength: 4801 },
-        { code: 'KEYW', name: 'Key West International Airport', city: 'Key West', state: 'FL', country: 'US', type: 'Commercial', runwayLength: 4801 },
-        { code: 'KJFK', name: 'John F. Kennedy International Airport', city: 'New York', state: 'NY', country: 'US', type: 'Commercial', runwayLength: 14511 },
-        { code: 'KLAX', name: 'Los Angeles International Airport', city: 'Los Angeles', state: 'CA', country: 'US', type: 'Commercial', runwayLength: 12923 },
-        { code: 'KORD', name: 'Chicago O\'Hare International Airport', city: 'Chicago', state: 'IL', country: 'US', type: 'Commercial', runwayLength: 13000 },
-        { code: 'KLAS', name: 'Harry Reid International Airport', city: 'Las Vegas', state: 'NV', country: 'US', type: 'Commercial', runwayLength: 14514 },
-        { code: 'KMIA', name: 'Miami International Airport', city: 'Miami', state: 'FL', country: 'US', type: 'Commercial', runwayLength: 13016 },
-        { code: 'KEWR', name: 'Newark Liberty International Airport', city: 'Newark', state: 'NJ', country: 'US', type: 'Commercial', runwayLength: 11000 },
-        { code: 'KSFO', name: 'San Francisco International Airport', city: 'San Francisco', state: 'CA', country: 'US', type: 'Commercial', runwayLength: 11870 },
-        { code: 'KBOS', name: 'Boston Logan International Airport', city: 'Boston', state: 'MA', country: 'US', type: 'Commercial', runwayLength: 10083 },
-        { code: 'EGLL', name: 'London Heathrow Airport', city: 'London', state: 'England', country: 'UK', type: 'Commercial', runwayLength: 12799 },
-        { code: 'LHR', name: 'London Heathrow Airport', city: 'London', state: 'England', country: 'UK', type: 'Commercial', runwayLength: 12799 }
+        { code: 'EYW', name: 'Key West International Airport', city: 'Key West', state: 'FL', country: 'US', type: 'Commercial', runwayLength: 4801, source: 'Fallback Database' },
+        { code: 'KEYW', name: 'Key West International Airport', city: 'Key West', state: 'FL', country: 'US', type: 'Commercial', runwayLength: 4801, source: 'Fallback Database' },
+        { code: 'KJFK', name: 'John F. Kennedy International Airport', city: 'New York', state: 'NY', country: 'US', type: 'Commercial', runwayLength: 14511, source: 'Fallback Database' },
+        { code: 'KLAX', name: 'Los Angeles International Airport', city: 'Los Angeles', state: 'CA', country: 'US', type: 'Commercial', runwayLength: 12923, source: 'Fallback Database' },
+        { code: 'KORD', name: 'Chicago O\'Hare International Airport', city: 'Chicago', state: 'IL', country: 'US', type: 'Commercial', runwayLength: 13000, source: 'Fallback Database' },
+        { code: 'KLAS', name: 'Harry Reid International Airport', city: 'Las Vegas', state: 'NV', country: 'US', type: 'Commercial', runwayLength: 14514, source: 'Fallback Database' },
+        { code: 'KMIA', name: 'Miami International Airport', city: 'Miami', state: 'FL', country: 'US', type: 'Commercial', runwayLength: 13016, source: 'Fallback Database' },
+        { code: 'KEWR', name: 'Newark Liberty International Airport', city: 'Newark', state: 'NJ', country: 'US', type: 'Commercial', runwayLength: 11000, source: 'Fallback Database' },
+        { code: 'KSFO', name: 'San Francisco International Airport', city: 'San Francisco', state: 'CA', country: 'US', type: 'Commercial', runwayLength: 11870, source: 'Fallback Database' },
+        { code: 'KBOS', name: 'Boston Logan International Airport', city: 'Boston', state: 'MA', country: 'US', type: 'Commercial', runwayLength: 10083, source: 'Fallback Database' },
+        { code: 'EGLL', name: 'London Heathrow Airport', city: 'London', state: 'England', country: 'UK', type: 'Commercial', runwayLength: 12799, source: 'Fallback Database' },
+        { code: 'LHR', name: 'London Heathrow Airport', city: 'London', state: 'England', country: 'UK', type: 'Commercial', runwayLength: 12799, source: 'Fallback Database' }
       ];
       
       const queryLower = query.toLowerCase();

@@ -18,6 +18,7 @@ interface Airport {
   fbo?: string[] | string | null;
   latitude?: number;
   longitude?: number;
+  source?: string;
 }
 
 interface AirportSearchProps {
@@ -149,6 +150,16 @@ export const AirportSearch: React.FC<AirportSearchProps> = ({
                         <span className="px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-700">
                           {airport.type}
                         </span>
+                        {airport.source && (
+                          <span className={`px-2 py-0.5 text-xs rounded-full ${
+                            airport.source === 'AirportDB.io' ? 'bg-green-100 text-green-700' :
+                            airport.source === 'Aviation Edge' ? 'bg-blue-100 text-blue-700' :
+                            airport.source === 'AeroDataBox' ? 'bg-purple-100 text-purple-700' :
+                            'bg-orange-100 text-orange-700'
+                          }`}>
+                            {airport.source}
+                          </span>
+                        )}
                       </div>
                       <div className="text-sm font-medium text-gray-900 mt-1">
                         {airport.name}
