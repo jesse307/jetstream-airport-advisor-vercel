@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { X, Search } from "lucide-react";
+import { X, Search, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -169,12 +169,31 @@ export const AirportSearch: React.FC<AirportSearchProps> = ({
                         {airport.country && airport.country !== 'US' && `, ${airport.country}`}
                       </div>
                     </div>
-                    <div className="text-right text-xs text-gray-500">
+                    <div className="text-right text-xs">
                       {airport.runwayLength && (
-                        <div>Runway: {airport.runwayLength}'</div>
+                        <div className={`flex items-center gap-1 ${
+                          airport.runwayLength < 5000 ? 'text-amber-600' : 
+                          airport.runwayLength < 3000 ? 'text-red-600' : 
+                          'text-gray-500'
+                        }`}>
+                          {airport.runwayLength < 5000 && (
+                            <AlertTriangle className="h-3 w-3" />
+                          )}
+                          <span>Runway: {airport.runwayLength}'</span>
+                        </div>
+                      )}
+                      {airport.runwayLength && airport.runwayLength < 5000 && (
+                        <div className="text-xs text-amber-600 mt-1">
+                          ⚠️ Limited to smaller aircraft
+                        </div>
+                      )}
+                      {airport.runwayLength && airport.runwayLength < 3000 && (
+                        <div className="text-xs text-red-600 mt-1">
+                          🚫 Very short runway
+                        </div>
                       )}
                       {airport.fbo && (
-                        <div className="mt-1">
+                        <div className="mt-1 text-gray-500">
                           FBO: {Array.isArray(airport.fbo) ? airport.fbo.slice(0, 2).join(", ") : airport.fbo}
                         </div>
                       )}
