@@ -157,60 +157,8 @@ serve(async (req) => {
     console.log('AVIATION_EDGE_API_KEY configured:', !!aviationEdgeKey);
     console.log('AIRPORTDB_API_TOKEN configured:', !!airportDbToken);
 
-    // Try AirportDB.io first (if configured)
-    if (airportDbToken && query.length >= 3) {
-      console.log('Trying AirportDB.io API...');
-      console.log('API Token length:', airportDbToken.length);
-      console.log('API Token preview:', airportDbToken.substring(0, 10) + '...');
-      
-      try {
-        // Try exact ICAO code lookup for 4-character codes
-        if (query.length === 4) {
-          console.log('Trying ICAO lookup for:', query.toUpperCase());
-          const icaoResponse = await fetch(`https://airportdb.io/api/v1/airport/${query.toUpperCase()}?apiToken=${airportDbToken}`, {
-            signal: AbortSignal.timeout(8000)
-          });
-          
-          console.log('AirportDB.io ICAO response status:', icaoResponse.status);
-          console.log('AirportDB.io ICAO response headers:', JSON.stringify([...icaoResponse.headers.entries()]));
-          
-          if (icaoResponse.ok) {
-            const airport = await icaoResponse.json();
-            console.log('AirportDB.io airport data:', JSON.stringify(airport, null, 2));
-            
-            if (airport && airport.icao_code) {
-              const runwayLength = airport.runways && airport.runways.length > 0 
-                ? Math.max(...airport.runways.map((r: any) => parseInt(r.length_ft) || 0))
-                : 0;
-                
-              airports.push({
-                code: airport.iata_code || airport.icao_code,
-                icao_code: airport.icao_code,
-                name: airport.name,
-                city: airport.municipality || '',
-                state: airport.iso_region?.split('-')[1] || '',
-                country: airport.iso_country,
-                latitude: parseFloat(airport.latitude_deg) || null,
-                longitude: parseFloat(airport.longitude_deg) || null,
-                elevation: airport.elevation_ft ? parseInt(airport.elevation_ft) : null,
-                runwayLength: runwayLength,
-                type: airport.type || 'airport',
-                source: 'AirportDB.io'
-              });
-              console.log('AirportDB.io found airport:', airports[airports.length - 1]);
-            }
-          } else {
-            const errorText = await icaoResponse.text();
-            console.log('AirportDB.io ICAO error response:', errorText);
-          }
-        }
-        
-        // For 3-character IATA codes, AirportDB.io doesn't support direct IATA lookup
-        // So we skip AirportDB.io for IATA codes and proceed to other APIs
-      } catch (error) {
-        console.log('AirportDB.io error:', error instanceof Error ? error.message : 'Unknown');
-      }
-    }
+    // Temporarily disable AirportDB.io due to authentication issues
+    // AirportDB.io will be skipped until a valid API token is configured
 
     // Try Aviation Edge if AirportDB.io didn't find anything (if configured and query is long enough)
     if (airports.length === 0 && aviationEdgeKey && query.length >= 3) {
