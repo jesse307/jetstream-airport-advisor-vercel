@@ -339,6 +339,22 @@ export function FlightCalculator({ departure, arrival, initialPassengers }: Flig
         'LGB': [33.8177, -118.1516], // Long Beach
         'BHB': [44.4497, -68.3616], // Bar Harbor, Maine
         'HOU': [29.6465, -95.2789], // Houston Hobby
+        
+        // Hawaii Airports
+        'OGG': [20.8986, -156.4303], // Kahului Airport, Maui
+        'PHOG': [20.8986, -156.4303], // Kahului Airport, Maui (ICAO)
+        'HNL': [21.3099, -157.8581], // Honolulu International
+        'PHNL': [21.3099, -157.8581], // Honolulu International (ICAO)
+        'KOA': [19.7388, -156.0456], // Kona International, Big Island
+        'PHKO': [19.7388, -156.0456], // Kona International (ICAO)
+        'LIH': [21.9758, -159.3389], // Lihue Airport, Kauai
+        'PHLI': [21.9758, -159.3389], // Lihue Airport (ICAO)
+        'ITO': [19.7194, -155.0486], // Hilo International, Big Island
+        'PHTO': [19.7194, -155.0486], // Hilo International (ICAO)
+        'MKK': [21.1529, -157.0960], // Molokai Airport
+        'PHMK': [21.1529, -157.0960], // Molokai Airport (ICAO)
+        'LNY': [20.7856, -156.9514], // Lanai Airport
+        'PHNY': [20.7856, -156.9514], // Lanai Airport (ICAO)
       };
       
       const coords_result = coords[airport.code];
