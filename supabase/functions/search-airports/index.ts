@@ -160,6 +160,9 @@ serve(async (req) => {
     // Try AirportDB.io first (if configured)
     if (airportDbToken && query.length >= 3) {
       console.log('Trying AirportDB.io API...');
+      console.log('API Token length:', airportDbToken.length);
+      console.log('API Token preview:', airportDbToken.substring(0, 10) + '...');
+      
       try {
         // Try exact ICAO code lookup for 4-character codes
         if (query.length === 4) {
@@ -169,6 +172,7 @@ serve(async (req) => {
           });
           
           console.log('AirportDB.io ICAO response status:', icaoResponse.status);
+          console.log('AirportDB.io ICAO response headers:', JSON.stringify([...icaoResponse.headers.entries()]));
           
           if (icaoResponse.ok) {
             const airport = await icaoResponse.json();
@@ -195,6 +199,9 @@ serve(async (req) => {
               });
               console.log('AirportDB.io found airport:', airports[airports.length - 1]);
             }
+          } else {
+            const errorText = await icaoResponse.text();
+            console.log('AirportDB.io ICAO error response:', errorText);
           }
         }
         
