@@ -850,53 +850,70 @@ export function FlightCalculator({ departure, arrival, initialPassengers }: Flig
                                   const fuelMargin = aircraft.fuelCapacity - capability.fuelNeeded;
                                   const payloadMargin = aircraft.maxPayload - capability.totalPersonWeight;
                                   
-                                  return (
-                                    <div className="mt-3 p-3 bg-background/50 rounded border">
-                                      <div className="text-sm font-medium mb-2">Weight Analysis:</div>
-                                      <div className="grid grid-cols-2 gap-3 text-xs">
-                                        <div className={`p-2 rounded ${weightMargin < 0 ? 'bg-destructive/20 text-destructive' : 'bg-secondary/50'}`}>
-                                          <div className="font-medium">Total Weight</div>
-                                          <div>{capability.totalWeight.toLocaleString()} lbs</div>
-                                          <div className="text-xs opacity-70">
-                                            Max: {aircraft.maxTakeoffWeight.toLocaleString()} lbs
-                                          </div>
-                                          <div className={`text-xs font-medium ${weightMargin < 0 ? 'text-destructive' : 'text-green-600'}`}>
-                                            {weightMargin < 0 ? `Over by ${Math.abs(weightMargin).toLocaleString()} lbs` : `${weightMargin.toLocaleString()} lbs under limit`}
-                                          </div>
-                                        </div>
-                                        
-                                        <div className={`p-2 rounded ${fuelMargin < 0 ? 'bg-destructive/20 text-destructive' : 'bg-secondary/50'}`}>
-                                          <div className="font-medium">Fuel Required</div>
-                                          <div>{capability.fuelNeeded.toLocaleString()} lbs</div>
-                                          <div className="text-xs opacity-70">
-                                            Capacity: {aircraft.fuelCapacity.toLocaleString()} lbs
-                                          </div>
-                                          <div className={`text-xs font-medium ${fuelMargin < 0 ? 'text-destructive' : 'text-green-600'}`}>
-                                            {fuelMargin < 0 ? `Over by ${Math.abs(fuelMargin).toLocaleString()} lbs` : `${fuelMargin.toLocaleString()} lbs remaining`}
-                                          </div>
-                                        </div>
-                                        
-                                        <div className={`p-2 rounded ${payloadMargin < 0 ? 'bg-destructive/20 text-destructive' : 'bg-secondary/50'}`}>
-                                          <div className="font-medium">Passenger Weight</div>
-                                          <div>{capability.totalPersonWeight.toLocaleString()} lbs</div>
-                                          <div className="text-xs opacity-70">
-                                            Max Payload: {aircraft.maxPayload.toLocaleString()} lbs
-                                          </div>
-                                          <div className={`text-xs font-medium ${payloadMargin < 0 ? 'text-destructive' : 'text-green-600'}`}>
-                                            {payloadMargin < 0 ? `Over by ${Math.abs(payloadMargin).toLocaleString()} lbs` : `${payloadMargin.toLocaleString()} lbs under limit`}
-                                          </div>
-                                        </div>
-                                        
-                                        <div className="p-2 rounded bg-secondary/50">
-                                          <div className="font-medium">Flight Time</div>
-                                          <div>{calculateFlightTime(distance, aircraft.speed, departureAirport, arrivalAirport)}</div>
-                                          <div className="text-xs opacity-70">
-                                            + 45min reserve fuel
-                                          </div>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  );
+                                   return (
+                                     <div className="mt-3 p-3 bg-background/50 rounded border">
+                                       <div className="text-sm font-medium mb-2">Physics-Based Analysis:</div>
+                                       <div className="grid grid-cols-2 gap-3 text-xs">
+                                         <div className={`p-2 rounded ${capability.weightMargin < 0 ? 'bg-destructive/20 text-destructive' : 'bg-secondary/50'}`}>
+                                           <div className="font-medium">Takeoff Weight (W_takeoff)</div>
+                                           <div>{capability.totalWeight.toLocaleString()} lbs</div>
+                                           <div className="text-xs opacity-70">
+                                             MTOW: {aircraft.maxTakeoffWeight.toLocaleString()} lbs
+                                           </div>
+                                           <div className={`text-xs font-medium ${capability.weightMargin < 0 ? 'text-destructive' : 'text-green-600'}`}>
+                                             {capability.weightMargin < 0 ? `Over by ${Math.abs(capability.weightMargin).toLocaleString()} lbs` : `${capability.weightMargin.toLocaleString()} lbs under MTOW`}
+                                           </div>
+                                         </div>
+                                         
+                                         <div className={`p-2 rounded ${capability.fuelMargin < 0 ? 'bg-destructive/20 text-destructive' : 'bg-secondary/50'}`}>
+                                           <div className="font-medium">Trip Fuel</div>
+                                           <div>{capability.fuelNeeded.toLocaleString()} lbs</div>
+                                           <div className="text-xs opacity-70">
+                                             Available: {capability.availableFuel.toLocaleString()} lbs
+                                           </div>
+                                           <div className={`text-xs font-medium ${capability.fuelMargin < 0 ? 'text-destructive' : 'text-green-600'}`}>
+                                             {capability.fuelMargin < 0 ? `Short by ${Math.abs(capability.fuelMargin).toLocaleString()} lbs` : `${capability.fuelMargin.toLocaleString()} lbs excess`}
+                                           </div>
+                                         </div>
+                                         
+                                         <div className={`p-2 rounded ${capability.rangeMargin < 0 ? 'bg-destructive/20 text-destructive' : 'bg-secondary/50'}`}>
+                                           <div className="font-medium">Range Analysis</div>
+                                           <div>{distance} / {capability.actualRange} NM</div>
+                                           <div className="text-xs opacity-70">
+                                             Max Range: {aircraft.maxRange} NM
+                                           </div>
+                                           <div className={`text-xs font-medium ${capability.rangeMargin < 0 ? 'text-destructive' : 'text-green-600'}`}>
+                                             {capability.rangeMargin < 0 ? `Short by ${Math.abs(capability.rangeMargin)} NM` : `${capability.rangeMargin} NM margin`}
+                                           </div>
+                                         </div>
+                                         
+                                         <div className="p-2 rounded bg-secondary/50">
+                                           <div className="font-medium">Runway Required (R_req)</div>
+                                           <div>{capability.runwayRequired?.toLocaleString() || 'N/A'} ft</div>
+                                           <div className="text-xs opacity-70">
+                                             Weight factor: {(capability.weightFactor || 1).toFixed(2)}
+                                           </div>
+                                         </div>
+                                       </div>
+                                       
+                                       {/* Recommendations */}
+                                       {capability.recommendations && capability.recommendations.length > 0 && (
+                                         <div className="mt-3 p-2 bg-yellow-50 rounded border border-yellow-200">
+                                           <div className="text-xs font-medium text-yellow-800 mb-1">⚠️ Recommendations:</div>
+                                           {capability.recommendations.map((rec: string, index: number) => (
+                                             <div key={index} className="text-xs text-yellow-700">
+                                               • {rec}
+                                             </div>
+                                           ))}
+                                         </div>
+                                       )}
+                                       
+                                       {/* Overall Feasibility */}
+                                       <div className={`mt-2 p-2 rounded text-xs font-medium ${capability.capable ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
+                                         {capability.capable ? '✅ FLIGHT FEASIBLE' : '❌ FLIGHT NOT FEASIBLE'}
+                                       </div>
+                                     </div>
+                                   );
                                 })()}
                                 
                                 <div className="mt-2">
@@ -1020,128 +1037,141 @@ export function FlightCalculator({ departure, arrival, initialPassengers }: Flig
                         <div className="mt-4 p-4 bg-secondary/20 rounded-lg border">
                           <h4 className="font-medium mb-3 flex items-center gap-2">
                             <Calculator className="h-4 w-4" />
-                            Detailed Flight Calculations
+                            Physics-Based Flight Analysis
                           </h4>
                           
                           <div className="space-y-4">
-                            {/* Basic Flight Parameters */}
+                            {/* New Algorithm Results */}
                             <div className="grid grid-cols-2 gap-4 text-sm">
                               <div className="p-3 bg-background rounded border">
-                                <div className="font-medium text-primary mb-2">Flight Parameters</div>
+                                <div className="font-medium text-primary mb-2">Weight Analysis (W_pax)</div>
                                 <div className="space-y-1">
                                   <div className="flex justify-between">
-                                    <span>Distance:</span>
-                                    <span className="font-mono">{distance} NM</span>
+                                    <span>Pilots (2×180 lbs):</span>
+                                    <span className="font-mono">360 lbs</span>
                                   </div>
                                   <div className="flex justify-between">
-                                    <span>Aircraft Speed:</span>
-                                    <span className="font-mono">{aircraft.speed} kts</span>
+                                    <span>Passengers ({passengers}×180 lbs):</span>
+                                    <span className="font-mono">{passengers * 180} lbs</span>
                                   </div>
                                   <div className="flex justify-between">
-                                    <span>Wind Component:</span>
-                                    <span className="font-mono">{windComponent > 0 ? '+' : ''}{windComponent.toFixed(1)} kts</span>
+                                    <span>Baggage ({passengers}×50 lbs):</span>
+                                    <span className="font-mono">{passengers * 50} lbs</span>
                                   </div>
-                                  <div className="flex justify-between">
-                                    <span>Effective Speed:</span>
-                                    <span className="font-mono">{effectiveSpeed.toFixed(1)} kts</span>
-                                  </div>
-                                  <div className="flex justify-between">
-                                    <span>Flight Time:</span>
-                                    <span className="font-mono">{flightTimeHours.toFixed(2)} hrs</span>
-                                  </div>
-                                  <div className="flex justify-between">
-                                    <span>+ Reserve (45min):</span>
-                                    <span className="font-mono">{(flightTimeHours + 0.75).toFixed(2)} hrs</span>
-                                  </div>
-                                </div>
-                              </div>
-                              
-                              <div className="p-3 bg-background rounded border">
-                                <div className="font-medium text-primary mb-2">Weight Breakdown</div>
-                                <div className="space-y-1">
-                                  <div className="flex justify-between">
-                                    <span>Pilots (2x180 lbs):</span>
-                                    <span className="font-mono">{capability.pilotWeight} lbs</span>
-                                  </div>
-                                  <div className="flex justify-between">
-                                    <span>Passengers ({passengers}x230 lbs):</span>
-                                    <span className="font-mono">{capability.passengerWeight} lbs</span>
-                                  </div>
-                                  <div className="flex justify-between">
-                                    <span>Total People:</span>
-                                    <span className="font-mono">{capability.totalPersonWeight} lbs</span>
+                                  <div className="flex justify-between border-t pt-1">
+                                    <span className="font-medium">Total Payload (W_pax):</span>
+                                    <span className="font-mono font-medium">{(passengers * 230).toLocaleString()} lbs</span>
                                   </div>
                                   <div className="flex justify-between">
                                     <span>Empty Weight:</span>
                                     <span className="font-mono">{aircraft.emptyWeight.toLocaleString()} lbs</span>
                                   </div>
                                   <div className="flex justify-between">
-                                    <span>Fuel Needed:</span>
+                                    <span>Trip Fuel:</span>
                                     <span className="font-mono">{capability.fuelNeeded.toLocaleString()} lbs</span>
                                   </div>
                                   <div className="flex justify-between border-t pt-1">
-                                    <span className="font-medium">Total Weight:</span>
+                                    <span className="font-medium">Takeoff Weight (W_takeoff):</span>
                                     <span className="font-mono font-medium">{capability.totalWeight.toLocaleString()} lbs</span>
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              <div className="p-3 bg-background rounded border">
+                                <div className="font-medium text-primary mb-2">Performance Analysis</div>
+                                <div className="space-y-1">
+                                  <div className="flex justify-between">
+                                    <span>Distance:</span>
+                                    <span className="font-mono">{distance} NM</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span>Flight Time:</span>
+                                    <span className="font-mono">{flightTimeHours.toFixed(2)} hrs</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span>Runway Required (R_req):</span>
+                                    <span className="font-mono">{capability.runwayRequired?.toLocaleString() || 'N/A'} ft</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span>Max Range:</span>
+                                    <span className="font-mono">{aircraft.maxRange} NM</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span>Adjusted Range:</span>
+                                    <span className="font-mono">{capability.actualRange} NM</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span>Available Fuel:</span>
+                                    <span className="font-mono">{capability.availableFuel.toLocaleString()} lbs</span>
                                   </div>
                                 </div>
                               </div>
                             </div>
                             
-                            {/* Limits vs Actual */}
+                            {/* Feasibility Check */}
                             <div className="p-3 bg-background rounded border">
-                              <div className="font-medium text-primary mb-2">Limits Analysis</div>
-                              <div className="grid grid-cols-4 gap-4 text-sm">
-                                {[
-                                  {
-                                    label: 'Range',
-                                    actual: distance,
-                                    limit: aircraft.maxRange,
-                                    unit: 'NM',
-                                    pass: distance <= aircraft.maxRange
-                                  },
-                                  {
-                                    label: 'Weight',
-                                    actual: capability.totalWeight,
-                                    limit: aircraft.maxTakeoffWeight,
-                                    unit: 'lbs',
-                                    pass: capability.totalWeight <= aircraft.maxTakeoffWeight
-                                  },
-                                  {
-                                    label: 'Payload',
-                                    actual: capability.totalPersonWeight,
-                                    limit: aircraft.maxPayload,
-                                    unit: 'lbs',
-                                    pass: capability.totalPersonWeight <= aircraft.maxPayload
-                                  },
-                                  {
-                                    label: 'Fuel',
-                                    actual: capability.fuelNeeded,
-                                    limit: aircraft.fuelCapacity,
-                                    unit: 'lbs',
-                                    pass: capability.fuelNeeded <= aircraft.fuelCapacity
-                                  }
-                                ].map((item, index) => {
-                                  const gap = item.limit - item.actual;
-                                  const percentage = (item.actual / item.limit) * 100;
-                                  
-                                  return (
-                                    <div key={index} className={`p-2 rounded text-xs ${item.pass ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
-                                      <div className={`font-medium ${item.pass ? 'text-green-700' : 'text-red-700'}`}>
-                                        {item.label}
-                                      </div>
-                                      <div className="mt-1 space-y-1">
-                                        <div>Actual: <span className="font-mono">{item.actual.toLocaleString()}</span></div>
-                                        <div>Limit: <span className="font-mono">{item.limit.toLocaleString()}</span></div>
-                                        <div className={`font-medium ${item.pass ? 'text-green-600' : 'text-red-600'}`}>
-                                          Gap: <span className="font-mono">{gap > 0 ? '+' : ''}{gap.toLocaleString()} {item.unit}</span>
-                                        </div>
-                                        <div className="text-xs opacity-70">
-                                          {percentage.toFixed(1)}% of limit
-                                        </div>
-                                      </div>
+                              <div className="font-medium text-primary mb-2">Feasibility Analysis</div>
+                              <div className="grid grid-cols-3 gap-4 text-sm">
+                                <div className={`p-2 rounded text-xs ${capability.weightCapable ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
+                                  <div className={`font-medium ${capability.weightCapable ? 'text-green-700' : 'text-red-700'}`}>
+                                    Weight Check
+                                  </div>
+                                  <div className="mt-1">
+                                    <div>{capability.totalWeight.toLocaleString()} / {aircraft.maxTakeoffWeight.toLocaleString()} lbs</div>
+                                    <div className={`font-medium ${capability.weightCapable ? 'text-green-600' : 'text-red-600'}`}>
+                                      {capability.weightMargin > 0 ? `${capability.weightMargin.toLocaleString()} lbs under` : `${Math.abs(capability.weightMargin).toLocaleString()} lbs over`}
                                     </div>
-                                  );
-                                })}
+                                  </div>
+                                </div>
+                                
+                                <div className={`p-2 rounded text-xs ${capability.rangeCapable ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
+                                  <div className={`font-medium ${capability.rangeCapable ? 'text-green-700' : 'text-red-700'}`}>
+                                    Range Check
+                                  </div>
+                                  <div className="mt-1">
+                                    <div>{distance} / {capability.actualRange} NM</div>
+                                    <div className={`font-medium ${capability.rangeCapable ? 'text-green-600' : 'text-red-600'}`}>
+                                      {capability.rangeMargin > 0 ? `${capability.rangeMargin} NM margin` : `${Math.abs(capability.rangeMargin)} NM short`}
+                                    </div>
+                                  </div>
+                                </div>
+                                
+                                <div className={`p-2 rounded text-xs ${capability.fuelCapable ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
+                                  <div className={`font-medium ${capability.fuelCapable ? 'text-green-700' : 'text-red-700'}`}>
+                                    Fuel Check
+                                  </div>
+                                  <div className="mt-1">
+                                    <div>{capability.fuelNeeded.toLocaleString()} / {capability.availableFuel.toLocaleString()} lbs</div>
+                                    <div className={`font-medium ${capability.fuelCapable ? 'text-green-600' : 'text-red-600'}`}>
+                                      {capability.fuelMargin > 0 ? `${capability.fuelMargin.toLocaleString()} lbs excess` : `${Math.abs(capability.fuelMargin).toLocaleString()} lbs short`}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                            
+                            {/* Recommendations */}
+                            {capability.recommendations && capability.recommendations.length > 0 && (
+                              <div className="p-3 bg-yellow-50 rounded border border-yellow-200">
+                                <div className="font-medium text-yellow-800 mb-2 flex items-center gap-2">
+                                  <span>⚠️</span>
+                                  Recommendations
+                                </div>
+                                <div className="space-y-1">
+                                  {capability.recommendations.map((rec: string, index: number) => (
+                                    <div key={index} className="text-sm text-yellow-700">
+                                      • {rec}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            
+                            {/* Overall Feasibility */}
+                            <div className={`p-3 rounded border ${capability.capable ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+                              <div className={`font-medium ${capability.capable ? 'text-green-700' : 'text-red-700'} flex items-center gap-2`}>
+                                <span>{capability.capable ? '✅' : '❌'}</span>
+                                Flight Feasibility: {capability.capable ? 'FEASIBLE' : 'NOT FEASIBLE'}
                               </div>
                             </div>
                           </div>
