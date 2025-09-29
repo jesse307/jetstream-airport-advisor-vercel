@@ -143,6 +143,11 @@ serve(async (req) => {
     console.log('Query length:', query.length);
     console.log('Query type:', typeof query);
 
+    // For queries shorter than 3 characters, skip API calls and go directly to fallback
+    if (query.length < 3) {
+      console.log('Query too short for API calls, using fallback database only');
+    }
+
     let airports: any[] = [];
 
     // Check environment variables
@@ -156,8 +161,8 @@ serve(async (req) => {
       console.log('RAPIDAPI_KEY preview:', rapidApiKey.substring(0, 10) + '...');
     }
 
-    // Try Aviation Edge first (if configured)
-    if (aviationEdgeKey) {
+    // Try Aviation Edge first (if configured and query is long enough)
+    if (aviationEdgeKey && query.length >= 3) {
       console.log('Trying Aviation Edge API...');
       try {
         const response = await fetch(
@@ -194,8 +199,8 @@ serve(async (req) => {
       }
     }
 
-    // Try AeroDataBox if Aviation Edge didn't work
-    if (airports.length === 0 && rapidApiKey) {
+    // Try AeroDataBox if Aviation Edge didn't work and query is long enough
+    if (airports.length === 0 && rapidApiKey && query.length >= 3) {
       console.log('Trying AeroDataBox API...');
       
       try {
@@ -234,17 +239,6 @@ serve(async (req) => {
             }
             
             console.log('IATA failed - Status:', aeroResponse.status, 'Body:', errorText);
-            
-            // Store the error details
-            airports.push({
-              code: 'API_ERROR',
-              name: `AeroDataBox API Error: ${aeroResponse.status}`,
-              city: errorText.substring(0, 200),
-              state: 'ERROR',
-              country: 'ERROR',
-              type: 'DEBUG',
-              runwayLength: 0
-            });
             
             // Try ICAO if it's 4 characters
             if (query.length === 4) {
@@ -428,31 +422,11 @@ serve(async (req) => {
         } else if (aeroResponse) {
           const errorText = await aeroResponse.text();
           console.log('AeroDataBox final error - Status:', aeroResponse.status, 'Body:', errorText);
-          
-          airports.push({
-            code: 'API_ERROR',
-            name: `AeroDataBox API Error: ${aeroResponse.status}`,
-            city: errorText.substring(0, 200),
-            state: 'ERROR',
-            country: 'ERROR',
-            type: 'DEBUG',
-            runwayLength: 0
-          });
         }
         
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : 'Unknown error';
         console.log('AeroDataBox fetch error:', errorMsg);
-        
-        airports.push({
-          code: 'FETCH_ERROR',
-          name: `API Fetch Error: ${errorMsg}`,
-          city: 'Network or timeout error',
-          state: 'ERROR',
-          country: 'ERROR',
-          type: 'DEBUG',
-          runwayLength: 0
-        });
       }
     } else if (!rapidApiKey) {
       airports.push({

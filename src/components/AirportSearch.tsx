@@ -40,7 +40,7 @@ export const AirportSearch: React.FC<AirportSearchProps> = ({
 
   // Search airports via API
   const searchAirports = async (searchQuery: string) => {
-    if (!searchQuery || searchQuery.trim().length < 2) {
+    if (!searchQuery || searchQuery.trim().length < 3) {
       setAirports([]);
       return;
     }
@@ -171,13 +171,13 @@ export const AirportSearch: React.FC<AirportSearchProps> = ({
                   </div>
                 </div>
               ))
-            ) : query.length >= 2 && !loading ? (
+            ) : query.length >= 3 && !loading ? (
               <div className="px-3 py-4 text-center text-gray-500">
                 No airports found for "{query}"
               </div>
-            ) : query.length > 0 && query.length < 2 ? (
+            ) : query.length > 0 && query.length < 3 ? (
               <div className="px-3 py-4 text-center text-gray-500">
-                Type at least 2 characters to search
+                Type at least 3 characters to search
               </div>
             ) : null}
           </div>
