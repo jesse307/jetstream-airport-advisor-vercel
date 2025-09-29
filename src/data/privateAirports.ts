@@ -33,6 +33,8 @@ export const PRIVATE_AIRPORTS: Airport[] = [
   { code: "KRAS", name: "Austin Executive Airport", city: "Austin, TX", state: "TX", runway: "6025 ft", fbo: "Austin Jet Center", type: "Public", latitude: 30.2978, longitude: -97.6889, elevation: 565 },
   
   // Florida Private Airports
+  { code: "ORL", name: "Orlando Executive Airport", city: "Orlando, FL", state: "FL", runway: "5000 ft", fbo: "Sheltair", type: "Public", latitude: 28.5450, longitude: -81.3270, elevation: 113, icao: "KORL" },
+  { code: "KORL", name: "Orlando Executive Airport", city: "Orlando, FL", state: "FL", runway: "5000 ft", fbo: "Sheltair", type: "Public", latitude: 28.5450, longitude: -81.3270, elevation: 113, icao: "KORL" },
   { code: "EYW", name: "Key West International Airport", city: "Key West, FL", state: "FL", runway: "4801 ft", fbo: "Signature Flight Support", type: "Commercial", latitude: 24.5561, longitude: -81.7596, elevation: 3, icao: "KEYW" },
   { code: "KEYW", name: "Key West International Airport", city: "Key West, FL", state: "FL", runway: "4801 ft", fbo: "Signature Flight Support", type: "Commercial", latitude: 24.5561, longitude: -81.7596, elevation: 3, icao: "KEYW" },
   { code: "FL02", name: "Bartow Executive", city: "Bartow, FL", state: "FL", runway: "5000 ft", fbo: "Bartow Aviation", type: "Private", latitude: 27.9434, longitude: -81.7834, elevation: 125 },
