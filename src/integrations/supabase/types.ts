@@ -14,6 +14,153 @@ export type Database = {
   }
   public: {
     Tables: {
+      aircraft: {
+        Row: {
+          aviapages_name: string | null
+          cabin_height: number | null
+          cabin_length: number | null
+          cabin_width: number | null
+          category: string
+          created_at: string
+          cruise_speed_long_range: number
+          cruise_speed_max: number
+          cruise_speed_normal: number
+          empty_weight: number
+          engine_manufacturer: string | null
+          engine_model: string | null
+          engines_count: number | null
+          fuel_burn_climb: number
+          fuel_burn_cruise: number
+          fuel_burn_descent: number
+          fuel_burn_taxi: number | null
+          fuel_burn_vs_altitude: Json | null
+          fuel_burn_vs_weight: Json | null
+          fuel_capacity: number
+          hourly_rate_max: number | null
+          hourly_rate_min: number | null
+          id: string
+          is_active: boolean | null
+          landing_distance: number
+          manufacturer: string
+          max_landing_weight: number
+          max_passengers: number
+          max_payload: number
+          max_range: number
+          max_range_with_reserves: number | null
+          max_takeoff_weight: number
+          min_runway: number
+          model: string
+          notes: string | null
+          range_vs_payload: Json | null
+          rate_of_climb: number
+          rate_of_descent: number | null
+          service_ceiling: number
+          takeoff_distance: number
+          thrust_per_engine: number | null
+          time_to_climb_fl410: number | null
+          typical_passengers: number
+          unusable_fuel: number | null
+          updated_at: string
+          variant: string | null
+        }
+        Insert: {
+          aviapages_name?: string | null
+          cabin_height?: number | null
+          cabin_length?: number | null
+          cabin_width?: number | null
+          category: string
+          created_at?: string
+          cruise_speed_long_range: number
+          cruise_speed_max: number
+          cruise_speed_normal: number
+          empty_weight: number
+          engine_manufacturer?: string | null
+          engine_model?: string | null
+          engines_count?: number | null
+          fuel_burn_climb: number
+          fuel_burn_cruise: number
+          fuel_burn_descent: number
+          fuel_burn_taxi?: number | null
+          fuel_burn_vs_altitude?: Json | null
+          fuel_burn_vs_weight?: Json | null
+          fuel_capacity: number
+          hourly_rate_max?: number | null
+          hourly_rate_min?: number | null
+          id?: string
+          is_active?: boolean | null
+          landing_distance: number
+          manufacturer: string
+          max_landing_weight: number
+          max_passengers: number
+          max_payload: number
+          max_range: number
+          max_range_with_reserves?: number | null
+          max_takeoff_weight: number
+          min_runway: number
+          model: string
+          notes?: string | null
+          range_vs_payload?: Json | null
+          rate_of_climb: number
+          rate_of_descent?: number | null
+          service_ceiling: number
+          takeoff_distance: number
+          thrust_per_engine?: number | null
+          time_to_climb_fl410?: number | null
+          typical_passengers: number
+          unusable_fuel?: number | null
+          updated_at?: string
+          variant?: string | null
+        }
+        Update: {
+          aviapages_name?: string | null
+          cabin_height?: number | null
+          cabin_length?: number | null
+          cabin_width?: number | null
+          category?: string
+          created_at?: string
+          cruise_speed_long_range?: number
+          cruise_speed_max?: number
+          cruise_speed_normal?: number
+          empty_weight?: number
+          engine_manufacturer?: string | null
+          engine_model?: string | null
+          engines_count?: number | null
+          fuel_burn_climb?: number
+          fuel_burn_cruise?: number
+          fuel_burn_descent?: number
+          fuel_burn_taxi?: number | null
+          fuel_burn_vs_altitude?: Json | null
+          fuel_burn_vs_weight?: Json | null
+          fuel_capacity?: number
+          hourly_rate_max?: number | null
+          hourly_rate_min?: number | null
+          id?: string
+          is_active?: boolean | null
+          landing_distance?: number
+          manufacturer?: string
+          max_landing_weight?: number
+          max_passengers?: number
+          max_payload?: number
+          max_range?: number
+          max_range_with_reserves?: number | null
+          max_takeoff_weight?: number
+          min_runway?: number
+          model?: string
+          notes?: string | null
+          range_vs_payload?: Json | null
+          rate_of_climb?: number
+          rate_of_descent?: number | null
+          service_ceiling?: number
+          takeoff_distance?: number
+          thrust_per_engine?: number | null
+          time_to_climb_fl410?: number | null
+          typical_passengers?: number
+          unusable_fuel?: number | null
+          updated_at?: string
+          variant?: string | null
+        }
+        Relationships: []
+      }
       leads: {
         Row: {
           analysis_data: Json | null
