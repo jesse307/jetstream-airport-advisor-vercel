@@ -151,103 +151,76 @@ serve(async (req) => {
     let airports: any[] = [];
 
     // Check environment variables
-    const aviationEdgeKey = Deno.env.get('AVIATION_EDGE_API_KEY');
-    const airportDbToken = Deno.env.get('AIRPORTDB_API_TOKEN');
+    const aviapagesToken = Deno.env.get('AVIAPAGES_API_TOKEN');
     
-    console.log('AVIATION_EDGE_API_KEY configured:', !!aviationEdgeKey);
-    console.log('AIRPORTDB_API_TOKEN configured:', !!airportDbToken);
+    console.log('AVIAPAGES_API_TOKEN configured:', !!aviapagesToken);
 
-    // Try AirportDB.io first (if configured)
-    if (airportDbToken && query.length >= 3) {
-      console.log('Trying AirportDB.io API...');
-      console.log('API Token configured, length:', airportDbToken.length);
+    // Try Aviapages Airport API (if configured and query is long enough)
+    if (aviapagesToken && query.length >= 3) {
+      console.log('Trying Aviapages Airport API...');
+      console.log('API Token configured, length:', aviapagesToken.length);
       
       try {
-        // Try exact ICAO code lookup for 4-character codes
-        if (query.length === 4) {
-          console.log('Trying ICAO lookup for:', query.toUpperCase());
-          console.log('Using endpoint: https://airportdb.io/api/v1/airport/' + query.toUpperCase() + '?apiToken=...');
+        // Build the search URL with query parameters
+        const searchUrl = `https://dir.aviapages.com/api/airports/?search=${encodeURIComponent(query)}`;
+        console.log('Using endpoint:', searchUrl);
+        
+        const aviapagesResponse = await fetch(searchUrl, {
+          headers: {
+            'Authorization': `Token ${aviapagesToken}`,
+            'Content-Type': 'application/json',
+          },
+          signal: AbortSignal.timeout(8000)
+        });
+        
+        console.log('Aviapages Airport API response status:', aviapagesResponse.status);
+        
+        if (aviapagesResponse.ok) {
+          const data = await aviapagesResponse.json();
+          console.log('Aviapages response type:', typeof data);
+          console.log('Aviapages response keys:', Object.keys(data));
           
-          const icaoResponse = await fetch(`https://airportdb.io/api/v1/airport/${query.toUpperCase()}?apiToken=${airportDbToken}`, {
-            signal: AbortSignal.timeout(8000)
-          });
+          // The API likely returns results in a 'results' or 'airports' array
+          const results = data.results || data.airports || data;
           
-          console.log('AirportDB.io ICAO response status:', icaoResponse.status);
-          
-          if (icaoResponse.ok) {
-            const airport = await icaoResponse.json();
-            console.log('AirportDB.io success! Airport data:', JSON.stringify(airport, null, 2));
+          if (Array.isArray(results) && results.length > 0) {
+            console.log('Aviapages found', results.length, 'airports');
             
-            if (airport && (airport.icao_code || airport.ident)) {
-              const runwayLength = airport.runways && airport.runways.length > 0 
-                ? Math.max(...airport.runways.map((r: any) => parseInt(r.length_ft) || 0))
-                : 0;
-                
+            results.forEach((airport: any) => {
+              // Extract runway length from runways array if available
+              let runwayLength = 0;
+              if (airport.runways && Array.isArray(airport.runways) && airport.runways.length > 0) {
+                runwayLength = Math.max(...airport.runways.map((r: any) => parseInt(r.length_ft || r.length) || 0));
+              } else if (airport.runway_length) {
+                runwayLength = parseInt(airport.runway_length);
+              }
+              
               airports.push({
-                code: airport.iata_code || airport.icao_code || airport.ident,
-                icao_code: airport.icao_code || airport.ident,
-                name: airport.name,
-                city: airport.municipality || '',
-                state: airport.iso_region?.split('-')[1] || '',
-                country: airport.iso_country,
-                latitude: parseFloat(airport.latitude_deg) || null,
-                longitude: parseFloat(airport.longitude_deg) || null,
-                elevation: airport.elevation_ft ? parseInt(airport.elevation_ft) : null,
+                code: airport.iata || airport.icao || airport.lid || 'N/A',
+                icao_code: airport.icao,
+                name: airport.name || 'Unknown',
+                city: airport.city?.name || airport.municipality || airport.city || 'Unknown',
+                state: airport.state || airport.region || '',
+                country: airport.country?.iso_alpha2 || airport.country?.name || airport.iso_country || 'Unknown',
+                latitude: parseFloat(airport.latitude || airport.lat) || null,
+                longitude: parseFloat(airport.longitude || airport.lon || airport.lng) || null,
+                elevation: airport.elevation ? parseInt(airport.elevation) : null,
                 runwayLength: runwayLength,
                 type: airport.type || 'airport',
-                source: 'AirportDB.io'
-              });
-              console.log('AirportDB.io found airport:', airports[airports.length - 1]);
-            }
-          } else {
-            const errorText = await icaoResponse.text();
-            console.log('AirportDB.io ICAO error response:', errorText);
-          }
-        }
-        
-        // For 3-character IATA codes, AirportDB.io doesn't support direct IATA lookup
-        // So we skip AirportDB.io for IATA codes and proceed to other APIs
-      } catch (error) {
-        console.log('AirportDB.io error:', error instanceof Error ? error.message : 'Unknown error');
-      }
-    }
-
-    // Try Aviation Edge if AirportDB.io didn't find anything (if configured and query is long enough)
-    if (airports.length === 0 && aviationEdgeKey && query.length >= 3) {
-      console.log('Trying Aviation Edge API...');
-      try {
-        const response = await fetch(
-          `https://aviation-edge.com/v2/public/airportDatabase?key=${aviationEdgeKey}&codeIataAirport=${query}`,
-          { signal: AbortSignal.timeout(8000) }
-        );
-
-        console.log('Aviation Edge response status:', response.status);
-        
-        if (response.ok) {
-          const data = await response.json();
-          console.log('Aviation Edge data type:', Array.isArray(data) ? 'array' : typeof data);
-          console.log('Aviation Edge data length:', Array.isArray(data) ? data.length : 'not array');
-          
-          if (Array.isArray(data) && data.length > 0) {
-            data.forEach((airport: any) => {
-              airports.push({
-                code: airport.codeIataAirport || airport.codeIcaoAirport || 'N/A',
-                name: airport.nameAirport || 'Unknown',
-                city: airport.nameCountry || 'Unknown',
-                state: airport.codeIso2Country || 'N/A',
-                country: airport.nameCountry || 'Unknown',
-                type: 'Commercial',
-                runwayLength: 0,
-                source: 'Aviation Edge'
+                source: 'Aviapages'
               });
             });
-            console.log('Aviation Edge found', airports.length, 'airports');
+            
+            console.log('Aviapages processed', airports.length, 'airports');
+          } else {
+            console.log('Aviapages returned no results or unexpected format');
           }
         } else {
-          console.log('Aviation Edge failed with status:', response.status);
+          const errorText = await aviapagesResponse.text();
+          console.log('Aviapages API error response:', errorText);
         }
       } catch (error) {
-        console.log('Aviation Edge error:', error instanceof Error ? error.message : 'Unknown');
+        console.log('Aviapages API error:', error instanceof Error ? error.message : 'Unknown error');
       }
     }
 
