@@ -152,16 +152,10 @@ serve(async (req) => {
 
     // Check environment variables
     const aviationEdgeKey = Deno.env.get('AVIATION_EDGE_API_KEY');
-    const rapidApiKey = Deno.env.get('RAPIDAPI_KEY');
     const airportDbToken = Deno.env.get('AIRPORTDB_API_TOKEN');
     
     console.log('AVIATION_EDGE_API_KEY configured:', !!aviationEdgeKey);
-    console.log('RAPIDAPI_KEY configured:', !!rapidApiKey);
     console.log('AIRPORTDB_API_TOKEN configured:', !!airportDbToken);
-    if (rapidApiKey) {
-      console.log('RAPIDAPI_KEY length:', rapidApiKey.length);
-      console.log('RAPIDAPI_KEY preview:', rapidApiKey.substring(0, 10) + '...');
-    }
 
     // Try AirportDB.io first (if configured)
     if (airportDbToken && query.length >= 3) {
@@ -253,250 +247,6 @@ serve(async (req) => {
       }
     }
 
-    // Try AeroDataBox if Aviation Edge didn't work and query is long enough
-    if (airports.length === 0 && rapidApiKey && query.length >= 3) {
-      console.log('Trying AeroDataBox API...');
-      
-      try {
-        let aeroResponse: Response | undefined;
-        
-        // Try different endpoint strategies
-        if (query.length === 3 || query.length === 4) {
-          console.log('Trying IATA lookup for:', query.toUpperCase());
-          
-          const iataUrl = `https://aerodatabox.p.rapidapi.com/airports/iata/${query.toUpperCase()}`;
-          console.log('IATA URL:', iataUrl);
-          
-          aeroResponse = await fetch(iataUrl, {
-            method: 'GET',
-            headers: {
-              'X-RapidAPI-Key': rapidApiKey,
-              'X-RapidAPI-Host': 'aerodatabox.p.rapidapi.com',
-              'Accept': 'application/json'
-            },
-            signal: AbortSignal.timeout(10000)
-          });
-          
-          console.log('IATA response status:', aeroResponse.status);
-          console.log('IATA response headers:', JSON.stringify([...aeroResponse.headers.entries()]));
-          
-          if (!aeroResponse.ok || aeroResponse.status === 204) {
-            // Handle 204 (No Content) and other errors gracefully
-            let errorText = 'No content returned';
-            try {
-              if (aeroResponse.status !== 204) {
-                errorText = await aeroResponse.text();
-              }
-            } catch (textError) {
-              console.log('Could not read error text:', textError);
-              errorText = `Status ${aeroResponse.status} - Could not read response`;
-            }
-            
-            console.log('IATA failed - Status:', aeroResponse.status, 'Body:', errorText);
-            
-            // Try ICAO if it's 4 characters
-            if (query.length === 4) {
-              console.log('Trying ICAO lookup for:', query.toUpperCase());
-              
-              const icaoUrl = `https://aerodatabox.p.rapidapi.com/airports/icao/${query.toUpperCase()}`;
-              console.log('ICAO URL:', icaoUrl);
-              
-              aeroResponse = await fetch(icaoUrl, {
-                method: 'GET',
-                headers: {
-                  'X-RapidAPI-Key': rapidApiKey,
-                  'X-RapidAPI-Host': 'aerodatabox.p.rapidapi.com',
-                  'Accept': 'application/json'
-                },
-                signal: AbortSignal.timeout(10000)
-              });
-              
-              console.log('ICAO response status:', aeroResponse.status);
-              
-              if (!aeroResponse.ok) {
-                const icaoErrorText = await aeroResponse.text();
-                console.log('ICAO failed - Status:', aeroResponse.status, 'Body:', icaoErrorText);
-              }
-            }
-          }
-          
-          // Try search endpoint as fallback
-          if (!aeroResponse.ok) {
-            console.log('Direct lookups failed, trying search endpoint');
-            
-            const searchUrl = `https://aerodatabox.p.rapidapi.com/airports/search/term?q=${encodeURIComponent(query)}&limit=10`;
-            console.log('Search URL:', searchUrl);
-            
-            aeroResponse = await fetch(searchUrl, {
-              method: 'GET',
-              headers: {
-                'X-RapidAPI-Key': rapidApiKey,
-                'X-RapidAPI-Host': 'aerodatabox.p.rapidapi.com',
-                'Accept': 'application/json'
-              },
-              signal: AbortSignal.timeout(10000)
-            });
-            
-            console.log('Search response status:', aeroResponse.status);
-          }
-        } else {
-          // For longer queries, use search directly
-          const searchUrl = `https://aerodatabox.p.rapidapi.com/airports/search/term?q=${encodeURIComponent(query)}&limit=10`;
-          console.log('Direct search URL:', searchUrl);
-          
-          aeroResponse = await fetch(searchUrl, {
-            method: 'GET',
-            headers: {
-              'X-RapidAPI-Key': rapidApiKey,
-              'X-RapidAPI-Host': 'aerodatabox.p.rapidapi.com',
-              'Accept': 'application/json'
-            },
-            signal: AbortSignal.timeout(10000)
-          });
-          
-          console.log('Direct search response status:', aeroResponse.status);
-        }
-        
-        // Process successful response
-        if (aeroResponse && aeroResponse.ok) {
-          let aeroData;
-          try {
-            aeroData = await aeroResponse.json();
-          } catch (jsonError) {
-            console.log('Failed to parse JSON response:', jsonError);
-            // Skip processing if JSON parsing fails
-            aeroData = null;
-          }
-          
-          if (aeroData) {
-            console.log('AeroDataBox response type:', Array.isArray(aeroData) ? 'array' : typeof aeroData);
-            console.log('AeroDataBox FULL response:', JSON.stringify(aeroData, null, 2));
-          
-          // Function to get runway data for an airport
-          const getRunwayData = async (airportCode: string): Promise<number> => {
-            try {
-              const runwayResponse = await fetch(
-                `https://aerodatabox.p.rapidapi.com/airports/iata/${airportCode}/runways`,
-                {
-                  method: 'GET',
-                  headers: {
-                    'X-RapidAPI-Key': rapidApiKey,
-                    'X-RapidAPI-Host': 'aerodatabox.p.rapidapi.com',
-                    'Accept': 'application/json'
-                  },
-                  signal: AbortSignal.timeout(5000)
-                }
-              );
-              
-              if (runwayResponse.ok) {
-                const runwayData = await runwayResponse.json();
-                console.log('Runway data for', airportCode, ':', JSON.stringify(runwayData));
-                
-                // Find the longest runway
-                if (Array.isArray(runwayData) && runwayData.length > 0) {
-                  const longestRunway = runwayData.reduce((max, runway) => {
-                    const length = runway.length?.meter || runway.lengthMeter || runway.length || 0;
-                    return length > max ? length : max;
-                  }, 0);
-                  
-                  // Convert from meters to feet if needed
-                  return Math.round(longestRunway * 3.28084);
-                }
-              }
-            } catch (error) {
-              console.log('Error fetching runway data for', airportCode, ':', error);
-            }
-            return 0;
-          };
-          
-          // Handle different response formats
-          if (Array.isArray(aeroData)) {
-            console.log('Processing array response with', aeroData.length, 'items');
-            for (const airport of aeroData) {
-              console.log('Processing airport:', JSON.stringify(airport, null, 2));
-              const airportCode = airport.iata || airport.icao;
-              const runwayLength = airportCode ? await getRunwayData(airportCode) : 0;
-              
-              airports.push({
-                code: airport.iata || airport.icao || 'N/A',
-                name: airport.fullName || airport.shortName || airport.name || 'Unknown',
-                city: airport.municipalityName || airport.city || 'Unknown',
-                state: airport.country?.code || airport.regionName || 'N/A',
-                country: airport.country?.name || airport.countryName || 'Unknown',
-                type: 'Commercial',
-                runwayLength: runwayLength,
-                latitude: airport.location?.lat || null,
-                longitude: airport.location?.lon || null,
-                source: 'AeroDataBox'
-              });
-            }
-          } else if (aeroData && typeof aeroData === 'object') {
-            console.log('Processing single object response:', JSON.stringify(aeroData, null, 2));
-            
-            // Check if this is a search response with items array
-            if (aeroData.items && Array.isArray(aeroData.items)) {
-              console.log('Found items array with', aeroData.items.length, 'airports');
-              for (const airport of aeroData.items) {
-                console.log('Processing airport from items:', JSON.stringify(airport, null, 2));
-                const airportCode = airport.iata || airport.icao;
-                const runwayLength = airportCode ? await getRunwayData(airportCode) : 0;
-                
-                airports.push({
-                  code: airport.iata || airport.icao || 'N/A',
-                  name: airport.name || airport.shortName || airport.fullName || 'Unknown',
-                  city: airport.municipalityName || airport.city || 'Unknown',
-                  state: airport.countryCode || airport.regionName || 'N/A',
-                  country: airport.countryCode || airport.countryName || 'Unknown',
-                  type: 'Commercial',
-                  runwayLength: runwayLength,
-                  latitude: airport.location?.lat || null,
-                  longitude: airport.location?.lon || null,
-                  source: 'AeroDataBox'
-                });
-              }
-            } else {
-              // Single airport response
-              const airportCode = aeroData.iata || aeroData.icao;
-              const runwayLength = airportCode ? await getRunwayData(airportCode) : 0;
-              
-              airports.push({
-                code: aeroData.iata || aeroData.icao || 'N/A',
-                name: aeroData.fullName || aeroData.shortName || aeroData.name || 'Unknown',
-                city: aeroData.municipalityName || aeroData.city || 'Unknown',
-                state: aeroData.country?.code || aeroData.regionName || 'N/A',
-                country: aeroData.country?.name || aeroData.countryName || 'Unknown',
-                type: 'Commercial',
-                runwayLength: runwayLength,
-                latitude: aeroData.location?.lat || null,
-                longitude: aeroData.location?.lon || null,
-                source: 'AeroDataBox'
-              });
-            }
-          }
-          }
-          
-          console.log('AeroDataBox processed', airports.length, 'airports');
-        } else if (aeroResponse) {
-          const errorText = await aeroResponse.text();
-          console.log('AeroDataBox final error - Status:', aeroResponse.status, 'Body:', errorText);
-        }
-        
-      } catch (error) {
-        const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-        console.log('AeroDataBox fetch error:', errorMsg);
-      }
-    } else if (!rapidApiKey) {
-      airports.push({
-        code: 'NO_API_KEY',
-        name: 'RAPIDAPI_KEY not configured',
-        city: 'Check Supabase secrets',
-        state: 'ERROR',
-        country: 'ERROR',
-        type: 'DEBUG',
-        runwayLength: 0
-      });
-    }
-
     // Remove any debug entries if we have real results
     const realResults = airports.filter(a => a.type !== 'DEBUG');
     const debugEntries = airports.filter(a => a.type === 'DEBUG');
@@ -508,101 +258,69 @@ serve(async (req) => {
       const fallbackAirports = [
         { code: 'EYW', name: 'Key West International Airport', city: 'Key West', state: 'FL', country: 'US', type: 'Commercial', runwayLength: 4801, source: 'Fallback Database' },
         { code: 'KEYW', name: 'Key West International Airport', city: 'Key West', state: 'FL', country: 'US', type: 'Commercial', runwayLength: 4801, source: 'Fallback Database' },
-        { code: 'KJFK', name: 'John F. Kennedy International Airport', city: 'New York', state: 'NY', country: 'US', type: 'Commercial', runwayLength: 14511, source: 'Fallback Database' },
-        { code: 'KLAX', name: 'Los Angeles International Airport', city: 'Los Angeles', state: 'CA', country: 'US', type: 'Commercial', runwayLength: 12923, source: 'Fallback Database' },
-        { code: 'KORD', name: 'Chicago O\'Hare International Airport', city: 'Chicago', state: 'IL', country: 'US', type: 'Commercial', runwayLength: 13000, source: 'Fallback Database' },
-        { code: 'KLAS', name: 'Harry Reid International Airport', city: 'Las Vegas', state: 'NV', country: 'US', type: 'Commercial', runwayLength: 14514, source: 'Fallback Database' },
+        { code: 'LAX', name: 'Los Angeles International Airport', city: 'Los Angeles', state: 'CA', country: 'US', type: 'Commercial', runwayLength: 12091, source: 'Fallback Database' },
+        { code: 'KLAX', name: 'Los Angeles International Airport', city: 'Los Angeles', state: 'CA', country: 'US', type: 'Commercial', runwayLength: 12091, source: 'Fallback Database' },
+        { code: 'JFK', name: 'John F. Kennedy International Airport', city: 'New York', state: 'NY', country: 'US', type: 'Commercial', runwayLength: 14572, source: 'Fallback Database' },
+        { code: 'KJFK', name: 'John F. Kennedy International Airport', city: 'New York', state: 'NY', country: 'US', type: 'Commercial', runwayLength: 14572, source: 'Fallback Database' },
+        { code: 'LGA', name: 'LaGuardia Airport', city: 'New York', state: 'NY', country: 'US', type: 'Commercial', runwayLength: 7000, source: 'Fallback Database' },
+        { code: 'KLGA', name: 'LaGuardia Airport', city: 'New York', state: 'NY', country: 'US', type: 'Commercial', runwayLength: 7000, source: 'Fallback Database' },
+        { code: 'ORD', name: 'O\'Hare International Airport', city: 'Chicago', state: 'IL', country: 'US', type: 'Commercial', runwayLength: 13000, source: 'Fallback Database' },
+        { code: 'KORD', name: 'O\'Hare International Airport', city: 'Chicago', state: 'IL', country: 'US', type: 'Commercial', runwayLength: 13000, source: 'Fallback Database' },
+        { code: 'MIA', name: 'Miami International Airport', city: 'Miami', state: 'FL', country: 'US', type: 'Commercial', runwayLength: 13016, source: 'Fallback Database' },
         { code: 'KMIA', name: 'Miami International Airport', city: 'Miami', state: 'FL', country: 'US', type: 'Commercial', runwayLength: 13016, source: 'Fallback Database' },
-        { code: 'KEWR', name: 'Newark Liberty International Airport', city: 'Newark', state: 'NJ', country: 'US', type: 'Commercial', runwayLength: 11000, source: 'Fallback Database' },
+        { code: 'DFW', name: 'Dallas/Fort Worth International Airport', city: 'Dallas', state: 'TX', country: 'US', type: 'Commercial', runwayLength: 13401, source: 'Fallback Database' },
+        { code: 'KDFW', name: 'Dallas/Fort Worth International Airport', city: 'Dallas', state: 'TX', country: 'US', type: 'Commercial', runwayLength: 13401, source: 'Fallback Database' },
+        { code: 'SFO', name: 'San Francisco International Airport', city: 'San Francisco', state: 'CA', country: 'US', type: 'Commercial', runwayLength: 11870, source: 'Fallback Database' },
         { code: 'KSFO', name: 'San Francisco International Airport', city: 'San Francisco', state: 'CA', country: 'US', type: 'Commercial', runwayLength: 11870, source: 'Fallback Database' },
-        { code: 'KBOS', name: 'Boston Logan International Airport', city: 'Boston', state: 'MA', country: 'US', type: 'Commercial', runwayLength: 10083, source: 'Fallback Database' },
-        { code: 'EGLL', name: 'London Heathrow Airport', city: 'London', state: 'England', country: 'UK', type: 'Commercial', runwayLength: 12799, source: 'Fallback Database' },
-        { code: 'LHR', name: 'London Heathrow Airport', city: 'London', state: 'England', country: 'UK', type: 'Commercial', runwayLength: 12799, source: 'Fallback Database' }
+        { code: 'ATL', name: 'Hartsfield-Jackson Atlanta International Airport', city: 'Atlanta', state: 'GA', country: 'US', type: 'Commercial', runwayLength: 12390, source: 'Fallback Database' },
+        { code: 'KATL', name: 'Hartsfield-Jackson Atlanta International Airport', city: 'Atlanta', state: 'GA', country: 'US', type: 'Commercial', runwayLength: 12390, source: 'Fallback Database' },
+        { code: 'SEA', name: 'Seattle-Tacoma International Airport', city: 'Seattle', state: 'WA', country: 'US', type: 'Commercial', runwayLength: 11901, source: 'Fallback Database' },
+        { code: 'KSEA', name: 'Seattle-Tacoma International Airport', city: 'Seattle', state: 'WA', country: 'US', type: 'Commercial', runwayLength: 11901, source: 'Fallback Database' },
+        { code: 'LAS', name: 'McCarran International Airport', city: 'Las Vegas', state: 'NV', country: 'US', type: 'Commercial', runwayLength: 14511, source: 'Fallback Database' },
+        { code: 'KLAS', name: 'McCarran International Airport', city: 'Las Vegas', state: 'NV', country: 'US', type: 'Commercial', runwayLength: 14511, source: 'Fallback Database' },
+        { code: 'DEN', name: 'Denver International Airport', city: 'Denver', state: 'CO', country: 'US', type: 'Commercial', runwayLength: 16000, source: 'Fallback Database' },
+        { code: 'KDEN', name: 'Denver International Airport', city: 'Denver', state: 'CO', country: 'US', type: 'Commercial', runwayLength: 16000, source: 'Fallback Database' },
+        { code: 'BOS', name: 'Logan International Airport', city: 'Boston', state: 'MA', country: 'US', type: 'Commercial', runwayLength: 10083, source: 'Fallback Database' },
+        { code: 'KBOS', name: 'Logan International Airport', city: 'Boston', state: 'MA', country: 'US', type: 'Commercial', runwayLength: 10083, source: 'Fallback Database' },
+        { code: 'PHX', name: 'Phoenix Sky Harbor International Airport', city: 'Phoenix', state: 'AZ', country: 'US', type: 'Commercial', runwayLength: 11489, source: 'Fallback Database' },
+        { code: 'KPHX', name: 'Phoenix Sky Harbor International Airport', city: 'Phoenix', state: 'AZ', country: 'US', type: 'Commercial', runwayLength: 11489, source: 'Fallback Database' },
+        { code: 'IAH', name: 'Houston George Bush', city: 'Houston', state: 'TX', country: 'US', type: 'Commercial', runwayLength: 12037, source: 'Fallback Database' },
+        { code: 'KIAH', name: 'Houston George Bush', city: 'Houston', state: 'TX', country: 'US', type: 'Commercial', runwayLength: 12037, source: 'Fallback Database' },
+        { code: 'HOU', name: 'William P. Hobby Airport', city: 'Houston', state: 'TX', country: 'US', type: 'Commercial', runwayLength: 7602, source: 'Fallback Database' },
+        { code: 'KHOU', name: 'William P. Hobby Airport', city: 'Houston', state: 'TX', country: 'US', type: 'Commercial', runwayLength: 7602, source: 'Fallback Database' },
+        { code: 'TEB', name: 'Teterboro', city: 'Teterboro', state: 'NJ', country: 'US', type: 'Commercial', runwayLength: 7014, source: 'Fallback Database' },
+        { code: 'KTEB', name: 'Teterboro', city: 'Teterboro', state: 'NJ', country: 'US', type: 'Commercial', runwayLength: 7014, source: 'Fallback Database' },
+        { code: 'OGG', name: 'Kahului', city: 'Kahului', state: 'HI', country: 'US', type: 'Commercial', runwayLength: 7021, source: 'Fallback Database' },
+        { code: 'PHOG', name: 'Kahului', city: 'Kahului', state: 'HI', country: 'US', type: 'Commercial', runwayLength: 7021, source: 'Fallback Database' }
       ];
-      
-      const queryLower = query.toLowerCase();
-      const fallbackResults = fallbackAirports.filter(airport => 
-        airport.code.toLowerCase().includes(queryLower) ||
-        airport.name.toLowerCase().includes(queryLower) ||
-        airport.city.toLowerCase().includes(queryLower)
-      );
-      
-      // Include debug entries for API diagnostics
-      airports = [...debugEntries, ...fallbackResults];
-      console.log('Using fallback database, found', fallbackResults.length, 'airports');
+
+      const filteredFallback = fallbackAirports.filter(airport => {
+        const codeMatch = airport.code.toLowerCase().includes(query.toLowerCase());
+        const nameMatch = airport.name.toLowerCase().includes(query.toLowerCase());
+        const cityMatch = airport.city.toLowerCase().includes(query.toLowerCase());
+        return codeMatch || nameMatch || cityMatch;
+      });
+
+      airports = filteredFallback.slice(0, 10);
+      console.log('Fallback found', airports.length, 'airports');
     } else {
       airports = realResults;
     }
 
-    console.log('Final result count:', airports.length);
-    console.log('=== END DEBUG ===');
+    console.log('=== SEARCH COMPLETE ===');
+    console.log('Total airports found:', airports.length);
+    console.log('Results:', JSON.stringify(airports, null, 2));
 
-    // For debugging, include debug info in response if it's a debug query
-    const response: any = { airports };
-    if (query.includes('DEBUG_TEST')) {
-      response.debug = {
-        queryReceived: query,
-        aviationEdgeConfigured: !!aviationEdgeKey,
-        rapidApiConfigured: !!rapidApiKey,
-        rapidApiKeyLength: rapidApiKey?.length || 0,
-        rapidApiKeyPreview: rapidApiKey?.substring(0, 10) + '...' || 'NOT_SET',
-        totalAirportsFound: airports.length,
-        debugEntries: airports.filter(a => a.type === 'DEBUG'),
-        realResults: airports.filter(a => a.type !== 'DEBUG'),
-        fellbackToHardcoded: airports.some(a => a.code === 'KJFK' || a.code === 'KLAX'),
-        rawApiResponse: null // Will be set if we captured it
-      };
-      
-      // Try to capture the raw API response for debugging
-      if (rapidApiKey) {
-        try {
-          const testResponse = await fetch('https://aerodatabox.p.rapidapi.com/airports/iata/LHR', {
-            method: 'GET',
-            headers: {
-              'X-RapidAPI-Key': rapidApiKey,
-              'X-RapidAPI-Host': 'aerodatabox.p.rapidapi.com',
-              'Accept': 'application/json'
-            },
-            signal: AbortSignal.timeout(5000)
-          });
-          
-          if (testResponse.ok) {
-            const rawData = await testResponse.json();
-            response.debug.rawApiResponse = rawData;
-          } else {
-            response.debug.rawApiResponse = {
-              error: true,
-              status: testResponse.status,
-              statusText: testResponse.statusText,
-              body: await testResponse.text()
-            };
-          }
-        } catch (error) {
-          response.debug.rawApiResponse = {
-            error: true,
-            message: error instanceof Error ? error.message : 'Unknown error'
-          };
-        }
-      }
-    }
-
-    return new Response(JSON.stringify(response), {
+    return new Response(JSON.stringify({ airports }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (error) {
-    console.error('Function error:', error);
-    return new Response(JSON.stringify({ 
+    console.error('Error in search-airports function:', error);
+    
+    return new Response(JSON.stringify({
       error: 'Internal server error',
-      airports: [{
-        code: 'FUNCTION_ERROR',
-        name: `Function Error: ${error instanceof Error ? error.message : 'Unknown'}`,
-        city: 'Check function logs',
-        state: 'ERROR',
-        country: 'ERROR',
-        type: 'DEBUG',
-        runwayLength: 0
-      }]
+      details: error instanceof Error ? error.message : 'Unknown error'
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
