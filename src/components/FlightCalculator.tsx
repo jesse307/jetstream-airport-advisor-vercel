@@ -389,7 +389,7 @@ export function FlightCalculator({ departure, arrival, initialPassengers }: Flig
     return Math.round(distance);
   };
 
-  // Get typical wind component for route
+  // Get realistic wind component for route based on typical patterns
   const getWindComponent = (dep: Airport, arr: Airport): number => {
     const depCoords = getCoordinates(dep);
     const arrCoords = getCoordinates(arr);
@@ -405,17 +405,39 @@ export function FlightCalculator({ departure, arrival, initialPassengers }: Flig
     const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(deltaLon);
     const bearing = (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
     
-    // Typical wind patterns (prevailing westerlies in US)
-    // Winds generally flow west to east at 15-25 kts at typical private jet altitudes
-    const avgWindSpeed = 20; // knots
-    const avgWindDirection = 270; // degrees (west wind)
+    // More realistic wind patterns based on typical jet stream and seasonal patterns
+    // Winds at FL350-FL450 (typical private jet cruise altitude)
+    let avgWindSpeed = 25; // knots - more realistic average
+    let avgWindDirection = 270; // degrees (west wind) - prevailing pattern
+    
+    // Seasonal and regional adjustments
+    const avgLat = (depCoords[0] + arrCoords[0]) / 2;
+    const avgLon = (depCoords[1] + arrCoords[1]) / 2;
+    
+    // Northern routes (above 40°N) have stronger jet stream effects
+    if (avgLat > 40) {
+      avgWindSpeed = 35; // Stronger jet stream
+      avgWindDirection = 260; // More southwest flow
+    }
+    
+    // Southern routes have lighter winds
+    if (avgLat < 30) {
+      avgWindSpeed = 15; // Lighter subtropical winds
+      avgWindDirection = 280; // More westerly
+    }
+    
+    // Pacific routes have different patterns
+    if (avgLon < -120) {
+      avgWindSpeed = 30; // Pacific jet stream
+      avgWindDirection = 245; // More SW flow
+    }
     
     // Calculate wind component (headwind = negative, tailwind = positive)
     const windDiff = Math.abs(bearing - avgWindDirection);
     const normalizedDiff = windDiff > 180 ? 360 - windDiff : windDiff;
     const windComponent = avgWindSpeed * Math.cos(normalizedDiff * Math.PI / 180);
     
-    console.log(`Route bearing: ${bearing.toFixed(0)}°, Wind component: ${windComponent.toFixed(1)} kts`);
+    console.log(`Route bearing: ${bearing.toFixed(0)}°, Wind: ${avgWindSpeed}kt @ ${avgWindDirection}°, Component: ${windComponent.toFixed(1)} kts`);
     return windComponent;
   };
 
@@ -429,10 +451,14 @@ export function FlightCalculator({ departure, arrival, initialPassengers }: Flig
       console.log(`Wind-adjusted speed: ${aircraftSpeed} + ${windComponent.toFixed(1)} = ${effectiveSpeed.toFixed(1)} kts`);
     }
     
-    const timeInHours = distance / effectiveSpeed;
+    // Apply airway routing factor (airways are typically 5-15% longer than great circle)
+    const airwayFactor = 1.08; // 8% longer on average for realistic routing
+    const effectiveDistance = distance * airwayFactor;
+    
+    const timeInHours = effectiveDistance / effectiveSpeed;
     const hours = Math.floor(timeInHours);
     const minutes = Math.round((timeInHours - hours) * 60);
-    console.log(`Flight time calculation: ${distance} NM ÷ ${effectiveSpeed.toFixed(1)} kts = ${timeInHours.toFixed(2)} hours = ${hours}h ${minutes}m`);
+    console.log(`Flight time calculation: ${effectiveDistance.toFixed(1)} NM ÷ ${effectiveSpeed.toFixed(1)} kts = ${timeInHours.toFixed(2)} hours = ${hours}h ${minutes}m`);
     return `${hours}h ${minutes.toString().padStart(2, "0")}m`;
   };
 
@@ -445,7 +471,11 @@ export function FlightCalculator({ departure, arrival, initialPassengers }: Flig
       effectiveSpeed = aircraftSpeed + windComponent;
     }
     
-    return distance / effectiveSpeed;
+    // Apply airway routing factor for realistic flight planning
+    const airwayFactor = 1.08; // 8% longer on average
+    const effectiveDistance = distance * airwayFactor;
+    
+    return effectiveDistance / effectiveSpeed;
   };
 
   const calculateCostRange = (flightTimeHours: number, hourlyRate: number): { min: number; max: number } => {
@@ -482,21 +512,31 @@ export function FlightCalculator({ departure, arrival, initialPassengers }: Flig
     const baggage_per_pax = 50; // lbs
     const W_pax = passengers * (avg_pax_weight + baggage_per_pax);
     
-    // Calculate trip fuel needed (basic estimate)
+    // Calculate trip fuel needed with more realistic methodology
     const flightTimeHours = calculateFlightTimeInHours(distance, aircraft.speed, departureAirport, arrivalAirport);
-    const trip_fuel_needed = (flightTimeHours + 0.75) * aircraft.fuelConsumption; // with 45min reserve
+    
+    // More accurate fuel calculation aligned with industry standards
+    const baseFuelRate = aircraft.fuelConsumption; // lbs/hr at cruise
+    const taxiFuel = 200; // lbs for taxi operations
+    const reserveFuel = baseFuelRate * 0.75; // 45 minutes reserve
+    const contingencyFuel = flightTimeHours * baseFuelRate * 0.05; // 5% contingency
+    const trip_fuel_needed = (flightTimeHours * baseFuelRate) + taxiFuel + reserveFuel + contingencyFuel;
     
     // Step 2: Total Takeoff Weight
     const W_takeoff = aircraft.emptyWeight + W_pax + trip_fuel_needed;
     
-    // Step 3: Adjusted Takeoff Distance (assuming R_MTOW is around 3000ft baseline)
-    const R_MTOW_baseline = 3000; // feet, typical runway requirement at MTOW
-    const R_req = R_MTOW_baseline * Math.pow((W_takeoff / aircraft.maxTakeoffWeight), 1.1);
+    // Step 3: Adjusted Takeoff Distance (more accurate runway calculation)
+    // Use aircraft-specific minimum runway as baseline, not generic 3000ft
+    const R_baseline = aircraft.minRunway; // Use the aircraft's actual minimum runway requirement
+    const weightRatio = W_takeoff / aircraft.maxTakeoffWeight;
+    const R_req = R_baseline * Math.pow(weightRatio, 1.2); // Slightly more conservative than 1.1
     
-    // Step 4: Adjusted Range
+    // Step 4: Adjusted Range (more accurate range calculation)
     const W_fuel_max = aircraft.maxTakeoffWeight - aircraft.emptyWeight - W_pax;
     const available_fuel = Math.min(W_fuel_max, aircraft.fuelCapacity);
-    const Range_adjusted = aircraft.maxRange * (available_fuel / aircraft.fuelCapacity);
+    // Account for reserves in range calculation
+    const usable_fuel_for_range = available_fuel - reserveFuel - taxiFuel;
+    const Range_adjusted = aircraft.maxRange * (usable_fuel_for_range / aircraft.fuelCapacity);
     
     // Step 5: Feasibility Check
     const weight_feasible = W_takeoff <= aircraft.maxTakeoffWeight;
@@ -977,28 +1017,83 @@ export function FlightCalculator({ departure, arrival, initialPassengers }: Flig
                         </div>
                         {aviapagesResult.time?.airway && (
                           <div>
-                            <span className="text-muted-foreground">Flight Time:</span>
+                            <span className="text-muted-foreground">Flight Time (Aviapages):</span>
                             <div className="font-bold text-primary">{Math.floor(aviapagesResult.time.airway / 60)}h {aviapagesResult.time.airway % 60}m</div>
                           </div>
                         )}
                         {aviapagesResult.distance?.airway && (
                           <div>
-                            <span className="text-muted-foreground">Distance:</span>
+                            <span className="text-muted-foreground">Distance (Aviapages):</span>
                             <div className="font-medium">{Math.round(aviapagesResult.distance.airway * 0.539957)} NM</div>
                           </div>
                         )}
                         {aviapagesResult.fuel?.airway && (
                           <div>
-                            <span className="text-muted-foreground">Fuel:</span>
+                            <span className="text-muted-foreground">Fuel (Aviapages):</span>
                             <div className="font-medium">{aviapagesResult.fuel.airway} lbs</div>
                           </div>
                         )}
+                        
+                        {/* Physics-based comparison */}
+                        {selectedAircraft && (() => {
+                          const aircraftCategory = selectedAircraft.split('-')[0];
+                          const aircraft = AIRCRAFT_TYPES.find(a => a.category === aircraftCategory);
+                          if (!aircraft) return null;
+                          
+                          const physicsFlightTime = calculateFlightTime(distance, aircraft.speed, departureAirport, arrivalAirport);
+                          const capability = calculateAircraftCapability(aircraft, distance, passengers);
+                          
+                          return (
+                            <>
+                              <div>
+                                <span className="text-muted-foreground">Flight Time (Physics):</span>
+                                <div className="font-bold text-blue-600">{physicsFlightTime}</div>
+                              </div>
+                              <div>
+                                <span className="text-muted-foreground">Distance (Physics):</span>
+                                <div className="font-medium">{Math.round(distance * 1.08)} NM</div>
+                                <div className="text-xs text-muted-foreground">Great circle + 8% routing</div>
+                              </div>
+                              <div>
+                                <span className="text-muted-foreground">Fuel (Physics):</span>
+                                <div className="font-medium">{capability.fuelNeeded} lbs</div>
+                                <div className="text-xs text-muted-foreground">Includes reserves</div>
+                              </div>
+                            </>
+                          );
+                        })()}
+                        
                         <div>
                           <span className="text-muted-foreground">Fuel Stop Needed:</span>
                           <div className={`font-medium ${(aviapagesResult.airport?.techstop && aviapagesResult.airport.techstop.length > 0) ? 'text-destructive' : 'text-green-600'}`}>
                             {(aviapagesResult.airport?.techstop && aviapagesResult.airport.techstop.length > 0) ? 'Yes' : 'No'}
                           </div>
                         </div>
+                        
+                        {/* Comparison accuracy indicator */}
+                        {aviapagesResult.time?.airway && selectedAircraft && (() => {
+                          const aircraftCategory = selectedAircraft.split('-')[0];
+                          const aircraft = AIRCRAFT_TYPES.find(a => a.category === aircraftCategory);
+                          if (!aircraft) return null;
+                          
+                          const aviapagesMinutes = aviapagesResult.time.airway;
+                          const physicsTimeHours = calculateFlightTimeInHours(distance, aircraft.speed, departureAirport, arrivalAirport);
+                          const physicsMinutes = physicsTimeHours * 60;
+                          const timeDifference = Math.abs(aviapagesMinutes - physicsMinutes);
+                          const percentDifference = (timeDifference / aviapagesMinutes) * 100;
+                          
+                          return (
+                            <div className="col-span-2">
+                              <span className="text-muted-foreground">Calculation Alignment:</span>
+                              <div className={`text-sm font-medium ${percentDifference < 10 ? 'text-green-600' : percentDifference < 20 ? 'text-amber-600' : 'text-red-600'}`}>
+                                {percentDifference < 10 ? '✅ Excellent alignment' : 
+                                 percentDifference < 20 ? '⚠️ Good alignment' : 
+                                 '❌ Large discrepancy'} ({percentDifference.toFixed(1)}% difference)
+                              </div>
+                            </div>
+                          );
+                        })()}
+                        
                         {aviapagesResult.warnings && aviapagesResult.warnings.length > 0 && (
                           <div className="col-span-2">
                             <span className="text-muted-foreground">⚠️ Warnings:</span>
