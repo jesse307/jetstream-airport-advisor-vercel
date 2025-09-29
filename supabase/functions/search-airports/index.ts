@@ -198,42 +198,8 @@ serve(async (req) => {
           }
         }
         
-        // Try IATA code lookup for 3-character codes
-        if (airports.length === 0 && query.length === 3) {
-          console.log('Trying IATA lookup for:', query.toUpperCase());
-          const iataResponse = await fetch(`https://airportdb.io/api/v1/airport/iata/${query.toUpperCase()}?apiToken=${airportDbToken}`, {
-            signal: AbortSignal.timeout(8000)
-          });
-          
-          console.log('AirportDB.io IATA response status:', iataResponse.status);
-          
-          if (iataResponse.ok) {
-            const airport = await iataResponse.json();
-            console.log('AirportDB.io IATA airport data:', JSON.stringify(airport, null, 2));
-            
-            if (airport && airport.iata_code) {
-              const runwayLength = airport.runways && airport.runways.length > 0 
-                ? Math.max(...airport.runways.map((r: any) => parseInt(r.length_ft) || 0))
-                : 0;
-                
-              airports.push({
-                code: airport.iata_code,
-                icao_code: airport.icao_code,
-                name: airport.name,
-                city: airport.municipality || '',
-                state: airport.iso_region?.split('-')[1] || '',
-                country: airport.iso_country,
-                latitude: parseFloat(airport.latitude_deg) || null,
-                longitude: parseFloat(airport.longitude_deg) || null,
-                elevation: airport.elevation_ft ? parseInt(airport.elevation_ft) : null,
-                runwayLength: runwayLength,
-                type: airport.type || 'airport',
-                source: 'AirportDB.io'
-              });
-              console.log('AirportDB.io found IATA airport:', airports[airports.length - 1]);
-            }
-          }
-        }
+        // For 3-character IATA codes, AirportDB.io doesn't support direct IATA lookup
+        // So we skip AirportDB.io for IATA codes and proceed to other APIs
       } catch (error) {
         console.log('AirportDB.io error:', error instanceof Error ? error.message : 'Unknown');
       }
