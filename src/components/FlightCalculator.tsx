@@ -461,71 +461,78 @@ export function FlightCalculator({ departure, arrival, initialPassengers }: Flig
   };
 
   const calculateAircraftCapability = (aircraft: AircraftType, distance: number, passengers: number) => {
-    // Calculate weights
-    const pilotWeight = 2 * 180; // 2 pilots at 180 lbs each
-    const passengerWeight = passengers * 230; // 180 lbs + 50 lbs luggage per passenger
-    const totalPersonWeight = pilotWeight + passengerWeight;
+    // Step 1: Calculate total payload
+    const avg_pax_weight = 180; // lbs
+    const baggage_per_pax = 50; // lbs
+    const W_pax = passengers * (avg_pax_weight + baggage_per_pax);
     
-    // Calculate maximum fuel we can carry given weight constraints
-    const maxFuelByWeight = Math.max(0, aircraft.maxTakeoffWeight - aircraft.emptyWeight - totalPersonWeight);
-    const maxFuelByPayload = Math.max(0, aircraft.fuelCapacity); // fuel tank limit
-    const availableFuel = Math.min(maxFuelByWeight, maxFuelByPayload, aircraft.fuelCapacity);
-    
-    // Calculate fuel consumption rate (increases with weight)
-    const baselineWeight = aircraft.emptyWeight + (2 * 180) + (2 * 230); // Empty + pilots + 2 passengers (lighter baseline)
-    const currentWeight = aircraft.emptyWeight + totalPersonWeight;
-    const weightFactor = Math.max(1.0, Math.pow(currentWeight / baselineWeight, 1.5)); // More aggressive weight penalty
-    const adjustedConsumption = aircraft.fuelConsumption * weightFactor;
-    
-    // Calculate flight time
+    // Calculate trip fuel needed (basic estimate)
     const flightTimeHours = calculateFlightTimeInHours(distance, aircraft.speed, departureAirport, arrivalAirport);
+    const trip_fuel_needed = (flightTimeHours + 0.75) * aircraft.fuelConsumption; // with 45min reserve
     
-    // Calculate fuel needed (with 45 min reserve) - now accounts for weight
-    const baseFuelNeeded = (flightTimeHours + 0.75) * adjustedConsumption;
+    // Step 2: Total Takeoff Weight
+    const W_takeoff = aircraft.emptyWeight + W_pax + trip_fuel_needed;
     
-    // Calculate actual range with available fuel (accounting for weight)
-    const maxFlightTimeWithFuel = (availableFuel / adjustedConsumption) - 0.75; // minus 45min reserve
-    const effectiveSpeed = aircraft.speed + (departureAirport && arrivalAirport ? getWindComponent(departureAirport, arrivalAirport) : 0);
-    const actualRange = Math.max(0, maxFlightTimeWithFuel * effectiveSpeed);
+    // Step 3: Adjusted Takeoff Distance (assuming R_MTOW is around 3000ft baseline)
+    const R_MTOW_baseline = 3000; // feet, typical runway requirement at MTOW
+    const R_req = R_MTOW_baseline * Math.pow((W_takeoff / aircraft.maxTakeoffWeight), 1.1);
     
-    // Calculate total weight
-    const fuelToCarry = Math.min(baseFuelNeeded, availableFuel);
-    const totalWeight = aircraft.emptyWeight + totalPersonWeight + fuelToCarry;
+    // Step 4: Adjusted Range
+    const W_fuel_max = aircraft.maxTakeoffWeight - aircraft.emptyWeight - W_pax;
+    const available_fuel = Math.min(W_fuel_max, aircraft.fuelCapacity);
+    const Range_adjusted = aircraft.maxRange * (available_fuel / aircraft.fuelCapacity);
     
-    // Debug logging for capability checks
-    console.log(`${aircraft.category} capability check:`, {
-      distance,
-      actualRange: Math.round(actualRange),
-      maxRange: aircraft.maxRange,
-      fuelNeeded: Math.round(baseFuelNeeded),
-      availableFuel: Math.round(availableFuel),
-      fuelCapacity: aircraft.fuelCapacity,
-      flightTimeHours: flightTimeHours.toFixed(2),
-      weightFactor: weightFactor.toFixed(2),
-      adjustedConsumption: Math.round(adjustedConsumption)
+    // Step 5: Feasibility Check
+    const weight_feasible = W_takeoff <= aircraft.maxTakeoffWeight;
+    const runway_feasible = R_req <= 10000; // Assume 10,000ft max runway available
+    const range_feasible = Range_adjusted >= distance;
+    const Feasible = weight_feasible && runway_feasible && range_feasible;
+    
+    // Step 6: Optional Recommendations
+    let recommendations = [];
+    if (!Feasible) {
+      if (!weight_feasible) recommendations.push("Reduce passengers or baggage - aircraft is overweight");
+      if (!runway_feasible) recommendations.push("Use longer runway or reduce weight - takeoff distance too long");
+      if (!range_feasible) recommendations.push("Plan a fuel stop or reduce payload - insufficient range");
+    }
+    
+    // Debug logging
+    console.log(`${aircraft.category} feasibility analysis:`, {
+      passengers,
+      W_pax: Math.round(W_pax),
+      trip_fuel_needed: Math.round(trip_fuel_needed),
+      W_takeoff: Math.round(W_takeoff),
+      MTOW: aircraft.maxTakeoffWeight,
+      R_req: Math.round(R_req),
+      Range_adjusted: Math.round(Range_adjusted),
+      distance: Math.round(distance),
+      feasible: Feasible,
+      recommendations
     });
     
-    // Check all capabilities - now using actual range based on fuel/weight
-    const rangeCapable = distance <= Math.min(actualRange, aircraft.maxRange);
-    const weightCapable = totalWeight <= aircraft.maxTakeoffWeight;
-    const payloadCapable = totalPersonWeight <= aircraft.maxPayload;
-    const fuelCapable = baseFuelNeeded <= availableFuel;
-    
+    // Step 7: Output (maintaining compatibility with existing interface)
     return {
-      capable: rangeCapable && weightCapable && payloadCapable && fuelCapable,
-      pilotWeight,
-      passengerWeight,
-      totalPersonWeight,
-      fuelNeeded: Math.round(baseFuelNeeded),
-      availableFuel: Math.round(availableFuel),
-      actualRange: Math.round(actualRange),
-      totalWeight: Math.round(totalWeight),
-      adjustedConsumption: Math.round(adjustedConsumption),
-      weightFactor: weightFactor,
-      rangeCapable,
-      weightCapable,
-      payloadCapable,
-      fuelCapable
+      capable: Feasible,
+      pilotWeight: 2 * 180, // 2 pilots
+      passengerWeight: passengers * avg_pax_weight,
+      totalPersonWeight: W_pax + (2 * 180),
+      fuelNeeded: Math.round(trip_fuel_needed),
+      availableFuel: Math.round(available_fuel),
+      totalWeight: Math.round(W_takeoff),
+      actualRange: Math.round(Range_adjusted),
+      runwayRequired: Math.round(R_req),
+      recommendations: recommendations,
+      // Additional detailed metrics
+      weightMargin: Math.round(aircraft.maxTakeoffWeight - W_takeoff),
+      rangeMargin: Math.round(Range_adjusted - distance),
+      fuelMargin: Math.round(available_fuel - trip_fuel_needed),
+      // Legacy compatibility fields
+      adjustedConsumption: Math.round(aircraft.fuelConsumption),
+      weightFactor: W_takeoff / aircraft.maxTakeoffWeight,
+      rangeCapable: range_feasible,
+      weightCapable: weight_feasible,
+      payloadCapable: W_pax <= aircraft.maxPayload,
+      fuelCapable: trip_fuel_needed <= available_fuel
     };
   };
 
