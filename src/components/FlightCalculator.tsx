@@ -269,10 +269,37 @@ export function FlightCalculator({ departure, arrival, initialPassengers }: Flig
     }
   }, [departureAirport, arrivalAirport]);
 
-  // Auto-calculate with aviapages when aircraft is selected
+  // Auto-calculate with aviapages when aircraft is selected - with local feasibility check first
   useEffect(() => {
     if (departureAirport && arrivalAirport && selectedAircraft) {
       const fetchAviapagesData = async () => {
+        // First, do a local feasibility check to avoid unnecessary API calls
+        const aircraftCategory = selectedAircraft.split('-')[0];
+        const aircraft = AIRCRAFT_TYPES.find(a => a.category === aircraftCategory);
+        
+        if (!aircraft) return;
+        
+        // Quick feasibility checks
+        const rangeCheck = distance <= aircraft.maxRange;
+        const estimatedWeight = aircraft.emptyWeight + (passengers * 230) + (distance / aircraft.speed * aircraft.fuelConsumption);
+        const weightCheck = estimatedWeight <= aircraft.maxTakeoffWeight * 1.1; // Allow 10% margin
+        
+        // If clearly not feasible, don't call API
+        if (!rangeCheck || !weightCheck) {
+          console.log('Local check failed - skipping aviapages call');
+          setAviapagesResult({
+            errors: [{
+              code: 9999,
+              scope: 'local_check',
+              message: !rangeCheck 
+                ? `Range exceeded: ${distance} NM exceeds maximum range of ${aircraft.maxRange} NM`
+                : `Weight limit exceeded: estimated takeoff weight too high for this aircraft`
+            }]
+          });
+          return;
+        }
+        
+        // If feasible, call aviapages API
         setIsLoadingAviapages(true);
         setAviapagesResult(null);
         try {
@@ -287,8 +314,19 @@ export function FlightCalculator({ departure, arrival, initialPassengers }: Flig
             setAviapagesResult(result.flightTime);
           } else {
             console.warn("Aviapages API failed:", result.error);
-            if (result.error?.includes("throttled")) {
-              toast.error("Aviapages API rate limited. Please wait and try again.");
+            if (result.error?.includes("throttled") || result.error?.includes("429")) {
+              toast.error("Rate limited. Using local calculation instead.");
+              // Fall back to local calculation
+              setAviapagesResult({
+                errors: [{
+                  code: 9998,
+                  scope: 'rate_limit',
+                  message: 'Aviapages API rate limited. Showing local estimate only.'
+                }],
+                distance: { great_circle: distance / 0.539957 },
+                time: { airway: Math.round(distance / aircraft.speed * 60 * 1.08) },
+                fuel: { airway: Math.round(distance / aircraft.speed * aircraft.fuelConsumption * 1.08) }
+              });
             } else {
               toast.error("Failed to get aviapages data");
             }
@@ -301,7 +339,7 @@ export function FlightCalculator({ departure, arrival, initialPassengers }: Flig
       };
       fetchAviapagesData();
     }
-  }, [selectedAircraft, passengers, departureAirport, arrivalAirport]);
+  }, [selectedAircraft, passengers, departureAirport, arrivalAirport, distance]);
 
   return (
     <Card className="shadow-aviation">
