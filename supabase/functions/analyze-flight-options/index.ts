@@ -26,48 +26,59 @@ serve(async (req) => {
       throw new Error("AVIAPAGES_API_TOKEN not configured");
     }
 
-    // Common aircraft types to query from Aviapages
-    const aircraftTypesToQuery = [
-      "Light Jet-Citation CJ3+",
-      "Light Jet-Phenom 300",
-      "Super Light Jet-Citation CJ4",
-      "Super Mid Jet-Citation X+",
-      "Super Mid Jet-Gulfstream G280",
-      "Heavy Jet-Gulfstream G650",
-      "Heavy Jet-Global 6000",
-      "Light Jet-Learjet 75",
+    // Common aircraft models to query from Aviapages (just model names, not categories)
+    const aircraftModels = [
+      { name: "Citation CJ3+", category: "Light Jet" },
+      { name: "Phenom 300", category: "Light Jet" },
+      { name: "Citation CJ4", category: "Super Light Jet" },
+      { name: "Citation X+", category: "Super Mid Jet" },
+      { name: "Gulfstream G280", category: "Super Mid Jet" },
+      { name: "Gulfstream G650", category: "Heavy Jet" },
+      { name: "Global 6000", category: "Heavy Jet" },
+      { name: "Learjet 75", category: "Light Jet" },
     ];
 
-    // Query Aviapages for each aircraft type
+    // Query Aviapages for each aircraft model using POST method
     const aviapagesResults = await Promise.all(
-      aircraftTypesToQuery.map(async (aircraftType) => {
+      aircraftModels.map(async (aircraft) => {
         try {
-          const response = await fetch(
-            `https://dir.aviapages.com/api/flight_time/?departure=${departureCode}&arrival=${arrivalCode}&aircraft=${encodeURIComponent(aircraftType)}&passengers=${passengers}`,
-            {
-              headers: {
-                'Authorization': `Token ${AVIAPAGES_API_TOKEN}`,
-              },
-            }
-          );
+          const requestBody = {
+            departure_airport: departureCode,
+            arrival_airport: arrivalCode,
+            aircraft: aircraft.name,
+            pax: passengers,
+            great_circle_time: true,
+            great_circle_distance: true,
+            airway_time: true
+          };
+
+          const response = await fetch('https://frc.aviapages.com/api/flight_calculator/', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Token ${AVIAPAGES_API_TOKEN}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(requestBody),
+            signal: AbortSignal.timeout(15000)
+          });
 
           if (response.ok) {
             const data = await response.json();
-            const [category, name] = aircraftType.split('-');
+            console.log(`Aviapages success for ${aircraft.name}`);
             return { 
-              aircraftType,
-              name,
-              category,
+              name: aircraft.name,
+              category: aircraft.category,
               aviapagesData: data, 
               success: true 
             };
           } else {
-            console.log(`Aviapages failed for ${aircraftType}: ${response.statusText}`);
-            return { aircraftType, success: false };
+            const errorText = await response.text();
+            console.log(`Aviapages failed for ${aircraft.name}: ${response.status} - ${errorText}`);
+            return { name: aircraft.name, category: aircraft.category, success: false };
           }
         } catch (error) {
-          console.log(`Aviapages error for ${aircraftType}:`, error.message);
-          return { aircraftType, success: false };
+          console.log(`Aviapages error for ${aircraft.name}:`, error.message);
+          return { name: aircraft.name, category: aircraft.category, success: false };
         }
       })
     );
