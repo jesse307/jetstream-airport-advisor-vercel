@@ -42,36 +42,35 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Flatten data to individual fields at root level for Make webhook
-    const webhookPayload = {
-      firstName: leadData.firstName,
-      lastName: leadData.lastName,
-      email: leadData.email,
-      phone: leadData.phone,
-      tripType: leadData.tripType,
-      departureAirport: leadData.departureAirport,
-      arrivalAirport: leadData.arrivalAirport,
-      departureDate: leadData.departureDate,
-      departureTime: leadData.departureTime,
-      returnDate: leadData.returnDate,
-      returnTime: leadData.returnTime,
-      passengers: leadData.passengers,
-      notes: leadData.notes,
-      leadId: leadData.leadId,
-      createdAt: leadData.createdAt,
-      status: leadData.status
-    };
+    // Create form data with individual fields for Make webhook
+    const formData = new URLSearchParams();
+    formData.append('firstName', leadData.firstName);
+    formData.append('lastName', leadData.lastName);
+    formData.append('email', leadData.email);
+    formData.append('phone', leadData.phone);
+    formData.append('tripType', leadData.tripType);
+    formData.append('departureAirport', leadData.departureAirport);
+    formData.append('arrivalAirport', leadData.arrivalAirport);
+    formData.append('departureDate', leadData.departureDate);
+    formData.append('departureTime', leadData.departureTime || '');
+    formData.append('returnDate', leadData.returnDate);
+    formData.append('returnTime', leadData.returnTime || '');
+    formData.append('passengers', leadData.passengers.toString());
+    formData.append('notes', leadData.notes || '');
+    formData.append('leadId', leadData.leadId);
+    formData.append('createdAt', leadData.createdAt);
+    formData.append('status', leadData.status);
 
-    console.log("Sending data to Make webhook:", JSON.stringify(webhookPayload, null, 2));
+    console.log("Sending form data to Make webhook:", formData.toString());
 
     const webhookUrl = "https://hook.us2.make.com/j8qtzo8gui8ieqaye9dxprb2cgxqydlb";
     
     const webhookResponse = await fetch(webhookUrl, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
+        "Content-Type": "application/x-www-form-urlencoded",
       },
-      body: JSON.stringify(webhookPayload),
+      body: formData.toString(),
     });
 
     const responseText = await webhookResponse.text();
