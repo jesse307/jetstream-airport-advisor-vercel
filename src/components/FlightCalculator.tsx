@@ -274,28 +274,56 @@ export function FlightCalculator({ departure, arrival, initialPassengers }: Flig
   const handleCalculate = async () => {
     if (!departureAirport || !arrivalAirport || !selectedAircraft) return;
     
-    // First, do a local feasibility check to avoid unnecessary API calls
+    // First, do comprehensive local feasibility checks to avoid unnecessary API calls
     const aircraftCategory = selectedAircraft.split('-')[0];
     const aircraft = AIRCRAFT_TYPES.find(a => a.category === aircraftCategory);
     
     if (!aircraft) return;
     
-    // Quick feasibility checks
-    const rangeCheck = distance <= aircraft.maxRange;
-    const estimatedWeight = aircraft.emptyWeight + (passengers * 230) + (distance / aircraft.speed * aircraft.fuelConsumption);
-    const weightCheck = estimatedWeight <= aircraft.maxTakeoffWeight * 1.1; // Allow 10% margin
+    // 1. Runway compatibility check
+    const departureRunwayOk = checkRunwayCompatibility(departureAirport.runway, aircraft.minRunway);
+    const arrivalRunwayOk = checkRunwayCompatibility(arrivalAirport.runway, aircraft.minRunway);
     
-    // If clearly not feasible, don't call API
-    if (!rangeCheck || !weightCheck) {
-      console.log('Local check failed - skipping aviapages call');
+    // 2. Calculate weights (lbs)
+    const passengerWeight = passengers * 230; // Average passenger + luggage
+    const flightTimeHours = distance / aircraft.speed;
+    const fuelNeededLbs = flightTimeHours * aircraft.fuelConsumption;
+    const fuelWithReserve = fuelNeededLbs * 1.15; // 15% reserve for safety, alternate, etc.
+    
+    // 3. Payload check - can we carry the passengers?
+    const payloadNeeded = passengerWeight;
+    const payloadAvailable = aircraft.maxPayload;
+    const payloadOk = payloadNeeded <= payloadAvailable;
+    
+    // 4. Fuel capacity check - can we carry enough fuel?
+    const fuelCapacityOk = fuelWithReserve <= aircraft.fuelCapacity;
+    
+    // 5. Total weight check - is takeoff weight within limits?
+    const totalWeight = aircraft.emptyWeight + passengerWeight + fuelWithReserve;
+    const weightOk = totalWeight <= aircraft.maxTakeoffWeight;
+    
+    // 6. Range check with actual fuel load
+    const actualRange = (aircraft.fuelCapacity / aircraft.fuelConsumption) * aircraft.speed;
+    const rangeOk = distance <= actualRange * 0.85; // Use 85% of theoretical max range
+    
+    // Collect all failures
+    const failures = [];
+    if (!departureRunwayOk) failures.push(`Departure runway too short (needs ${aircraft.minRunway} ft)`);
+    if (!arrivalRunwayOk) failures.push(`Arrival runway too short (needs ${aircraft.minRunway} ft)`);
+    if (!payloadOk) failures.push(`Payload exceeded: ${Math.round(payloadNeeded)} lbs needed, ${aircraft.maxPayload} lbs available`);
+    if (!fuelCapacityOk) failures.push(`Fuel capacity exceeded: ${Math.round(fuelWithReserve)} lbs needed, ${aircraft.fuelCapacity} lbs capacity`);
+    if (!weightOk) failures.push(`Takeoff weight exceeded: ${Math.round(totalWeight)} lbs total, ${aircraft.maxTakeoffWeight} lbs maximum`);
+    if (!rangeOk) failures.push(`Range exceeded: ${distance} NM requested, ~${Math.round(actualRange * 0.85)} NM practical range`);
+    
+    // If any check fails, don't call API
+    if (failures.length > 0) {
+      console.log('Local feasibility checks failed:', failures);
       setAviapagesResult({
-        errors: [{
-          code: 9999,
+        errors: failures.map((msg, idx) => ({
+          code: 9999 + idx,
           scope: 'local_check',
-          message: !rangeCheck 
-            ? `Range exceeded: ${distance} NM exceeds maximum range of ${aircraft.maxRange} NM`
-            : `Weight limit exceeded: estimated takeoff weight too high for this aircraft`
-        }]
+          message: msg
+        }))
       });
       return;
     }
