@@ -32,11 +32,11 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: 'You are a data extraction assistant. Extract lead information from unstructured text and return it in a structured format.'
+            content: 'You are a data extraction assistant. Extract CLIENT/CUSTOMER lead information from unstructured text. The data may contain both rep/owner information and client information - always extract the CLIENT information (usually found under "Name", "Company Name", or similar fields), NOT the rep/owner information at the top.'
           },
           {
             role: 'user',
-            content: `Extract lead information from the following text:\n\n${unstructuredData}`
+            content: `Extract CLIENT lead information from the following text. Look for the client/customer name (often under "Name" or "Company" fields), not the rep/owner name:\n\n${unstructuredData}`
           }
         ],
         tools: [
@@ -48,8 +48,8 @@ serve(async (req) => {
               parameters: {
                 type: 'object',
                 properties: {
-                  first_name: { type: 'string', description: 'First name of the contact' },
-                  last_name: { type: 'string', description: 'Last name of the contact' },
+                  first_name: { type: 'string', description: 'First name of the CLIENT/CUSTOMER (not the rep or owner)' },
+                  last_name: { type: 'string', description: 'Last name of the CLIENT/CUSTOMER (not the rep or owner)' },
                   email: { type: 'string', description: 'Email address' },
                   phone: { type: 'string', description: 'Phone number' },
                   trip_type: { 
