@@ -84,15 +84,17 @@ export default function LeadAnalysis() {
         status: lead.status
       };
 
-      const response = await fetch('https://hook.us2.make.com/j8qtzo8gui8ieqaye9dxprb2cgxqydlb', {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        mode: "no-cors",
-        body: JSON.stringify(exportData),
+      const { data, error } = await supabase.functions.invoke('trigger-make-webhook', {
+        body: { leadData: exportData }
       });
 
+      if (error) {
+        console.error('Process error:', error);
+        toast.error('Failed to start process');
+        return;
+      }
+
+      console.log('Make webhook response:', data);
       toast.success('Process started successfully!');
     } catch (error) {
       console.error('Process error:', error);

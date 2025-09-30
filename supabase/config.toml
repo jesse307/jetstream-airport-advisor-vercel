@@ -6,6 +6,9 @@ verify_jwt = false
 [functions.test-api]
 verify_jwt = false
 
+[functions.trigger-make-webhook]
+verify_jwt = false
+
 [functions.get-make-api-key]
 verify_jwt = false
 
