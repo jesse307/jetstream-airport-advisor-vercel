@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import LeadIntake from "./pages/LeadIntake";
+import LeadImport from "./pages/LeadImport";
 import LeadAnalysis from "./pages/LeadAnalysis";
 import NotFound from "./pages/NotFound";
 
@@ -19,6 +20,7 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/leads/new" element={<LeadIntake />} />
+          <Route path="/leads/import" element={<LeadImport />} />
           <Route path="/leads/:id" element={<LeadAnalysis />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

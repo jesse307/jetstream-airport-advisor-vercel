@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.get-make-api-key]
 verify_jwt = false
+
+[functions.parse-lead-data]
+verify_jwt = false
