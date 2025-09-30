@@ -155,6 +155,17 @@ export function FlightCalculator({ departure, arrival, departureAirport: propDep
     return !isNaN(runwayLength) && runwayLength >= minRunway;
   };
 
+  // Calculate distance when airports change
+  useEffect(() => {
+    if (departureAirport && arrivalAirport) {
+      const dist = calculateDistance(departureAirport, arrivalAirport);
+      console.log('Distance calculated:', dist, 'NM');
+      setDistance(dist);
+    } else {
+      setDistance(0);
+    }
+  }, [departureAirport, arrivalAirport]);
+
   // Find minimum capable category and one above it, then get 2-3 popular models
   const getRecommendedAircraftModels = () => {
     if (!departureAirport || !arrivalAirport || distance === 0) return [];
@@ -221,13 +232,24 @@ export function FlightCalculator({ departure, arrival, departureAirport: propDep
   // Auto-calculate recommendations when distance/passengers change
   useEffect(() => {
     const fetchRecommendations = async () => {
+      console.log('fetchRecommendations called', { 
+        departureAirport: departureAirport?.code, 
+        arrivalAirport: arrivalAirport?.code, 
+        distance,
+        passengers 
+      });
+
       if (!departureAirport || !arrivalAirport || distance === 0) {
+        console.log('Skipping: missing data', { departureAirport: !!departureAirport, arrivalAirport: !!arrivalAirport, distance });
         setRecommendedAircraft([]);
         return;
       }
 
       const models = getRecommendedAircraftModels();
+      console.log('Recommended models:', models.map(m => m.name));
+      
       if (models.length === 0) {
+        console.log('No capable aircraft found');
         setRecommendedAircraft([]);
         return;
       }
