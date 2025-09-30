@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { calculateFlightTimeWithAviapages } from "@/lib/aviapages";
 import { toast } from "sonner";
@@ -269,77 +270,74 @@ export function FlightCalculator({ departure, arrival, initialPassengers }: Flig
     }
   }, [departureAirport, arrivalAirport]);
 
-  // Auto-calculate with aviapages when aircraft is selected - with local feasibility check first
-  useEffect(() => {
-    if (departureAirport && arrivalAirport && selectedAircraft) {
-      const fetchAviapagesData = async () => {
-        // First, do a local feasibility check to avoid unnecessary API calls
-        const aircraftCategory = selectedAircraft.split('-')[0];
-        const aircraft = AIRCRAFT_TYPES.find(a => a.category === aircraftCategory);
-        
-        if (!aircraft) return;
-        
-        // Quick feasibility checks
-        const rangeCheck = distance <= aircraft.maxRange;
-        const estimatedWeight = aircraft.emptyWeight + (passengers * 230) + (distance / aircraft.speed * aircraft.fuelConsumption);
-        const weightCheck = estimatedWeight <= aircraft.maxTakeoffWeight * 1.1; // Allow 10% margin
-        
-        // If clearly not feasible, don't call API
-        if (!rangeCheck || !weightCheck) {
-          console.log('Local check failed - skipping aviapages call');
+  // Manual calculation with button click
+  const handleCalculate = async () => {
+    if (!departureAirport || !arrivalAirport || !selectedAircraft) return;
+    
+    // First, do a local feasibility check to avoid unnecessary API calls
+    const aircraftCategory = selectedAircraft.split('-')[0];
+    const aircraft = AIRCRAFT_TYPES.find(a => a.category === aircraftCategory);
+    
+    if (!aircraft) return;
+    
+    // Quick feasibility checks
+    const rangeCheck = distance <= aircraft.maxRange;
+    const estimatedWeight = aircraft.emptyWeight + (passengers * 230) + (distance / aircraft.speed * aircraft.fuelConsumption);
+    const weightCheck = estimatedWeight <= aircraft.maxTakeoffWeight * 1.1; // Allow 10% margin
+    
+    // If clearly not feasible, don't call API
+    if (!rangeCheck || !weightCheck) {
+      console.log('Local check failed - skipping aviapages call');
+      setAviapagesResult({
+        errors: [{
+          code: 9999,
+          scope: 'local_check',
+          message: !rangeCheck 
+            ? `Range exceeded: ${distance} NM exceeds maximum range of ${aircraft.maxRange} NM`
+            : `Weight limit exceeded: estimated takeoff weight too high for this aircraft`
+        }]
+      });
+      return;
+    }
+    
+    // If feasible, call aviapages API
+    setIsLoadingAviapages(true);
+    setAviapagesResult(null);
+    try {
+      const result = await calculateFlightTimeWithAviapages(
+        departureAirport.code,
+        arrivalAirport.code,
+        selectedAircraft,
+        passengers
+      );
+      
+      if (result.success) {
+        setAviapagesResult(result.flightTime);
+      } else {
+        console.warn("Aviapages API failed:", result.error);
+        if (result.error?.includes("throttled") || result.error?.includes("429")) {
+          toast.error("Rate limited. Using local calculation instead.");
+          // Fall back to local calculation
           setAviapagesResult({
             errors: [{
-              code: 9999,
-              scope: 'local_check',
-              message: !rangeCheck 
-                ? `Range exceeded: ${distance} NM exceeds maximum range of ${aircraft.maxRange} NM`
-                : `Weight limit exceeded: estimated takeoff weight too high for this aircraft`
-            }]
+              code: 9998,
+              scope: 'rate_limit',
+              message: 'Aviapages API rate limited. Showing local estimate only.'
+            }],
+            distance: { great_circle: distance / 0.539957 },
+            time: { airway: Math.round(distance / aircraft.speed * 60 * 1.08) },
+            fuel: { airway: Math.round(distance / aircraft.speed * aircraft.fuelConsumption * 1.08) }
           });
-          return;
+        } else {
+          toast.error("Failed to get aviapages data");
         }
-        
-        // If feasible, call aviapages API
-        setIsLoadingAviapages(true);
-        setAviapagesResult(null);
-        try {
-          const result = await calculateFlightTimeWithAviapages(
-            departureAirport.code,
-            arrivalAirport.code,
-            selectedAircraft,
-            passengers
-          );
-          
-          if (result.success) {
-            setAviapagesResult(result.flightTime);
-          } else {
-            console.warn("Aviapages API failed:", result.error);
-            if (result.error?.includes("throttled") || result.error?.includes("429")) {
-              toast.error("Rate limited. Using local calculation instead.");
-              // Fall back to local calculation
-              setAviapagesResult({
-                errors: [{
-                  code: 9998,
-                  scope: 'rate_limit',
-                  message: 'Aviapages API rate limited. Showing local estimate only.'
-                }],
-                distance: { great_circle: distance / 0.539957 },
-                time: { airway: Math.round(distance / aircraft.speed * 60 * 1.08) },
-                fuel: { airway: Math.round(distance / aircraft.speed * aircraft.fuelConsumption * 1.08) }
-              });
-            } else {
-              toast.error("Failed to get aviapages data");
-            }
-          }
-        } catch (error) {
-          console.error("Error calling aviapages:", error);
-        } finally {
-          setIsLoadingAviapages(false);
-        }
-      };
-      fetchAviapagesData();
+      }
+    } catch (error) {
+      console.error("Error calling aviapages:", error);
+    } finally {
+      setIsLoadingAviapages(false);
     }
-  }, [selectedAircraft, passengers, departureAirport, arrivalAirport, distance]);
+  };
 
   return (
     <Card className="shadow-aviation">
@@ -393,6 +391,13 @@ export function FlightCalculator({ departure, arrival, initialPassengers }: Flig
                     )}
                   </SelectContent>
                 </Select>
+                <Button 
+                  onClick={handleCalculate} 
+                  disabled={!selectedAircraft || isLoadingAviapages}
+                  className="shrink-0"
+                >
+                  {isLoadingAviapages ? "Calculating..." : "Calculate"}
+                </Button>
               </div>
             )}
           </div>
@@ -425,16 +430,9 @@ export function FlightCalculator({ departure, arrival, initialPassengers }: Flig
                 <div className="flex items-center gap-2 mb-4">
                   <Plane className="h-4 w-4 text-primary" />
                   <span className="font-semibold text-primary">Flight Details</span>
-                  {isLoadingAviapages && (
-                    <Badge variant="secondary" className="text-xs">Calculating...</Badge>
-                  )}
                 </div>
                 
-                {isLoadingAviapages ? (
-                  <div className="text-sm text-muted-foreground">
-                    Loading flight data from aviapages...
-                  </div>
-                ) : aviapagesResult ? (
+                {aviapagesResult ? (
                   <>
                     {/* Check for errors first */}
                     {aviapagesResult.errors && aviapagesResult.errors.length > 0 ? (
