@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { calculateFlightTimeWithAviapages } from "@/lib/aviapages";
 import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { FlightAnalysisReport } from "./FlightAnalysisReport";
 
 interface Airport {
   code: string;
@@ -613,6 +614,15 @@ export function FlightCalculator({ departure, arrival, departureAirport: propDep
               </div>
             )}
           </div>
+        )}
+        
+        {/* Flight Analysis Report */}
+        {departureAirport && arrivalAirport && distance > 0 && (
+          <FlightAnalysisReport 
+            departureAirport={departureAirport}
+            arrivalAirport={arrivalAirport}
+            passengers={passengers}
+          />
         )}
       </CardContent>
     </Card>
