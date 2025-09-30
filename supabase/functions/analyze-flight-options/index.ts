@@ -192,157 +192,58 @@ serve(async (req) => {
       })
     );
 
-    // Generate HTML report
+    // Generate compact HTML report
     const generateHTML = () => {
-      const depRunway = departureAirport.runway || departureAirport.runwayLength || 'N/A';
-      const arrRunway = arrivalAirport.runway || arrivalAirport.runwayLength || 'N/A';
-
       return `
 <!DOCTYPE html>
 <html>
 <head>
   <style>
-    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: 0 auto; padding: 20px; }
-    .header { background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); color: white; padding: 30px; border-radius: 8px; margin-bottom: 30px; }
-    .header h1 { margin: 0; font-size: 28px; }
-    .section { background: #f8fafc; padding: 20px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #3b82f6; }
-    .section h2 { color: #1e40af; margin-top: 0; font-size: 20px; }
-    .route-info { display: flex; justify-content: space-between; align-items: center; margin: 20px 0; }
-    .airport { flex: 1; text-align: center; }
-    .airport-code { font-size: 32px; font-weight: bold; color: #1e40af; }
-    .airport-name { font-size: 14px; color: #64748b; }
-    .route-arrow { font-size: 24px; color: #3b82f6; padding: 0 20px; }
-    .info-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
-    .info-item { background: white; padding: 15px; border-radius: 6px; }
-    .info-label { font-size: 12px; color: #64748b; text-transform: uppercase; }
-    .info-value { font-size: 18px; font-weight: bold; color: #1e40af; margin-top: 5px; }
-    .aircraft-card { background: white; border: 2px solid #e2e8f0; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
-    .aircraft-header { display: flex; justify-content: between; align-items: center; margin-bottom: 15px; }
-    .aircraft-name { font-size: 20px; font-weight: bold; color: #1e40af; }
-    .aircraft-category { background: #dbeafe; color: #1e40af; padding: 5px 12px; border-radius: 12px; font-size: 12px; }
-    .specs-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 15px; }
-    .spec-item { text-align: center; padding: 10px; background: #f8fafc; border-radius: 6px; }
-    .spec-label { font-size: 11px; color: #64748b; }
-    .spec-value { font-size: 16px; font-weight: bold; color: #334155; margin-top: 3px; }
-    .aviapages-data { background: #f0f9ff; padding: 15px; border-radius: 6px; margin-top: 15px; }
-    .warning { background: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; border-radius: 6px; margin-top: 15px; }
-    .footer { text-align: center; color: #64748b; padding: 20px; font-size: 12px; margin-top: 30px; border-top: 2px solid #e2e8f0; }
+    body { font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
+    .route { background: #f0f9ff; padding: 15px; border-radius: 6px; margin-bottom: 20px; text-align: center; }
+    .route-line { display: flex; justify-content: center; align-items: center; gap: 15px; margin-bottom: 8px; }
+    .airport { font-size: 24px; font-weight: bold; color: #1e40af; }
+    .arrow { color: #64748b; }
+    .distance { font-size: 14px; color: #64748b; }
+    .aircraft-list { margin-top: 15px; }
+    .aircraft { background: white; border: 1px solid #e2e8f0; padding: 12px; margin-bottom: 10px; border-radius: 6px; }
+    .aircraft-name { font-weight: bold; color: #1e40af; margin-bottom: 5px; }
+    .aircraft-info { font-size: 13px; color: #64748b; }
   </style>
 </head>
 <body>
-  <div class="header">
-    <h1>✈️ Flight Analysis Report</h1>
-    <p style="margin: 10px 0 0 0; opacity: 0.9;">Comprehensive route and aircraft analysis</p>
+  <div class="route">
+    <div class="route-line">
+      <span class="airport">${departureCode}</span>
+      <span class="arrow">→</span>
+      <span class="airport">${arrivalCode}</span>
+    </div>
+    <div class="distance">${distance} NM • ${passengers} passenger${passengers > 1 ? 's' : ''}</div>
   </div>
 
-  <div class="route-info">
-    <div class="airport">
-      <div class="airport-code">${departureCode}</div>
-      <div class="airport-name">${departureAirport.name}</div>
-      <div class="airport-name">${departureAirport.city}</div>
-    </div>
-    <div class="route-arrow">→</div>
-    <div class="airport">
-      <div class="airport-code">${arrivalCode}</div>
-      <div class="airport-name">${arrivalAirport.name}</div>
-      <div class="airport-name">${arrivalAirport.city}</div>
-    </div>
-  </div>
-
-  <div class="section">
-    <h2>Route Analysis</h2>
-    <div class="info-grid">
-      <div class="info-item">
-        <div class="info-label">Distance</div>
-        <div class="info-value">${distance} NM</div>
-      </div>
-      <div class="info-item">
-        <div class="info-label">Passengers</div>
-        <div class="info-value">${passengers}</div>
-      </div>
-      <div class="info-item">
-        <div class="info-label">Departure Runway</div>
-        <div class="info-value">${depRunway}'</div>
-      </div>
-      <div class="info-item">
-        <div class="info-label">Arrival Runway</div>
-        <div class="info-value">${arrRunway}'</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="section">
-    <h2>Recommended Aircraft Options</h2>
-    <p style="color: #64748b; margin-bottom: 20px;">Based on route requirements, passenger count, and runway compatibility</p>
-    
+  <div class="aircraft-list">
     ${aviapagesResults.map((result, index) => {
       const aircraft = result.aircraft;
       const flightTime = result.success && result.aviapagesData?.time?.airway 
         ? Math.round(result.aviapagesData.time.airway) 
         : Math.round((distance / aircraft.speed) * 60);
+      const hours = Math.floor(flightTime / 60);
+      const mins = flightTime % 60;
 
       return `
-    <div class="aircraft-card">
-      <div class="aircraft-header">
-        <div>
-          <div class="aircraft-name">${index + 1}. ${aircraft.name}</div>
-          <div style="font-size: 14px; color: #64748b; margin-top: 5px;">${aircraft.category}</div>
-        </div>
-        <div class="aircraft-category">Option ${index + 1}</div>
-      </div>
-      
-      <div class="specs-grid">
-        <div class="spec-item">
-          <div class="spec-label">Flight Time</div>
-          <div class="spec-value">${Math.floor(flightTime / 60)}h ${flightTime % 60}m</div>
-        </div>
-        <div class="spec-item">
-          <div class="spec-label">Cruise Speed</div>
-          <div class="spec-value">${aircraft.speed} kts</div>
-        </div>
-        <div class="spec-item">
-          <div class="spec-label">Max Range</div>
-          <div class="spec-value">${aircraft.maxRange} NM</div>
-        </div>
-        <div class="spec-item">
-          <div class="spec-label">Min Runway</div>
-          <div class="spec-value">${aircraft.minRunway}'</div>
-        </div>
-        <div class="spec-item">
-          <div class="spec-label">Max Passengers</div>
-          <div class="spec-value">${aircraft.maxPassengers}</div>
-        </div>
-      </div>
-
-      ${result.success && result.aviapagesData ? `
-      <div class="aviapages-data">
-        <strong>✓ Verified Flight Data</strong>
-        <div style="font-size: 13px; color: #334155; margin-top: 8px;">
-          Actual distance: ${result.aviapagesData.distance?.great_circle ? Math.round(result.aviapagesData.distance.great_circle * 0.539957) : distance} NM
-        </div>
-      </div>
-      ` : result.error ? `
-      <div class="warning">
-        ⚠️ Using estimated calculations (Aviapages unavailable)
-      </div>
-      ` : ''}
+    <div class="aircraft">
+      <div class="aircraft-name">${aircraft.name}</div>
+      <div class="aircraft-info">${aircraft.category} • ${hours}h ${mins}m • ${aircraft.speed} kts</div>
     </div>
       `;
     }).join('')}
   </div>
 
   ${selectedAircraft.length === 0 ? `
-  <div class="warning">
-    <strong>⚠️ No Suitable Aircraft Found</strong>
-    <p style="margin: 10px 0 0 0;">The route requirements exceed available aircraft capabilities or runway limitations. Please contact us for alternative solutions.</p>
+  <div style="background: #fef3c7; padding: 15px; border-radius: 6px; margin-top: 15px;">
+    <strong>⚠️ No suitable aircraft found</strong>
   </div>
   ` : ''}
-
-  <div class="footer">
-    <p><strong>This is an automated analysis</strong></p>
-    <p>Prices are estimates and subject to change. Contact us for accurate quotes and availability.</p>
-    <p style="margin-top: 15px;">Generated on ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
-  </div>
 </body>
 </html>
       `.trim();
