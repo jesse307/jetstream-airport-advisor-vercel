@@ -26,153 +26,24 @@ serve(async (req) => {
       throw new Error("AVIAPAGES_API_TOKEN not configured");
     }
 
-    // Calculate distance using Haversine formula
-    const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
-      const R = 3440.065; // Earth's radius in nautical miles
-      const dLat = (lat2 - lat1) * Math.PI / 180;
-      const dLon = (lon2 - lon1) * Math.PI / 180;
-      
-      const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-        Math.sin(dLon/2) * Math.sin(dLon/2);
-      
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-      return Math.round(R * c);
-    };
-
-    const distance = calculateDistance(
-      departureAirport.latitude,
-      departureAirport.longitude,
-      arrivalAirport.latitude,
-      arrivalAirport.longitude
-    );
-
-    // Aircraft database with comprehensive specs
-    const aircraftDatabase = [
-      {
-        name: "Citation CJ3+",
-        category: "Light Jet",
-        speed: 464,
-        minRunway: 4000,
-        maxPassengers: 8,
-        maxRange: 2000,
-        hourlyRate: 8100,
-        emptyWeight: 11500,
-        maxTakeoffWeight: 17110,
-        maxPayload: 2200,
-        fuelCapacity: 5200,
-        fuelConsumption: 230,
-      },
-      {
-        name: "Citation CJ4",
-        category: "Super Light Jet",
-        speed: 451,
-        minRunway: 4500,
-        maxPassengers: 9,
-        maxRange: 2400,
-        hourlyRate: 9200,
-        emptyWeight: 13000,
-        maxTakeoffWeight: 19500,
-        maxPayload: 2600,
-        fuelCapacity: 6800,
-        fuelConsumption: 270,
-      },
-      {
-        name: "Citation X+",
-        category: "Super Mid Jet",
-        speed: 700,
-        minRunway: 5250,
-        maxPassengers: 10,
-        maxRange: 3460,
-        hourlyRate: 12500,
-        emptyWeight: 22700,
-        maxTakeoffWeight: 36600,
-        maxPayload: 3200,
-        fuelCapacity: 13900,
-        fuelConsumption: 400,
-      },
-      {
-        name: "Gulfstream G280",
-        category: "Super Mid Jet",
-        speed: 652,
-        minRunway: 4750,
-        maxPassengers: 10,
-        maxRange: 3600,
-        hourlyRate: 13500,
-        emptyWeight: 21450,
-        maxTakeoffWeight: 39600,
-        maxPayload: 4100,
-        fuelCapacity: 15620,
-        fuelConsumption: 380,
-      },
-      {
-        name: "Gulfstream G650",
-        category: "Heavy Jet",
-        speed: 652,
-        minRunway: 6000,
-        maxPassengers: 16,
-        maxRange: 7000,
-        hourlyRate: 18500,
-        emptyWeight: 53900,
-        maxTakeoffWeight: 99600,
-        maxPayload: 7500,
-        fuelCapacity: 44200,
-        fuelConsumption: 550,
-      },
-      {
-        name: "Phenom 300",
-        category: "Light Jet",
-        speed: 464,
-        minRunway: 4000,
-        maxPassengers: 8,
-        maxRange: 2000,
-        hourlyRate: 8100,
-        emptyWeight: 11500,
-        maxTakeoffWeight: 17110,
-        maxPayload: 2200,
-        fuelCapacity: 5200,
-        fuelConsumption: 230,
-      },
+    // Common aircraft types to query from Aviapages
+    const aircraftTypesToQuery = [
+      "Light Jet-Citation CJ3+",
+      "Light Jet-Phenom 300",
+      "Super Light Jet-Citation CJ4",
+      "Super Mid Jet-Citation X+",
+      "Super Mid Jet-Gulfstream G280",
+      "Heavy Jet-Gulfstream G650",
+      "Heavy Jet-Global 6000",
+      "Light Jet-Learjet 75",
     ];
 
-    // Check runway compatibility
-    const checkRunwayCompatibility = (runway: number | string | undefined, minRunway: number): boolean => {
-      if (!runway) return false;
-      const runwayLength = typeof runway === 'number' ? runway : parseInt(String(runway).replace(/[^\d]/g, ""));
-      return !isNaN(runwayLength) && runwayLength >= minRunway;
-    };
-
-    // Filter capable aircraft
-    const capableAircraft = aircraftDatabase.filter(aircraft => {
-      const depRunway = departureAirport.runway || departureAirport.runwayLength;
-      const arrRunway = arrivalAirport.runway || arrivalAirport.runwayLength;
-      
-      const departureOk = checkRunwayCompatibility(depRunway, aircraft.minRunway);
-      const arrivalOk = checkRunwayCompatibility(arrRunway, aircraft.minRunway);
-      
-      const flightTimeHours = distance / aircraft.speed;
-      const fuelNeeded = flightTimeHours * aircraft.fuelConsumption * 1.15;
-      const passengerWeight = passengers * 230;
-      const totalWeight = aircraft.emptyWeight + passengerWeight + fuelNeeded;
-      
-      const rangeOk = distance <= aircraft.maxRange * 0.85;
-      const passengersOk = passengers <= aircraft.maxPassengers;
-      const weightOk = totalWeight <= aircraft.maxTakeoffWeight;
-      const payloadOk = passengerWeight <= aircraft.maxPayload;
-      const fuelOk = fuelNeeded <= aircraft.fuelCapacity;
-      
-      return departureOk && arrivalOk && rangeOk && passengersOk && weightOk && payloadOk && fuelOk;
-    });
-
-    // Take top 3-4 aircraft
-    const selectedAircraft = capableAircraft.slice(0, 4);
-
-    // Call Aviapages for each aircraft
+    // Query Aviapages for each aircraft type
     const aviapagesResults = await Promise.all(
-      selectedAircraft.map(async (aircraft) => {
+      aircraftTypesToQuery.map(async (aircraftType) => {
         try {
           const response = await fetch(
-            `https://dir.aviapages.com/api/flight_time/?departure=${departureCode}&arrival=${arrivalCode}&aircraft=${encodeURIComponent(`${aircraft.category}-${aircraft.name}`)}&passengers=${passengers}`,
+            `https://dir.aviapages.com/api/flight_time/?departure=${departureCode}&arrival=${arrivalCode}&aircraft=${encodeURIComponent(aircraftType)}&passengers=${passengers}`,
             {
               headers: {
                 'Authorization': `Token ${AVIAPAGES_API_TOKEN}`,
@@ -182,15 +53,32 @@ serve(async (req) => {
 
           if (response.ok) {
             const data = await response.json();
-            return { aircraft, aviapagesData: data, success: true };
+            const [category, name] = aircraftType.split('-');
+            return { 
+              aircraftType,
+              name,
+              category,
+              aviapagesData: data, 
+              success: true 
+            };
           } else {
-            return { aircraft, success: false, error: response.statusText };
+            console.log(`Aviapages failed for ${aircraftType}: ${response.statusText}`);
+            return { aircraftType, success: false };
           }
         } catch (error) {
-          return { aircraft, success: false, error: error.message };
+          console.log(`Aviapages error for ${aircraftType}:`, error.message);
+          return { aircraftType, success: false };
         }
       })
     );
+
+    // Filter to only successful results and take top 3-4
+    const successfulAircraft = aviapagesResults
+      .filter(result => result.success)
+      .slice(0, 4);
+
+    // Get distance from first successful result
+    const distance = successfulAircraft[0]?.aviapagesData?.distance?.airway || 0;
 
     // Generate compact HTML report
     const generateHTML = () => {
@@ -218,28 +106,28 @@ serve(async (req) => {
       <span class="arrow">→</span>
       <span class="airport">${arrivalCode}</span>
     </div>
-    <div class="distance">${distance} NM • ${passengers} passenger${passengers > 1 ? 's' : ''}</div>
+    <div class="distance">${Math.round(distance)} NM • ${passengers} passenger${passengers > 1 ? 's' : ''}</div>
   </div>
 
   <div class="aircraft-list">
-    ${aviapagesResults.map((result, index) => {
-      const aircraft = result.aircraft;
-      const flightTime = result.success && result.aviapagesData?.time?.airway 
-        ? Math.round(result.aviapagesData.time.airway) 
-        : Math.round((distance / aircraft.speed) * 60);
+    ${successfulAircraft.map((result) => {
+      const flightTime = result.aviapagesData?.time?.airway || 0;
       const hours = Math.floor(flightTime / 60);
-      const mins = flightTime % 60;
+      const mins = Math.round(flightTime % 60);
+      const speed = result.aviapagesData?.distance?.airway && flightTime > 0
+        ? Math.round((result.aviapagesData.distance.airway / (flightTime / 60)))
+        : 0;
 
       return `
     <div class="aircraft">
-      <div class="aircraft-name">${aircraft.name}</div>
-      <div class="aircraft-info">${aircraft.category} • ${hours}h ${mins}m • ${aircraft.speed} kts</div>
+      <div class="aircraft-name">${result.name}</div>
+      <div class="aircraft-info">${result.category} • ${hours}h ${mins}m${speed > 0 ? ` • ${speed} kts` : ''}</div>
     </div>
       `;
     }).join('')}
   </div>
 
-  ${selectedAircraft.length === 0 ? `
+  ${successfulAircraft.length === 0 ? `
   <div style="background: #fef3c7; padding: 15px; border-radius: 6px; margin-top: 15px;">
     <strong>⚠️ No suitable aircraft found</strong>
   </div>
@@ -257,11 +145,11 @@ serve(async (req) => {
         html: htmlReport,
         data: {
           distance,
-          selectedAircraft: selectedAircraft.map(a => a.name),
-          aviapagesResults: aviapagesResults.map(r => ({
-            aircraft: r.aircraft.name,
-            success: r.success,
-            flightTime: r.success ? r.aviapagesData?.time?.airway : null,
+          selectedAircraft: successfulAircraft.map(a => a.name),
+          aviapagesResults: successfulAircraft.map(r => ({
+            aircraft: r.name,
+            flightTime: r.aviapagesData?.time?.airway,
+            distance: r.aviapagesData?.distance?.airway,
           })),
         },
       }),
