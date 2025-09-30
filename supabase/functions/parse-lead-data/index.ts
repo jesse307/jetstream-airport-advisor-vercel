@@ -60,9 +60,9 @@ serve(async (req) => {
                   departure_airport: { type: 'string', description: 'Departure airport code or name' },
                   arrival_airport: { type: 'string', description: 'Arrival airport code or name' },
                   departure_date: { type: 'string', description: 'Departure date in YYYY-MM-DD format' },
-                  departure_time: { type: 'string', description: 'Departure time in HH:MM format' },
+                  departure_time: { type: 'string', description: 'Departure time in AM/PM format (e.g., 10:00 AM)' },
                   return_date: { type: 'string', description: 'Return date in YYYY-MM-DD format (for round trips)' },
-                  return_time: { type: 'string', description: 'Return time in HH:MM format (for round trips)' },
+                  return_time: { type: 'string', description: 'Return time in AM/PM format (e.g., 3:00 PM, for round trips)' },
                   passengers: { type: 'number', description: 'Number of passengers' },
                   notes: { type: 'string', description: 'Additional notes or comments' }
                 },
