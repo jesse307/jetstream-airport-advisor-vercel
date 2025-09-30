@@ -179,13 +179,23 @@ Notes: VIP client, prefers window seats"
                   </div>
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">Departure Date</label>
-                    <p className="text-foreground">{parsedData.departure_date} {parsedData.departure_time && `at ${parsedData.departure_time}`}</p>
+                    <p className="text-foreground">{new Date(parsedData.departure_date).toLocaleDateString('en-US')}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Departure Time</label>
+                    <p className="text-foreground">{parsedData.departure_time || 'Not specified'}</p>
                   </div>
                   {parsedData.return_date && (
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">Return Date</label>
-                      <p className="text-foreground">{parsedData.return_date} {parsedData.return_time && `at ${parsedData.return_time}`}</p>
-                    </div>
+                    <>
+                      <div>
+                        <label className="text-sm font-medium text-muted-foreground">Return Date</label>
+                        <p className="text-foreground">{new Date(parsedData.return_date).toLocaleDateString('en-US')}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-muted-foreground">Return Time</label>
+                        <p className="text-foreground">{parsedData.return_time || 'Not specified'}</p>
+                      </div>
+                    </>
                   )}
                 </div>
                 {parsedData.notes && (
