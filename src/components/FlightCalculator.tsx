@@ -36,6 +36,25 @@ interface AircraftType {
   hourlyRate: number;
 }
 
+// Category hierarchy from smallest to largest
+const CATEGORY_HIERARCHY = [
+  'Light Jet',
+  'Super Light Jet', 
+  'Mid Jet',
+  'Super Mid Jet',
+  'Heavy Jet',
+  'Ultra Long Range'
+];
+
+interface AviapagesFlightResult {
+  aircraft: string;
+  category: string;
+  flightTime?: number;
+  distance?: number;
+  success: boolean;
+  error?: string;
+}
+
 // Using the comprehensive charter aircraft database
 
 interface FlightCalculatorProps {
@@ -49,9 +68,8 @@ interface FlightCalculatorProps {
 export function FlightCalculator({ departure, arrival, departureAirport: propDepartureAirport, arrivalAirport: propArrivalAirport, initialPassengers }: FlightCalculatorProps) {
   const [distance, setDistance] = useState<number>(0);
   const [passengers, setPassengers] = useState<number>(initialPassengers || 1);
-  const [selectedAircraft, setSelectedAircraft] = useState<string>("");
-  const [aviapagesResult, setAviapagesResult] = useState<any>(null);
   const [isLoadingAviapages, setIsLoadingAviapages] = useState(false);
+  const [recommendedAircraft, setRecommendedAircraft] = useState<AviapagesFlightResult[]>([]);
 
   const parseAirportString = (airportString: string): Airport | null => {
     if (!airportString) return null;
@@ -137,150 +155,120 @@ export function FlightCalculator({ departure, arrival, departureAirport: propDep
     return !isNaN(runwayLength) && runwayLength >= minRunway;
   };
 
-  const getCapableAircraft = () => {
+  // Find minimum capable category and one above it, then get 2-3 popular models
+  const getRecommendedAircraftModels = () => {
     if (!departureAirport || !arrivalAirport || distance === 0) return [];
     
-    return CHARTER_AIRCRAFT.filter(aircraft => {
-      // 1. Runway compatibility (check both runway and runwayLength properties)
+    const capableAircraft = CHARTER_AIRCRAFT.filter(aircraft => {
       const depRunway = departureAirport.runway || departureAirport.runwayLength;
       const arrRunway = arrivalAirport.runway || arrivalAirport.runwayLength;
       const departureCompatible = checkRunwayCompatibility(depRunway, aircraft.minRunway);
       const arrivalCompatible = checkRunwayCompatibility(arrRunway, aircraft.minRunway);
       
-      // 2. Calculate required fuel for this trip
       const flightTimeHours = distance / aircraft.speed;
       const fuelNeededLbs = flightTimeHours * aircraft.fuelConsumption;
-      const fuelWithReserve = fuelNeededLbs * 1.15; // 15% reserve
+      const fuelWithReserve = fuelNeededLbs * 1.15;
       
-      // 3. Check total weight
-      const passengerWeight = passengers * 230; // Average passenger + luggage weight
+      const passengerWeight = passengers * 230;
       const totalWeight = aircraft.emptyWeight + passengerWeight + fuelWithReserve;
       const weightCapable = totalWeight <= aircraft.maxTakeoffWeight;
       
-      // 4. Check payload capacity
       const payloadCapable = passengerWeight <= aircraft.maxPayload;
-      
-      // 5. Check fuel capacity
       const fuelCapacityOk = fuelWithReserve <= aircraft.fuelCapacity;
       
-      // 6. Check practical range (85% of theoretical max)
       const actualRange = (aircraft.fuelCapacity / aircraft.fuelConsumption) * aircraft.speed;
       const rangeCapable = distance <= actualRange * 0.85;
       
-      // 7. Check passenger capacity
       const passengerCapable = passengers <= aircraft.passengers;
       
       return departureCompatible && arrivalCompatible && rangeCapable && 
              weightCapable && payloadCapable && fuelCapacityOk && passengerCapable;
     });
-  };
 
-  useEffect(() => {
-    if (departureAirport && arrivalAirport) {
-      const dist = calculateDistance(departureAirport, arrivalAirport);
-      setDistance(dist);
-    } else {
-      setDistance(0);
-    }
-  }, [departureAirport, arrivalAirport]);
+    if (capableAircraft.length === 0) return [];
 
-  // Manual calculation with button click
-  const handleCalculate = async () => {
-    if (!departureAirport || !arrivalAirport || !selectedAircraft) return;
-    
-    // Find the selected aircraft by name
-    const aircraft = CHARTER_AIRCRAFT.find(a => a.name === selectedAircraft);
-    
-    if (!aircraft) return;
-    
-    // 1. Runway compatibility check
-    const depRunway = departureAirport.runway || departureAirport.runwayLength;
-    const arrRunway = arrivalAirport.runway || arrivalAirport.runwayLength;
-    const departureRunwayOk = checkRunwayCompatibility(depRunway, aircraft.minRunway);
-    const arrivalRunwayOk = checkRunwayCompatibility(arrRunway, aircraft.minRunway);
-    
-    // 2. Calculate weights (lbs)
-    const passengerWeight = passengers * 230; // Average passenger + luggage
-    const flightTimeHours = distance / aircraft.speed;
-    const fuelNeededLbs = flightTimeHours * aircraft.fuelConsumption;
-    const fuelWithReserve = fuelNeededLbs * 1.15; // 15% reserve for safety, alternate, etc.
-    
-    // 3. Payload check - can we carry the passengers?
-    const payloadNeeded = passengerWeight;
-    const payloadAvailable = aircraft.maxPayload;
-    const payloadOk = payloadNeeded <= payloadAvailable;
-    
-    // 4. Fuel capacity check - can we carry enough fuel?
-    const fuelCapacityOk = fuelWithReserve <= aircraft.fuelCapacity;
-    
-    // 5. Total weight check - is takeoff weight within limits?
-    const totalWeight = aircraft.emptyWeight + passengerWeight + fuelWithReserve;
-    const weightOk = totalWeight <= aircraft.maxTakeoffWeight;
-    
-    // 6. Range check with actual fuel load
-    const actualRange = (aircraft.fuelCapacity / aircraft.fuelConsumption) * aircraft.speed;
-    const rangeOk = distance <= actualRange * 0.85; // Use 85% of theoretical max range
-    
-    // Collect all failures
-    const failures = [];
-    if (!departureRunwayOk) failures.push(`Departure runway too short (needs ${aircraft.minRunway} ft)`);
-    if (!arrivalRunwayOk) failures.push(`Arrival runway too short (needs ${aircraft.minRunway} ft)`);
-    if (!payloadOk) failures.push(`Payload exceeded: ${Math.round(payloadNeeded)} lbs needed, ${aircraft.maxPayload} lbs available`);
-    if (!fuelCapacityOk) failures.push(`Fuel capacity exceeded: ${Math.round(fuelWithReserve)} lbs needed, ${aircraft.fuelCapacity} lbs capacity`);
-    if (!weightOk) failures.push(`Takeoff weight exceeded: ${Math.round(totalWeight)} lbs total, ${aircraft.maxTakeoffWeight} lbs maximum`);
-    if (!rangeOk) failures.push(`Range exceeded: ${distance} NM requested, ~${Math.round(actualRange * 0.85)} NM practical range`);
-    
-    // If any check fails, don't call API
-    if (failures.length > 0) {
-      console.log('Local feasibility checks failed:', failures);
-      setAviapagesResult({
-        errors: failures.map((msg, idx) => ({
-          code: 9999 + idx,
-          scope: 'local_check',
-          message: msg
-        }))
-      });
-      return;
-    }
-    
-    // If feasible, call aviapages API
-    setIsLoadingAviapages(true);
-    setAviapagesResult(null);
-    try {
-      const result = await calculateFlightTimeWithAviapages(
-        departureAirport.code,
-        arrivalAirport.code,
-        selectedAircraft,
-        passengers
-      );
-      
-      if (result.success) {
-        setAviapagesResult(result.flightTime);
-      } else {
-        console.warn("Aviapages API failed:", result.error);
-        if (result.error?.includes("throttled") || result.error?.includes("429")) {
-          toast.error("Rate limited. Using local calculation instead.");
-          // Fall back to local calculation
-          setAviapagesResult({
-            errors: [{
-              code: 9998,
-              scope: 'rate_limit',
-              message: 'Aviapages API rate limited. Showing local estimate only.'
-            }],
-            distance: { great_circle: distance / 0.539957 },
-            time: { airway: Math.round(distance / aircraft.speed * 60 * 1.08) },
-            fuel: { airway: Math.round(distance / aircraft.speed * aircraft.fuelConsumption * 1.08) }
-          });
-        } else {
-          toast.error("Failed to get aviapages data");
-        }
+    // Find minimum capable category
+    let minCategory = null;
+    for (const cat of CATEGORY_HIERARCHY) {
+      if (capableAircraft.some(a => a.category === cat)) {
+        minCategory = cat;
+        break;
       }
-    } catch (error) {
-      console.error("Error calling aviapages:", error);
-    } finally {
-      setIsLoadingAviapages(false);
     }
+
+    if (!minCategory) return [];
+
+    // Get this category and one above it
+    const minIndex = CATEGORY_HIERARCHY.indexOf(minCategory);
+    const categoriesToShow = [CATEGORY_HIERARCHY[minIndex]];
+    if (minIndex + 1 < CATEGORY_HIERARCHY.length) {
+      categoriesToShow.push(CATEGORY_HIERARCHY[minIndex + 1]);
+    }
+
+    // Get 2-3 popular models from each category
+    const popularModels: typeof CHARTER_AIRCRAFT = [];
+    
+    for (const category of categoriesToShow) {
+      const aircraftInCategory = CHARTER_AIRCRAFT.filter(a => a.category === category);
+      // Sort by popularity (using hourly rate as proxy for popularity/demand)
+      const sorted = aircraftInCategory.sort((a, b) => a.hourlyRate - b.hourlyRate);
+      popularModels.push(...sorted.slice(0, 3));
+    }
+
+    return popularModels;
   };
+
+  // Auto-calculate recommendations when distance/passengers change
+  useEffect(() => {
+    const fetchRecommendations = async () => {
+      if (!departureAirport || !arrivalAirport || distance === 0) {
+        setRecommendedAircraft([]);
+        return;
+      }
+
+      const models = getRecommendedAircraftModels();
+      if (models.length === 0) {
+        setRecommendedAircraft([]);
+        return;
+      }
+
+      setIsLoadingAviapages(true);
+      
+      const results = await Promise.all(
+        models.map(async (aircraft) => {
+          try {
+            const result = await calculateFlightTimeWithAviapages(
+              departureAirport.code,
+              arrivalAirport.code,
+              aircraft.name,
+              passengers
+            );
+
+            return {
+              aircraft: aircraft.name,
+              category: aircraft.category,
+              flightTime: result.success ? result.flightTime?.time?.airway : undefined,
+              distance: result.success ? result.flightTime?.distance?.airway : undefined,
+              success: result.success,
+              error: result.error
+            };
+          } catch (error) {
+            return {
+              aircraft: aircraft.name,
+              category: aircraft.category,
+              success: false,
+              error: error instanceof Error ? error.message : 'Unknown error'
+            };
+          }
+        })
+      );
+
+      setRecommendedAircraft(results);
+      setIsLoadingAviapages(false);
+    };
+
+    fetchRecommendations();
+  }, [departureAirport, arrivalAirport, distance, passengers]);
 
   return (
     <Card className="shadow-aviation">
@@ -308,39 +296,6 @@ export function FlightCalculator({ departure, arrival, departureAirport: propDep
               className="w-24 bg-card shadow-card-custom"
             />
             
-            {/* Aircraft Selection Dropdown */}
-            {departureAirport && arrivalAirport && distance > 0 && (
-              <div className="flex items-center gap-2 flex-1">
-                <Label className="text-sm font-medium text-muted-foreground">Aircraft:</Label>
-                <Select value={selectedAircraft} onValueChange={setSelectedAircraft}>
-                  <SelectTrigger className="w-full bg-card border-border">
-                    <SelectValue placeholder="Select capable aircraft" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-card border-border shadow-lg">
-                    {getCapableAircraft().length === 0 ? (
-                      <SelectItem value="none" disabled>No aircraft can complete this trip</SelectItem>
-                    ) : (
-                      getCapableAircraft().map(aircraft => (
-                        <SelectItem key={aircraft.name} value={aircraft.name}>
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium">{aircraft.name}</span>
-                            <Badge variant="outline" className="text-xs">{aircraft.category}</Badge>
-                            <Badge variant="secondary" className="text-xs">{aircraft.range} NM</Badge>
-                          </div>
-                        </SelectItem>
-                      ))
-                    )}
-                  </SelectContent>
-                </Select>
-                <Button 
-                  onClick={handleCalculate} 
-                  disabled={!selectedAircraft || isLoadingAviapages}
-                  className="shrink-0"
-                >
-                  {isLoadingAviapages ? "Calculating..." : "Calculate"}
-                </Button>
-              </div>
-            )}
           </div>
         </div>
 
@@ -365,131 +320,72 @@ export function FlightCalculator({ departure, arrival, departureAirport: propDep
               </div>
             </div>
 
-            {/* Aviapages Results */}
-            {selectedAircraft && (
-              <div className="rounded-lg bg-secondary/20 border border-secondary p-4">
-                <div className="flex items-center gap-2 mb-4">
-                  <Plane className="h-4 w-4 text-primary" />
-                  <span className="font-semibold text-primary">Flight Details</span>
+            {/* Recommended Aircraft */}
+            {isLoadingAviapages ? (
+              <div className="rounded-lg bg-secondary/20 border border-secondary p-6 text-center">
+                <Clock className="h-8 w-8 text-primary mx-auto mb-2 animate-spin" />
+                <p className="text-muted-foreground">Calculating flight times...</p>
+              </div>
+            ) : recommendedAircraft.length > 0 ? (
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <Plane className="h-5 w-5 text-primary" />
+                  <h3 className="font-semibold text-lg">Recommended Aircraft</h3>
                 </div>
                 
-                {aviapagesResult ? (
-                  <>
-                    {/* Check for errors first */}
-                    {aviapagesResult.errors && aviapagesResult.errors.length > 0 ? (
-                      <Alert variant="destructive" className="mb-4">
-                        <AlertCircle className="h-4 w-4" />
-                        <AlertDescription>
-                          <div className="font-medium mb-2">Aircraft Limitation Detected:</div>
-                          {aviapagesResult.errors.map((error: any, index: number) => (
-                            <div key={index} className="text-sm mb-1">
-                              • {error.message}
-                            </div>
-                          ))}
-                          <div className="mt-3 text-sm">
-                            <strong>This aircraft cannot complete this flight nonstop.</strong> 
-                            {aviapagesResult.airport?.techstop && aviapagesResult.airport.techstop.length > 0 && (
-                              <div className="mt-2">
-                                <strong>Suggested fuel stops:</strong> {aviapagesResult.airport.techstop.join(', ')}
+                {/* Group aircraft by category */}
+                {(() => {
+                  const grouped = recommendedAircraft.reduce((acc, aircraft) => {
+                    if (!acc[aircraft.category]) {
+                      acc[aircraft.category] = [];
+                    }
+                    acc[aircraft.category].push(aircraft);
+                    return acc;
+                  }, {} as Record<string, AviapagesFlightResult[]>);
+
+                  return Object.entries(grouped).map(([category, aircraft]) => (
+                    <div key={category} className="space-y-2">
+                      <Badge variant="outline" className="mb-2">{category}</Badge>
+                      <div className="grid gap-3">
+                        {aircraft.map((ac) => (
+                          <div 
+                            key={ac.aircraft}
+                            className="rounded-lg bg-card border border-border p-4 hover:border-primary transition-colors"
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1">
+                                <div className="font-semibold text-primary">{ac.aircraft}</div>
+                                {ac.success && ac.flightTime ? (
+                                  <div className="text-sm text-muted-foreground mt-1">
+                                    Flight Time: <span className="font-bold text-primary">
+                                      {Math.floor(ac.flightTime / 60)}h {Math.round(ac.flightTime % 60)}m
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <div className="text-sm text-destructive mt-1">
+                                    {ac.error || 'Flight time unavailable'}
+                                  </div>
+                                )}
                               </div>
-                            )}
-                          </div>
-                        </AlertDescription>
-                      </Alert>
-                    ) : (
-                      // Show successful calculation
-                      <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div>
-                          <span className="text-muted-foreground">Aircraft:</span>
-                          <div className="font-medium">{aviapagesResult.aircraft || selectedAircraft}</div>
-                        </div>
-                        {aviapagesResult.time?.airway && (
-                          <div>
-                            <span className="text-muted-foreground">Flight Time:</span>
-                            <div className="font-bold text-primary">
-                              {Math.floor(aviapagesResult.time.airway / 60)}h {aviapagesResult.time.airway % 60}m
+                              {ac.success && (
+                                <Clock className="h-5 w-5 text-primary" />
+                              )}
                             </div>
                           </div>
-                        )}
-                        {aviapagesResult.distance?.airway && (
-                          <div>
-                            <span className="text-muted-foreground">Routing Distance:</span>
-                            <div className="font-medium">{Math.round(aviapagesResult.distance.airway * 0.539957)} NM</div>
-                          </div>
-                        )}
-                        {aviapagesResult.fuel?.airway && (
-                          <div>
-                            <span className="text-muted-foreground">Fuel Required:</span>
-                            <div className="font-medium">{aviapagesResult.fuel.airway} lbs</div>
-                          </div>
-                        )}
-                        
-                        {/* Calculate cost estimate if we have flight time */}
-                        {aviapagesResult.time?.airway && (() => {
-                          const aircraft = CHARTER_AIRCRAFT.find(a => a.name === selectedAircraft);
-                          if (!aircraft) return null;
-                          
-                          const flightTimeHours = aviapagesResult.time.airway / 60;
-                          const estimatedCost = flightTimeHours * aircraft.hourlyRate;
-                          const minCost = estimatedCost * 0.9;
-                          const maxCost = estimatedCost * 1.1;
-                          
-                          return (
-                            <div className="col-span-2">
-                              <span className="text-muted-foreground">Estimated Cost:</span>
-                              <div className="font-bold text-primary text-lg">
-                                {formatCurrency(minCost)} - {formatCurrency(maxCost)}
-                              </div>
-                              <div className="text-xs text-muted-foreground">
-                                Based on {formatCurrency(aircraft.hourlyRate)}/hr ± 10%
-                              </div>
-                            </div>
-                          );
-                        })()}
+                        ))}
                       </div>
-                    )}
-                    
-                    {/* Runway compatibility info */}
-                    {(() => {
-                      const aircraft = CHARTER_AIRCRAFT.find(a => a.name === selectedAircraft);
-                      if (!aircraft) return null;
-                      
-                      const departureCompatible = checkRunwayCompatibility(departureAirport.runway, aircraft.minRunway);
-                      const arrivalCompatible = checkRunwayCompatibility(arrivalAirport.runway, aircraft.minRunway);
-                      
-                      if (!departureCompatible || !arrivalCompatible) {
-                        return (
-                          <Alert variant="destructive" className="mt-4">
-                            <AlertCircle className="h-4 w-4" />
-                            <AlertDescription>
-                              <div className="font-medium mb-1">Runway Incompatibility:</div>
-                              {!departureCompatible && (
-                                <div className="text-sm">• Departure runway too short (needs {aircraft.minRunway} ft)</div>
-                              )}
-                              {!arrivalCompatible && (
-                                <div className="text-sm">• Arrival runway too short (needs {aircraft.minRunway} ft)</div>
-                              )}
-                            </AlertDescription>
-                          </Alert>
-                        );
-                      }
-                      
-                      return (
-                        <div className="mt-4 p-3 bg-green-50 dark:bg-green-950 rounded border border-green-200 dark:border-green-800">
-                          <div className="text-sm text-green-800 dark:text-green-200">
-                            ✅ Runway requirements met at both airports (min {aircraft.minRunway} ft)
-                          </div>
-                        </div>
-                      );
-                    })()}
-                  </>
-                ) : (
-                  <div className="text-sm text-muted-foreground">
-                    Select an aircraft to calculate flight details
-                  </div>
-                )}
+                    </div>
+                  ));
+                })()}
               </div>
-            )}
+            ) : distance > 0 ? (
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  No suitable aircraft found for this route with {passengers} passenger{passengers > 1 ? 's' : ''}.
+                </AlertDescription>
+              </Alert>
+            ) : null}
           </div>
         )}
       </CardContent>
