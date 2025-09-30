@@ -225,8 +225,6 @@ serve(async (req) => {
     .spec-label { font-size: 11px; color: #64748b; }
     .spec-value { font-size: 16px; font-weight: bold; color: #334155; margin-top: 3px; }
     .aviapages-data { background: #f0f9ff; padding: 15px; border-radius: 6px; margin-top: 15px; }
-    .price-estimate { background: #10b981; color: white; padding: 15px; border-radius: 6px; text-align: center; margin-top: 15px; }
-    .price-amount { font-size: 28px; font-weight: bold; }
     .warning { background: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; border-radius: 6px; margin-top: 15px; }
     .footer { text-align: center; color: #64748b; padding: 20px; font-size: 12px; margin-top: 30px; border-top: 2px solid #e2e8f0; }
   </style>
@@ -282,10 +280,6 @@ serve(async (req) => {
       const flightTime = result.success && result.aviapagesData?.time?.airway 
         ? Math.round(result.aviapagesData.time.airway) 
         : Math.round((distance / aircraft.speed) * 60);
-      const fuelBurn = result.success && result.aviapagesData?.fuel?.airway
-        ? Math.round(result.aviapagesData.fuel.airway)
-        : Math.round((distance / aircraft.speed) * aircraft.fuelConsumption);
-      const estimatedCost = Math.round((flightTime / 60) * aircraft.hourlyRate);
 
       return `
     <div class="aircraft-card">
@@ -311,10 +305,6 @@ serve(async (req) => {
           <div class="spec-value">${aircraft.maxRange} NM</div>
         </div>
         <div class="spec-item">
-          <div class="spec-label">Fuel Burn</div>
-          <div class="spec-value">${fuelBurn} lbs</div>
-        </div>
-        <div class="spec-item">
           <div class="spec-label">Min Runway</div>
           <div class="spec-value">${aircraft.minRunway}'</div>
         </div>
@@ -336,12 +326,6 @@ serve(async (req) => {
         ⚠️ Using estimated calculations (Aviapages unavailable)
       </div>
       ` : ''}
-
-      <div class="price-estimate">
-        <div style="font-size: 14px; opacity: 0.9;">Estimated Charter Cost</div>
-        <div class="price-amount">$${estimatedCost.toLocaleString()}</div>
-        <div style="font-size: 12px; opacity: 0.8; margin-top: 5px;">Base rate: $${aircraft.hourlyRate.toLocaleString()}/hr</div>
-      </div>
     </div>
       `;
     }).join('')}
