@@ -42,7 +42,27 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    console.log("Sending data to Make webhook:", JSON.stringify(leadData, null, 2));
+    // Flatten data to individual fields at root level for Make webhook
+    const webhookPayload = {
+      firstName: leadData.firstName,
+      lastName: leadData.lastName,
+      email: leadData.email,
+      phone: leadData.phone,
+      tripType: leadData.tripType,
+      departureAirport: leadData.departureAirport,
+      arrivalAirport: leadData.arrivalAirport,
+      departureDate: leadData.departureDate,
+      departureTime: leadData.departureTime,
+      returnDate: leadData.returnDate,
+      returnTime: leadData.returnTime,
+      passengers: leadData.passengers,
+      notes: leadData.notes,
+      leadId: leadData.leadId,
+      createdAt: leadData.createdAt,
+      status: leadData.status
+    };
+
+    console.log("Sending data to Make webhook:", JSON.stringify(webhookPayload, null, 2));
 
     const webhookUrl = "https://hook.us2.make.com/j8qtzo8gui8ieqaye9dxprb2cgxqydlb";
     
@@ -51,7 +71,7 @@ const handler = async (req: Request): Promise<Response> => {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(leadData),
+      body: JSON.stringify(webhookPayload),
     });
 
     const responseText = await webhookResponse.text();
