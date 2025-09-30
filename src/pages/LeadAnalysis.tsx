@@ -54,12 +54,12 @@ export default function LeadAnalysis() {
   const [loading, setLoading] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
 
-  const handleExportToSheets = async () => {
+  const handleStartProcess = async () => {
     if (!lead) return;
     
     setIsExporting(true);
     try {
-      // Prepare data for Google Sheets
+      // Prepare data for Make webhook
       const exportData = {
         // Contact Information
         firstName: lead.first_name,
@@ -84,20 +84,19 @@ export default function LeadAnalysis() {
         status: lead.status
       };
 
-      const { data, error } = await supabase.functions.invoke('export-to-sheets', {
-        body: { leadData: exportData }
+      const response = await fetch('https://hook.us2.make.com/j8qtzo8gui8ieqaye9dxprb2cgxqydlb', {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        mode: "no-cors",
+        body: JSON.stringify(exportData),
       });
 
-      if (error) {
-        console.error('Export error:', error);
-        toast.error('Failed to export to Google Sheets');
-        return;
-      }
-
-      toast.success('Successfully exported to Google Sheets!');
+      toast.success('Process started successfully!');
     } catch (error) {
-      console.error('Export error:', error);
-      toast.error('Failed to export to Google Sheets');
+      console.error('Process error:', error);
+      toast.error('Failed to start process');
     } finally {
       setIsExporting(false);
     }
@@ -358,10 +357,10 @@ export default function LeadAnalysis() {
                   <Button 
                     className="w-full" 
                     variant="aviation"
-                    onClick={handleExportToSheets}
+                    onClick={handleStartProcess}
                     disabled={isExporting}
                   >
-                    {isExporting ? 'Exporting...' : 'Export to Google Sheets'}
+                    {isExporting ? 'Starting...' : 'Start Process'}
                   </Button>
                   <Button className="w-full" variant="outline">
                     Update Status
