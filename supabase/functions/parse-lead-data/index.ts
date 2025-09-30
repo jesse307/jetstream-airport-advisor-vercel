@@ -108,6 +108,70 @@ serve(async (req) => {
     const parsedData = JSON.parse(toolCall.function.arguments);
     console.log('Parsed lead data:', parsedData);
 
+    // Enrich airport data with codes and cities from aviapages
+    const AVIAPAGES_API_TOKEN = Deno.env.get('AVIAPAGES_API_TOKEN');
+    
+    if (AVIAPAGES_API_TOKEN && (parsedData.departure_airport || parsedData.arrival_airport)) {
+      console.log('Enriching airport data...');
+      
+      try {
+        // Search for departure airport
+        if (parsedData.departure_airport) {
+          const depSearchUrl = `https://dir.aviapages.com/api/airports/?search=${encodeURIComponent(parsedData.departure_airport)}`;
+          const depResponse = await fetch(depSearchUrl, {
+            headers: {
+              'Authorization': `Token ${AVIAPAGES_API_TOKEN}`,
+              'Content-Type': 'application/json',
+            },
+            signal: AbortSignal.timeout(5000)
+          });
+          
+          if (depResponse.ok) {
+            const depData = await depResponse.json();
+            const depResults = depData.results || depData.airports || depData;
+            if (Array.isArray(depResults) && depResults.length > 0) {
+              const airport = depResults[0];
+              const code = airport.iata || airport.icao || airport.lid;
+              const city = airport.city?.name || airport.municipality || airport.city;
+              if (code && city) {
+                parsedData.departure_airport = `${code} (${city})`;
+                console.log('Enriched departure airport:', parsedData.departure_airport);
+              }
+            }
+          }
+        }
+        
+        // Search for arrival airport
+        if (parsedData.arrival_airport) {
+          const arrSearchUrl = `https://dir.aviapages.com/api/airports/?search=${encodeURIComponent(parsedData.arrival_airport)}`;
+          const arrResponse = await fetch(arrSearchUrl, {
+            headers: {
+              'Authorization': `Token ${AVIAPAGES_API_TOKEN}`,
+              'Content-Type': 'application/json',
+            },
+            signal: AbortSignal.timeout(5000)
+          });
+          
+          if (arrResponse.ok) {
+            const arrData = await arrResponse.json();
+            const arrResults = arrData.results || arrData.airports || arrData;
+            if (Array.isArray(arrResults) && arrResults.length > 0) {
+              const airport = arrResults[0];
+              const code = airport.iata || airport.icao || airport.lid;
+              const city = airport.city?.name || airport.municipality || airport.city;
+              if (code && city) {
+                parsedData.arrival_airport = `${code} (${city})`;
+                console.log('Enriched arrival airport:', parsedData.arrival_airport);
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.log('Failed to enrich airport data:', error);
+        // Continue with original airport names if enrichment fails
+      }
+    }
+
     return new Response(
       JSON.stringify({ parsedData }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
