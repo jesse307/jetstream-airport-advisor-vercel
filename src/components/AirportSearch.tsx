@@ -23,7 +23,7 @@ interface Airport {
 
 interface AirportSearchProps {
   value: string;
-  onChange: (value: string) => void;
+  onChange: (value: string, airport?: Airport) => void;
   placeholder?: string;
   label?: string;
 }
@@ -76,7 +76,7 @@ export const AirportSearch: React.FC<AirportSearchProps> = ({
   }, [query]);
 
   const handleSelect = (airport: Airport) => {
-    onChange(`${airport.code} - ${airport.name}, ${airport.city}`);
+    onChange(`${airport.code} - ${airport.name}, ${airport.city}`, airport);
     setQuery("");
     setIsOpen(false);
     setAirports([]);

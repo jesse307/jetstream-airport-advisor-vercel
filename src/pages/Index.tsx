@@ -9,12 +9,17 @@ import { Button } from "@/components/ui/button";
 const Index = () => {
   const [departure, setDeparture] = useState<string>("");
   const [arrival, setArrival] = useState<string>("");
+  const [departureAirport, setDepartureAirport] = useState<any>(null);
+  const [arrivalAirport, setArrivalAirport] = useState<any>(null);
   const [showApiTest, setShowApiTest] = useState<boolean>(false);
 
   const handleSwapAirports = () => {
-    const temp = departure;
+    const tempStr = departure;
+    const tempApt = departureAirport;
     setDeparture(arrival);
-    setArrival(temp);
+    setArrival(tempStr);
+    setDepartureAirport(arrivalAirport);
+    setArrivalAirport(tempApt);
   };
 
   return (
@@ -73,7 +78,10 @@ const Index = () => {
             <div className="space-y-4">
               <AirportSearch
                 value={departure}
-                onChange={setDeparture}
+                onChange={(value, airport) => {
+                  setDeparture(value);
+                  setDepartureAirport(airport);
+                }}
                 label="Departure Airport"
                 placeholder="Search by city or airport code"
               />
@@ -83,7 +91,10 @@ const Index = () => {
               <div className="flex-1 space-y-4">
                 <AirportSearch
                   value={arrival}
-                  onChange={setArrival}
+                  onChange={(value, airport) => {
+                    setArrival(value);
+                    setArrivalAirport(airport);
+                  }}
                   label="Arrival Airport"
                   placeholder="Search by city or airport code"
                 />
@@ -101,7 +112,12 @@ const Index = () => {
           </div>
 
         {/* Flight Calculator */}
-        <FlightCalculator departure={departure} arrival={arrival} />
+        <FlightCalculator 
+          departure={departure} 
+          arrival={arrival}
+          departureAirport={departureAirport}
+          arrivalAirport={arrivalAirport}
+        />
       </div>
       </main>
 

@@ -157,10 +157,12 @@ const AIRCRAFT_TYPES: AircraftType[] = [
 interface FlightCalculatorProps {
   departure: string;
   arrival: string;
+  departureAirport?: any;
+  arrivalAirport?: any;
   initialPassengers?: number;
 }
 
-export function FlightCalculator({ departure, arrival, initialPassengers }: FlightCalculatorProps) {
+export function FlightCalculator({ departure, arrival, departureAirport: propDepartureAirport, arrivalAirport: propArrivalAirport, initialPassengers }: FlightCalculatorProps) {
   const [distance, setDistance] = useState<number>(0);
   const [passengers, setPassengers] = useState<number>(initialPassengers || 1);
   const [selectedAircraft, setSelectedAircraft] = useState<string>("");
@@ -190,8 +192,9 @@ export function FlightCalculator({ departure, arrival, initialPassengers }: Flig
     };
   };
 
-  const departureAirport = parseAirportString(departure);
-  const arrivalAirport = parseAirportString(arrival);
+  // Use prop airports if available (they have coords), otherwise parse from string
+  const departureAirport = propDepartureAirport || parseAirportString(departure);
+  const arrivalAirport = propArrivalAirport || parseAirportString(arrival);
 
   const getCoordinates = (airport: Airport) => {
     if (airport.latitude && airport.longitude) {
