@@ -57,8 +57,8 @@ serve(async (req) => {
                     enum: ['one-way', 'round-trip'],
                     description: 'Type of trip'
                   },
-                  departure_airport: { type: 'string', description: 'Departure airport code or name' },
-                  arrival_airport: { type: 'string', description: 'Arrival airport code or name' },
+                  departure_airport: { type: 'string', description: 'Departure airport code, ICAO code, or airport name (e.g., TEB, KTEB, Teterboro, or JFK)' },
+                  arrival_airport: { type: 'string', description: 'Arrival airport code, ICAO code, or airport name (e.g., LAX, KLAX, Los Angeles, or JFK)' },
                   departure_date: { type: 'string', description: 'Departure date in YYYY-MM-DD format' },
                   departure_time: { type: 'string', description: 'Departure time in AM/PM format (e.g., 10:00 AM)' },
                   return_date: { type: 'string', description: 'Return date in YYYY-MM-DD format (for round trips)' },
