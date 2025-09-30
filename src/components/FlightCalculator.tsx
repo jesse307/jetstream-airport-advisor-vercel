@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { calculateFlightTimeWithAviapages } from "@/lib/aviapages";
 import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { FlightAnalysisReport } from "./FlightAnalysisReport";
+import { CHARTER_AIRCRAFT } from "@/data/aircraftDatabase";
 
 interface Airport {
   code: string;
@@ -26,134 +26,17 @@ interface Airport {
 }
 
 interface AircraftType {
+  name: string;
   category: string;
+  manufacturer: string;
   speed: number;
-  examples: string[];
+  range: number;
+  passengers: number;
   minRunway: number;
-  passengers: string;
   hourlyRate: number;
-  maxRange: number;
-  maxPayload: number;
-  fuelCapacity: number;
-  fuelConsumption: number;
-  emptyWeight: number;
-  maxTakeoffWeight: number;
 }
 
-const AIRCRAFT_TYPES: AircraftType[] = [
-  {
-    category: "Very Light Jet",
-    speed: 340,
-    examples: ["Eclipse 550", "Phenom 100", "Citation M2"],
-    minRunway: 3200,
-    passengers: "4-6",
-    hourlyRate: 5500,
-    maxRange: 1200,
-    maxPayload: 1800,
-    fuelCapacity: 3500,
-    fuelConsumption: 180,
-    emptyWeight: 8500,
-    maxTakeoffWeight: 12500
-  },
-  {
-    category: "Turboprop",
-    speed: 280,
-    examples: ["King Air 350", "TBM 940", "PC-12"],
-    minRunway: 3000,
-    passengers: "6-10",
-    hourlyRate: 6500,
-    maxRange: 1200,
-    maxPayload: 2500,
-    fuelCapacity: 2100,
-    fuelConsumption: 280,
-    emptyWeight: 9000,
-    maxTakeoffWeight: 15000
-  },
-  {
-    category: "Light Jet", 
-    speed: 464,
-    examples: ["Citation CJ3+", "Phenom 300", "Learjet 75"],
-    minRunway: 4000,
-    passengers: "6-8",
-    hourlyRate: 8100,
-    maxRange: 2000,
-    maxPayload: 2200,
-    fuelCapacity: 5200,
-    fuelConsumption: 230,
-    emptyWeight: 11500,
-    maxTakeoffWeight: 17110
-  },
-  {
-    category: "Super Light Jet",
-    speed: 451,
-    examples: ["Citation CJ4", "Phenom 300E", "Learjet 45XR"],
-    minRunway: 4500,
-    passengers: "7-9",
-    hourlyRate: 9200,
-    maxRange: 2400,
-    maxPayload: 2600,
-    fuelCapacity: 6800,
-    fuelConsumption: 270,
-    emptyWeight: 13000,
-    maxTakeoffWeight: 19500
-  },
-  {
-    category: "Mid Jet",
-    speed: 460,
-    examples: ["Citation XLS+", "Hawker 900XP", "Learjet 60XR"],
-    minRunway: 5000,
-    passengers: "8-10",
-    hourlyRate: 8600,
-    maxRange: 2100,
-    maxPayload: 2800,
-    fuelCapacity: 8500,
-    fuelConsumption: 310,
-    emptyWeight: 16000,
-    maxTakeoffWeight: 23000
-  },
-  {
-    category: "Super Mid Jet",
-    speed: 525,
-    examples: ["Citation X+", "Challenger 350", "G280"],
-    minRunway: 5500,
-    passengers: "9-12",
-    hourlyRate: 11000,
-    maxRange: 3200,
-    maxPayload: 3500,
-    fuelCapacity: 12000,
-    fuelConsumption: 350,
-    emptyWeight: 18500,
-    maxTakeoffWeight: 28100
-  },
-  {
-    category: "Heavy Jet",
-    speed: 516,
-    examples: ["Falcon 7X", "G650", "Global 6000"],
-    minRunway: 6000,
-    passengers: "12-16",
-    hourlyRate: 13000,
-    maxRange: 5500,
-    maxPayload: 4200,
-    fuelCapacity: 24000,
-    fuelConsumption: 450,
-    emptyWeight: 25000,
-    maxTakeoffWeight: 42000
-  },
-  {
-    category: "Ultra Long Range",
-    speed: 520,
-    examples: ["G700", "Global 7500", "Falcon 8X"],
-    minRunway: 6500,
-    passengers: "14-19",
-    hourlyRate: 18000,
-    maxRange: 7700,
-    maxPayload: 5000,
-    fuelCapacity: 32000,
-    fuelConsumption: 500,
-    emptyWeight: 35000,
-    maxTakeoffWeight: 54000
-  }
-];
+// Using the comprehensive charter aircraft database
 
 interface FlightCalculatorProps {
   departure: string;
@@ -257,7 +140,7 @@ export function FlightCalculator({ departure, arrival, departureAirport: propDep
   const getCapableAircraft = () => {
     if (!departureAirport || !arrivalAirport || distance === 0) return [];
     
-    return AIRCRAFT_TYPES.filter(aircraft => {
+    return CHARTER_AIRCRAFT.filter(aircraft => {
       // 1. Runway compatibility (check both runway and runwayLength properties)
       const depRunway = departureAirport.runway || departureAirport.runwayLength;
       const arrRunway = arrivalAirport.runway || arrivalAirport.runwayLength;
@@ -269,8 +152,8 @@ export function FlightCalculator({ departure, arrival, departureAirport: propDep
       const fuelNeededLbs = flightTimeHours * aircraft.fuelConsumption;
       const fuelWithReserve = fuelNeededLbs * 1.15; // 15% reserve
       
-      // 3. Check if aircraft can carry passengers + fuel
-      const passengerWeight = passengers * 230;
+      // 3. Check total weight
+      const passengerWeight = passengers * 230; // Average passenger + luggage weight
       const totalWeight = aircraft.emptyWeight + passengerWeight + fuelWithReserve;
       const weightCapable = totalWeight <= aircraft.maxTakeoffWeight;
       
@@ -285,8 +168,7 @@ export function FlightCalculator({ departure, arrival, departureAirport: propDep
       const rangeCapable = distance <= actualRange * 0.85;
       
       // 7. Check passenger capacity
-      const maxPassengers = parseInt(aircraft.passengers.split('-')[1]);
-      const passengerCapable = passengers <= maxPassengers;
+      const passengerCapable = passengers <= aircraft.passengers;
       
       return departureCompatible && arrivalCompatible && rangeCapable && 
              weightCapable && payloadCapable && fuelCapacityOk && passengerCapable;
@@ -306,9 +188,8 @@ export function FlightCalculator({ departure, arrival, departureAirport: propDep
   const handleCalculate = async () => {
     if (!departureAirport || !arrivalAirport || !selectedAircraft) return;
     
-    // First, do comprehensive local feasibility checks to avoid unnecessary API calls
-    const aircraftCategory = selectedAircraft.split('-')[0];
-    const aircraft = AIRCRAFT_TYPES.find(a => a.category === aircraftCategory);
+    // Find the selected aircraft by name
+    const aircraft = CHARTER_AIRCRAFT.find(a => a.name === selectedAircraft);
     
     if (!aircraft) return;
     
@@ -439,17 +320,15 @@ export function FlightCalculator({ departure, arrival, departureAirport: propDep
                     {getCapableAircraft().length === 0 ? (
                       <SelectItem value="none" disabled>No aircraft can complete this trip</SelectItem>
                     ) : (
-                      getCapableAircraft().flatMap(aircraft => 
-                        aircraft.examples.map(example => (
-                          <SelectItem key={`${aircraft.category}-${example}`} value={`${aircraft.category}-${example}`}>
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium">{example}</span>
-                              <Badge variant="outline" className="text-xs">{aircraft.category}</Badge>
-                              <Badge variant="secondary" className="text-xs">{aircraft.maxRange} NM</Badge>
-                            </div>
-                          </SelectItem>
-                        ))
-                      )
+                      getCapableAircraft().map(aircraft => (
+                        <SelectItem key={aircraft.name} value={aircraft.name}>
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">{aircraft.name}</span>
+                            <Badge variant="outline" className="text-xs">{aircraft.category}</Badge>
+                            <Badge variant="secondary" className="text-xs">{aircraft.range} NM</Badge>
+                          </div>
+                        </SelectItem>
+                      ))
                     )}
                   </SelectContent>
                 </Select>
@@ -547,8 +426,7 @@ export function FlightCalculator({ departure, arrival, departureAirport: propDep
                         
                         {/* Calculate cost estimate if we have flight time */}
                         {aviapagesResult.time?.airway && (() => {
-                          const aircraftCategory = selectedAircraft.split('-')[0];
-                          const aircraft = AIRCRAFT_TYPES.find(a => a.category === aircraftCategory);
+                          const aircraft = CHARTER_AIRCRAFT.find(a => a.name === selectedAircraft);
                           if (!aircraft) return null;
                           
                           const flightTimeHours = aviapagesResult.time.airway / 60;
@@ -573,8 +451,7 @@ export function FlightCalculator({ departure, arrival, departureAirport: propDep
                     
                     {/* Runway compatibility info */}
                     {(() => {
-                      const aircraftCategory = selectedAircraft.split('-')[0];
-                      const aircraft = AIRCRAFT_TYPES.find(a => a.category === aircraftCategory);
+                      const aircraft = CHARTER_AIRCRAFT.find(a => a.name === selectedAircraft);
                       if (!aircraft) return null;
                       
                       const departureCompatible = checkRunwayCompatibility(departureAirport.runway, aircraft.minRunway);
@@ -614,15 +491,6 @@ export function FlightCalculator({ departure, arrival, departureAirport: propDep
               </div>
             )}
           </div>
-        )}
-        
-        {/* Flight Analysis Report */}
-        {departureAirport && arrivalAirport && distance > 0 && (
-          <FlightAnalysisReport 
-            departureAirport={departureAirport}
-            arrivalAirport={arrivalAirport}
-            passengers={passengers}
-          />
         )}
       </CardContent>
     </Card>
