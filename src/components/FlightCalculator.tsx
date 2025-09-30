@@ -239,7 +239,9 @@ export function FlightCalculator({ departure, arrival, departureAirport: propDep
     }).format(amount);
   };
 
-  const checkRunwayCompatibility = (runway: string | number, minRunway: number) => {
+  const checkRunwayCompatibility = (runway: string | number | undefined, minRunway: number) => {
+    if (!runway) return false; // If runway info is missing, can't confirm compatibility
+    
     let runwayLength: number;
     
     if (typeof runway === 'number') {
@@ -248,16 +250,18 @@ export function FlightCalculator({ departure, arrival, departureAirport: propDep
       runwayLength = parseInt(runway.replace(/[^\d]/g, ""));
     }
     
-    return runwayLength >= minRunway;
+    return !isNaN(runwayLength) && runwayLength >= minRunway;
   };
 
   const getCapableAircraft = () => {
     if (!departureAirport || !arrivalAirport || distance === 0) return [];
     
     return AIRCRAFT_TYPES.filter(aircraft => {
-      // 1. Runway compatibility
-      const departureCompatible = checkRunwayCompatibility(departureAirport.runway, aircraft.minRunway);
-      const arrivalCompatible = checkRunwayCompatibility(arrivalAirport.runway, aircraft.minRunway);
+      // 1. Runway compatibility (check both runway and runwayLength properties)
+      const depRunway = departureAirport.runway || departureAirport.runwayLength;
+      const arrRunway = arrivalAirport.runway || arrivalAirport.runwayLength;
+      const departureCompatible = checkRunwayCompatibility(depRunway, aircraft.minRunway);
+      const arrivalCompatible = checkRunwayCompatibility(arrRunway, aircraft.minRunway);
       
       // 2. Calculate required fuel for this trip
       const flightTimeHours = distance / aircraft.speed;
@@ -308,8 +312,10 @@ export function FlightCalculator({ departure, arrival, departureAirport: propDep
     if (!aircraft) return;
     
     // 1. Runway compatibility check
-    const departureRunwayOk = checkRunwayCompatibility(departureAirport.runway, aircraft.minRunway);
-    const arrivalRunwayOk = checkRunwayCompatibility(arrivalAirport.runway, aircraft.minRunway);
+    const depRunway = departureAirport.runway || departureAirport.runwayLength;
+    const arrRunway = arrivalAirport.runway || arrivalAirport.runwayLength;
+    const departureRunwayOk = checkRunwayCompatibility(depRunway, aircraft.minRunway);
+    const arrivalRunwayOk = checkRunwayCompatibility(arrRunway, aircraft.minRunway);
     
     // 2. Calculate weights (lbs)
     const passengerWeight = passengers * 230; // Average passenger + luggage
