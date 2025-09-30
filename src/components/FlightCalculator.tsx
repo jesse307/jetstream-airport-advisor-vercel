@@ -252,12 +252,36 @@ export function FlightCalculator({ departure, arrival, initialPassengers }: Flig
     if (!departureAirport || !arrivalAirport || distance === 0) return [];
     
     return AIRCRAFT_TYPES.filter(aircraft => {
-      // Only check runway compatibility and basic range
+      // 1. Runway compatibility
       const departureCompatible = checkRunwayCompatibility(departureAirport.runway, aircraft.minRunway);
       const arrivalCompatible = checkRunwayCompatibility(arrivalAirport.runway, aircraft.minRunway);
-      const rangeCapable = aircraft.maxRange >= distance;
       
-      return departureCompatible && arrivalCompatible && rangeCapable;
+      // 2. Calculate required fuel for this trip
+      const flightTimeHours = distance / aircraft.speed;
+      const fuelNeededLbs = flightTimeHours * aircraft.fuelConsumption;
+      const fuelWithReserve = fuelNeededLbs * 1.15; // 15% reserve
+      
+      // 3. Check if aircraft can carry passengers + fuel
+      const passengerWeight = passengers * 230;
+      const totalWeight = aircraft.emptyWeight + passengerWeight + fuelWithReserve;
+      const weightCapable = totalWeight <= aircraft.maxTakeoffWeight;
+      
+      // 4. Check payload capacity
+      const payloadCapable = passengerWeight <= aircraft.maxPayload;
+      
+      // 5. Check fuel capacity
+      const fuelCapacityOk = fuelWithReserve <= aircraft.fuelCapacity;
+      
+      // 6. Check practical range (85% of theoretical max)
+      const actualRange = (aircraft.fuelCapacity / aircraft.fuelConsumption) * aircraft.speed;
+      const rangeCapable = distance <= actualRange * 0.85;
+      
+      // 7. Check passenger capacity
+      const maxPassengers = parseInt(aircraft.passengers.split('-')[1]);
+      const passengerCapable = passengers <= maxPassengers;
+      
+      return departureCompatible && arrivalCompatible && rangeCapable && 
+             weightCapable && payloadCapable && fuelCapacityOk && passengerCapable;
     });
   };
 
