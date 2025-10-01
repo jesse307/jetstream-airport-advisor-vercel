@@ -193,35 +193,45 @@ export function FlightCalculator({ departure, arrival, departureAirport: propDep
         aircraft.maxTakeoffWeight - aircraft.emptyWeight - totalPayload
       );
       
-      // Calculate fuel needed for this trip
+      // Calculate fuel needed per Part 135 IFR regulations (14 CFR 135.223)
+      // Part 135 requires: fuel to destination + fuel to alternate + 45 min reserve
       const flightTimeHours = distance / aircraft.speed;
       const cruiseFuelLbs = flightTimeHours * aircraft.fuelConsumption;
-      const taxiFuel = (15 / 60) * aircraft.fuelConsumption * 0.5;
-      const climbDescentFuel = cruiseFuelLbs * 0.2;
-      const reserveFuel = (45 / 60) * aircraft.fuelConsumption;
-      const alternateFuel = (30 / 60) * aircraft.fuelConsumption;
+      const taxiFuel = (15 / 60) * aircraft.fuelConsumption * 0.5; // 15 min taxi at reduced power
+      const climbDescentFuel = cruiseFuelLbs * 0.2; // 20% overhead for climb/descent
+      
+      // Part 135.223: 45 minutes reserve at normal cruise (not 30 minutes)
+      const reserveFuel = (45 / 60) * aircraft.fuelConsumption; 
+      
+      // Part 135.223: Must have fuel to reach alternate airport (assume 100 NM diversion)
+      const alternateDistance = 100; // NM
+      const alternateFlightTime = alternateDistance / aircraft.speed;
+      const alternateFuel = alternateFlightTime * aircraft.fuelConsumption;
       
       const totalFuelNeeded = cruiseFuelLbs + taxiFuel + climbDescentFuel + reserveFuel + alternateFuel;
       
       // Check if we can carry enough fuel for this trip
       const fuelCapacityOk = totalFuelNeeded <= maxFuelWithPayload;
       
-      // Calculate effective range with this payload
-      // The stated range assumes full fuel tanks. Scale proportionally based on fuel we can actually carry.
-      const fuelRatio = maxFuelWithPayload / aircraft.fuelCapacity;
-      const effectiveRangeNM = aircraft.range * fuelRatio * 0.765; // 85% for reserves * 90% safety margin = 76.5%
+      // Calculate effective range with Part 135 fuel requirements
+      // Available fuel for trip = maxFuelWithPayload - taxi - reserves - alternate
+      const fixedOverhead = taxiFuel + reserveFuel + alternateFuel;
+      const availableForCruiseAndClimb = maxFuelWithPayload - fixedOverhead;
+      
+      // Since climb/descent is 20% of cruise, available = cruise * 1.2
+      const maxCruiseFuel = availableForCruiseAndClimb / 1.2;
+      const effectiveRangeNM = (maxCruiseFuel / aircraft.fuelConsumption) * aircraft.speed;
       const rangeCapable = distance <= effectiveRangeNM;
       
-      if (aircraft.name === "Phenom 100" || aircraft.name === "Citation M2") {
-        console.log(`${aircraft.name} range check:`, {
+      if (aircraft.name === "Phenom 100" || aircraft.name === "Citation M2" || aircraft.name === "Hawker 800XP") {
+        console.log(`${aircraft.name} Part 135 range check:`, {
           distance,
-          maxFuelWithPayload,
-          fuelCapacity: aircraft.fuelCapacity,
-          fuelRatio,
-          statedRange: aircraft.range,
-          effectiveRangeNM,
+          maxFuelWithPayload: Math.round(maxFuelWithPayload),
+          fixedOverhead: Math.round(fixedOverhead),
+          availableForCruiseAndClimb: Math.round(availableForCruiseAndClimb),
+          maxCruiseFuel: Math.round(maxCruiseFuel),
+          effectiveRangeNM: Math.round(effectiveRangeNM),
           rangeCapable,
-          totalPayload,
           passengers
         });
       }
