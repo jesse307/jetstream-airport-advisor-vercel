@@ -184,17 +184,27 @@ export function FlightCalculator({ departure, arrival, departureAirport: propDep
       
       const passengerCapable = passengers <= aircraft.passengers;
       
-      // For additional validation, check fuel requirements
+      // Calculate fuel requirements with proper reserves
       const flightTimeHours = distance / aircraft.speed;
-      const fuelNeededLbs = flightTimeHours * aircraft.fuelConsumption;
-      const fuelWithReserve = fuelNeededLbs * 1.15;
-      const fuelCapacityOk = fuelWithReserve <= aircraft.fuelCapacity;
+      const cruiseFuelLbs = flightTimeHours * aircraft.fuelConsumption;
       
-      // Check weight constraints
-      const passengerWeight = passengers * 230;
-      const totalWeight = aircraft.emptyWeight + passengerWeight + fuelWithReserve;
+      // Add contingency fuel: taxi (15 min), climb/descent (20% of cruise), 45 min reserve
+      const taxiFuel = (15 / 60) * aircraft.fuelConsumption * 0.5; // Lower power for taxi
+      const climbDescentFuel = cruiseFuelLbs * 0.2; // Climb uses more, descent less
+      const reserveFuel = (45 / 60) * aircraft.fuelConsumption; // 45 min at cruise power
+      const alternateFuel = (30 / 60) * aircraft.fuelConsumption; // 30 min to alternate
+      
+      const totalFuelNeeded = cruiseFuelLbs + taxiFuel + climbDescentFuel + reserveFuel + alternateFuel;
+      const fuelCapacityOk = totalFuelNeeded <= aircraft.fuelCapacity;
+      
+      // Calculate weight with passengers AND baggage
+      const passengerWeight = passengers * 230; // Average passenger weight
+      const baggageWeight = passengers * 75; // Average baggage per passenger (conservative)
+      const totalPayload = passengerWeight + baggageWeight;
+      
+      const totalWeight = aircraft.emptyWeight + totalPayload + totalFuelNeeded;
       const weightCapable = totalWeight <= aircraft.maxTakeoffWeight;
-      const payloadCapable = passengerWeight <= aircraft.maxPayload;
+      const payloadCapable = totalPayload <= aircraft.maxPayload;
       
       const outboundCapable = departureCompatible && arrivalCompatible && rangeCapable && 
              weightCapable && payloadCapable && fuelCapacityOk && passengerCapable;
