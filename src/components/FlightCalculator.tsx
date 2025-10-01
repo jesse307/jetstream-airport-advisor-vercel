@@ -213,10 +213,10 @@ export function FlightCalculator({ departure, arrival, departureAirport: propDep
       // Check if we can carry enough fuel for this trip
       const fuelCapacityOk = totalFuelNeeded <= maxFuelWithPayload;
       
-      // For Part 135, use stated range with heavy penalties for payload and reserves
+      // For Part 135, use stated range with penalties for payload and reserves
       // Stated range assumes max fuel, minimal payload, and optimal conditions
-      const payloadPenalty = (totalPayload / aircraft.maxPayload) * 0.40; // Up to 40% reduction for full payload
-      const reservePenalty = 0.30; // 30% reduction for Part 135 fuel reserves (dest + 200nm alternate + 45min)
+      const payloadPenalty = (totalPayload / aircraft.maxPayload) * 0.25; // Up to 25% reduction for full payload
+      const reservePenalty = 0.20; // 20% reduction for Part 135 fuel reserves (dest + 200nm alternate + 45min)
       const safetyMargin = 0.90; // Additional 10% safety margin
       
       const effectiveRangeNM = aircraft.range * (1 - payloadPenalty - reservePenalty) * safetyMargin;
