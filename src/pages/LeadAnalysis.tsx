@@ -66,25 +66,37 @@ export default function LeadAnalysis() {
     loading: false
   });
   const [showCallNotesDialog, setShowCallNotesDialog] = useState(false);
+  const [isSpam, setIsSpam] = useState(false);
 
   const handleStartProcess = async () => {
     if (!lead || !departureAirportData || !arrivalAirportData) return;
     
-    // Check if phone is validated (use stored value from database)
+    // Get validation status from database or state
     const phoneIsValid = lead.phone_valid ?? phoneValidation.isValid;
+    const emailIsValid = lead.email_valid ?? emailValidation.isValid;
     
-    if (phoneIsValid === false) {
-      toast.error("Cannot start process with invalid phone number");
+    // Check if both are invalid → SPAM
+    if (phoneIsValid === false && emailIsValid === false) {
+      setIsSpam(true);
+      toast.error("Cannot process: Invalid contact information");
       return;
     }
     
-    if (phoneIsValid === null) {
-      toast.error("Phone validation in progress, please wait");
+    // If phone is invalid but email is valid → skip call notes and proceed
+    if (phoneIsValid === false && emailIsValid === true) {
+      toast.info("Skipping call - proceeding with email contact only");
+      handleCallNotesContinue("Phone invalid - email contact only", null);
       return;
     }
     
-    // Show call notes dialog
-    setShowCallNotesDialog(true);
+    // If phone is valid → show call notes dialog
+    if (phoneIsValid === true) {
+      setShowCallNotesDialog(true);
+      return;
+    }
+    
+    // If validation still in progress
+    toast.error("Validation in progress, please wait");
   };
 
   const handleCallNotesContinue = async (callNotes: string, updatedData?: any) => {
@@ -252,6 +264,12 @@ export default function LeadAnalysis() {
           loading: false 
         });
 
+        // Check if both email and phone are invalid
+        const phoneIsValid = lead.phone_valid ?? phoneValidation.isValid;
+        if (isValid === false && phoneIsValid === false) {
+          setIsSpam(true);
+        }
+
         // Update database with validation result
         await supabase
           .from('leads')
@@ -294,6 +312,12 @@ export default function LeadAnalysis() {
           isValid, 
           loading: false 
         });
+
+        // Check if both email and phone are invalid
+        const emailIsValid = lead.email_valid ?? emailValidation.isValid;
+        if (isValid === false && emailIsValid === false) {
+          setIsSpam(true);
+        }
 
         // Update database with validation result
         await supabase
@@ -387,6 +411,11 @@ export default function LeadAnalysis() {
       }
 
       setLead(data as Lead);
+
+      // Check for spam on load
+      if (data.email_valid === false && data.phone_valid === false) {
+        setIsSpam(true);
+      }
 
       // Fetch airport data with coordinates
       try {
@@ -514,6 +543,9 @@ export default function LeadAnalysis() {
             Back to Calculator
           </Link>
           <div className="ml-auto flex items-center gap-2">
+            {isSpam && (
+              <span className="text-red-600 font-bold text-lg mr-4">SPAM</span>
+            )}
             <Badge className={getStatusColor(lead.status)}>
               {lead.status.charAt(0).toUpperCase() + lead.status.slice(1)}
             </Badge>
