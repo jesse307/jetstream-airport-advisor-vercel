@@ -414,6 +414,39 @@ export function FlightCalculator({ departure, arrival, departureAirport: propDep
               <div className="text-right">
                 <div className="text-sm text-muted-foreground">Distance</div>
                 <div className="text-xl font-bold text-primary">{distance} NM</div>
+                {hasCalculated && recommendedAircraft.length > 0 && (
+                  <>
+                    <div className="text-sm text-muted-foreground mt-2">Avg Flight Time</div>
+                    <div className="text-base font-semibold text-primary">
+                      {(() => {
+                        const validFlights = recommendedAircraft.filter(ac => ac.success && ac.flightTime);
+                        if (validFlights.length === 0) return "N/A";
+                        
+                        const avgOutbound = validFlights.reduce((sum, ac) => sum + (ac.flightTime || 0), 0) / validFlights.length;
+                        const outboundHours = Math.floor(avgOutbound / 60);
+                        const outboundMins = Math.round(avgOutbound % 60);
+                        
+                        if (!isRoundTrip) {
+                          return `${outboundHours}h ${outboundMins}m`;
+                        }
+                        
+                        const validReturn = returnAircraft.filter(ac => ac.success && ac.flightTime);
+                        if (validReturn.length === 0) return `${outboundHours}h ${outboundMins}m (outbound)`;
+                        
+                        const avgReturn = validReturn.reduce((sum, ac) => sum + (ac.flightTime || 0), 0) / validReturn.length;
+                        const returnHours = Math.floor(avgReturn / 60);
+                        const returnMins = Math.round(avgReturn % 60);
+                        
+                        return (
+                          <div className="space-y-0.5">
+                            <div className="text-xs text-muted-foreground">Out: {outboundHours}h {outboundMins}m</div>
+                            <div className="text-xs text-muted-foreground">Return: {returnHours}h {returnMins}m</div>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  </>
+                )}
               </div>
             </div>
 
