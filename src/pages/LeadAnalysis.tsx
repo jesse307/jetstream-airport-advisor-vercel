@@ -254,11 +254,12 @@ export default function LeadAnalysis() {
 
         if (error) {
           console.error('Email validation error:', error);
-          setEmailValidation({ isValid: null, loading: false });
+          // On error, assume valid (benefit of the doubt)
+          setEmailValidation({ isValid: true, loading: false });
           return;
         }
 
-        const isValid = data.isValid;
+        const isValid = data?.isValid ?? true; // Default to true if validation fails
         setEmailValidation({ 
           isValid, 
           loading: false 
@@ -277,7 +278,8 @@ export default function LeadAnalysis() {
           .eq('id', lead.id);
       } catch (error) {
         console.error('Email validation error:', error);
-        setEmailValidation({ isValid: null, loading: false });
+        // On error, assume valid (benefit of the doubt)
+        setEmailValidation({ isValid: true, loading: false });
       }
     };
 
@@ -303,11 +305,12 @@ export default function LeadAnalysis() {
 
         if (error) {
           console.error('Phone validation error:', error);
-          setPhoneValidation({ isValid: null, loading: false });
+          // On error, assume valid (benefit of the doubt)
+          setPhoneValidation({ isValid: true, loading: false });
           return;
         }
 
-        const isValid = data.isValid;
+        const isValid = data?.isValid ?? true; // Default to true if validation fails
         setPhoneValidation({ 
           isValid, 
           loading: false 
@@ -326,7 +329,8 @@ export default function LeadAnalysis() {
           .eq('id', lead.id);
       } catch (error) {
         console.error('Phone validation error:', error);
-        setPhoneValidation({ isValid: null, loading: false });
+        // On error, assume valid (benefit of the doubt)
+        setPhoneValidation({ isValid: true, loading: false });
       }
     };
 

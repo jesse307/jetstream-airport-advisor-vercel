@@ -80,8 +80,10 @@ const LeadImport = () => {
         validationPromises.push(
           supabase.functions.invoke('validate-email', {
             body: { email: parsedData.email }
-          }).then(({ data }) => ({ email: data?.isValid || false }))
-          .catch(() => ({ email: null }))
+          }).then(({ data: result, error }) => ({ 
+            email: error ? true : (result?.isValid ?? true) // Default to true on error
+          }))
+          .catch(() => ({ email: true })) // Default to true on error
         );
       } else {
         validationPromises.push(Promise.resolve({ email: null }));
@@ -91,8 +93,10 @@ const LeadImport = () => {
         validationPromises.push(
           supabase.functions.invoke('validate-phone', {
             body: { phone: parsedData.phone }
-          }).then(({ data }) => ({ phone: data?.isValid || false }))
-          .catch(() => ({ phone: null }))
+          }).then(({ data: result, error }) => ({ 
+            phone: error ? true : (result?.isValid ?? true) // Default to true on error
+          }))
+          .catch(() => ({ phone: true })) // Default to true on error
         );
       } else {
         validationPromises.push(Promise.resolve({ phone: null }));
