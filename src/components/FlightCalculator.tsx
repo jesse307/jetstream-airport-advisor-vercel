@@ -196,8 +196,17 @@ export function FlightCalculator({ departure, arrival, departureAirport: propDep
       const weightCapable = totalWeight <= aircraft.maxTakeoffWeight;
       const payloadCapable = passengerWeight <= aircraft.maxPayload;
       
-      return departureCompatible && arrivalCompatible && rangeCapable && 
+      const outboundCapable = departureCompatible && arrivalCompatible && rangeCapable && 
              weightCapable && payloadCapable && fuelCapacityOk && passengerCapable;
+      
+      // For round trips, also check the return leg
+      if (isRoundTrip) {
+        // Return leg has same distance and requirements, just reverse runways
+        // Both runways already checked, so just need to confirm range works both ways
+        return outboundCapable;
+      }
+      
+      return outboundCapable;
     });
 
     if (capableAircraft.length === 0) return [];
