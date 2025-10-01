@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { FlightCalculator } from "@/components/FlightCalculator";
+import { CallNotesDialog } from "@/components/CallNotesDialog";
 
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -62,10 +63,30 @@ export default function LeadAnalysis() {
     isValid: null,
     loading: false
   });
+  const [showCallNotesDialog, setShowCallNotesDialog] = useState(false);
 
   const handleStartProcess = async () => {
     if (!lead || !departureAirportData || !arrivalAirportData) return;
     
+    // Check if phone is validated
+    if (phoneValidation.isValid === false) {
+      toast.error("Cannot start process with invalid phone number");
+      return;
+    }
+    
+    if (phoneValidation.isValid === null) {
+      toast.error("Phone validation in progress, please wait");
+      return;
+    }
+    
+    // Show call notes dialog
+    setShowCallNotesDialog(true);
+  };
+
+  const handleCallNotesContinue = async (callNotes: string, updatedData?: any) => {
+    if (!lead || !departureAirportData || !arrivalAirportData) return;
+    
+    setShowCallNotesDialog(false);
     setIsExporting(true);
     try {
       // Calculate distance
@@ -116,6 +137,31 @@ export default function LeadAnalysis() {
 
       const aiAnalysis = analysisData?.analysis || '';
       console.log('AI Analysis generated:', aiAnalysis);
+
+      // Update lead with call notes and any changes
+      const leadUpdates: any = {
+        notes: callNotes
+      };
+
+      if (updatedData) {
+        if (updatedData.departureAirport) leadUpdates.departure_airport = updatedData.departureAirport;
+        if (updatedData.arrivalAirport) leadUpdates.arrival_airport = updatedData.arrivalAirport;
+        if (updatedData.departureDate) leadUpdates.departure_date = updatedData.departureDate;
+        if (updatedData.departureTime) leadUpdates.departure_time = updatedData.departureTime;
+        if (updatedData.returnDate) leadUpdates.return_date = updatedData.returnDate;
+        if (updatedData.returnTime) leadUpdates.return_time = updatedData.returnTime;
+        if (updatedData.passengers) leadUpdates.passengers = updatedData.passengers;
+      }
+
+      const { error: updateError } = await supabase
+        .from('leads')
+        .update(leadUpdates)
+        .eq('id', lead.id);
+
+      if (updateError) {
+        console.error('Error updating lead:', updateError);
+        toast.error('Failed to save call notes');
+      }
 
       // Prepare data for Make webhook
       const exportData = {
@@ -636,6 +682,13 @@ export default function LeadAnalysis() {
         </div>
       </main>
 
+      <CallNotesDialog
+        open={showCallNotesDialog}
+        onOpenChange={setShowCallNotesDialog}
+        phoneNumber={lead.phone}
+        leadData={lead}
+        onContinue={handleCallNotesContinue}
+      />
     </div>
   );
 }

@@ -165,6 +165,7 @@ export type Database = {
         Row: {
           analysis_data: Json | null
           arrival_airport: string
+          call_notes: string | null
           created_at: string
           departure_airport: string
           departure_date: string
@@ -185,6 +186,7 @@ export type Database = {
         Insert: {
           analysis_data?: Json | null
           arrival_airport: string
+          call_notes?: string | null
           created_at?: string
           departure_airport: string
           departure_date: string
@@ -205,6 +207,7 @@ export type Database = {
         Update: {
           analysis_data?: Json | null
           arrival_airport?: string
+          call_notes?: string | null
           created_at?: string
           departure_airport?: string
           departure_date?: string
