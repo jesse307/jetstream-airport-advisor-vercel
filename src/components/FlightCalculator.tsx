@@ -176,21 +176,22 @@ export function FlightCalculator({ departure, arrival, departureAirport: propDep
       const departureCompatible = checkRunwayCompatibility(depRunway, aircraft.minRunway);
       const arrivalCompatible = checkRunwayCompatibility(arrRunway, aircraft.minRunway);
       
+      // Use the aircraft's stated range with 85% margin for reserves
+      const rangeCapable = distance <= (aircraft.range * 0.85);
+      
+      const passengerCapable = passengers <= aircraft.passengers;
+      
+      // For additional validation, check fuel requirements
       const flightTimeHours = distance / aircraft.speed;
       const fuelNeededLbs = flightTimeHours * aircraft.fuelConsumption;
       const fuelWithReserve = fuelNeededLbs * 1.15;
+      const fuelCapacityOk = fuelWithReserve <= aircraft.fuelCapacity;
       
+      // Check weight constraints
       const passengerWeight = passengers * 230;
       const totalWeight = aircraft.emptyWeight + passengerWeight + fuelWithReserve;
       const weightCapable = totalWeight <= aircraft.maxTakeoffWeight;
-      
       const payloadCapable = passengerWeight <= aircraft.maxPayload;
-      const fuelCapacityOk = fuelWithReserve <= aircraft.fuelCapacity;
-      
-      const actualRange = (aircraft.fuelCapacity / aircraft.fuelConsumption) * aircraft.speed;
-      const rangeCapable = distance <= actualRange * 0.85;
-      
-      const passengerCapable = passengers <= aircraft.passengers;
       
       return departureCompatible && arrivalCompatible && rangeCapable && 
              weightCapable && payloadCapable && fuelCapacityOk && passengerCapable;
