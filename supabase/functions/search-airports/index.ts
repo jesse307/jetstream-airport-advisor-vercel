@@ -148,9 +148,88 @@ serve(async (req) => {
 
     console.log('=== AIRPORT SEARCH DEBUG ===');
     console.log('Query:', query);
-    console.log('Using fallback database...');
 
     let airports: any[] = [];
+    
+    const aerodataboxApiKey = Deno.env.get('AERODATABOX_API_KEY');
+    console.log('AERODATABOX_API_KEY configured:', !!aerodataboxApiKey);
+
+    // Try AeroDataBox airport search first
+    if (aerodataboxApiKey && query.length >= 2) {
+      console.log('Trying AeroDataBox Airport Search...');
+      
+      try {
+        const searchUrl = `https://aerodatabox.p.rapidapi.com/airports/search/term?q=${encodeURIComponent(query)}&limit=15`;
+        console.log('Request URL:', searchUrl);
+
+        const response = await fetch(searchUrl, {
+          method: 'GET',
+          headers: {
+            'X-RapidAPI-Key': aerodataboxApiKey,
+            'X-RapidAPI-Host': 'aerodatabox.p.rapidapi.com'
+          },
+          signal: AbortSignal.timeout(10000)
+        });
+
+        console.log('AeroDataBox search response status:', response.status);
+
+        if (response.ok) {
+          const data = await response.json();
+          console.log('AeroDataBox found', data.items?.length || 0, 'airports');
+          
+          if (data.items && Array.isArray(data.items)) {
+            for (const airport of data.items) {
+              // Get runway information for this airport
+              let runwayLength = 0;
+              try {
+                const runwayUrl = `https://aerodatabox.p.rapidapi.com/airports/icao/${airport.icao}/runways`;
+                const runwayResponse = await fetch(runwayUrl, {
+                  headers: {
+                    'X-RapidAPI-Key': aerodataboxApiKey,
+                    'X-RapidAPI-Host': 'aerodatabox.p.rapidapi.com'
+                  },
+                  signal: AbortSignal.timeout(5000)
+                });
+                
+                if (runwayResponse.ok) {
+                  const runways = await runwayResponse.json();
+                  if (runways && Array.isArray(runways) && runways.length > 0) {
+                    runwayLength = Math.max(...runways.map((r: any) => r.lengthFt || 0));
+                  }
+                }
+              } catch (runwayError) {
+                console.log(`Failed to fetch runway for ${airport.icao}:`, runwayError instanceof Error ? runwayError.message : 'Unknown error');
+              }
+
+              airports.push({
+                code: airport.iata || airport.icao || 'N/A',
+                icao_code: airport.icao,
+                name: airport.name || 'Unknown',
+                city: airport.municipalityName || airport.location?.name || 'Unknown',
+                state: airport.countryCode || '',
+                country: airport.countryCode || 'Unknown',
+                latitude: airport.location?.lat || null,
+                longitude: airport.location?.lon || null,
+                elevation: airport.elevationFt || null,
+                runwayLength: runwayLength,
+                type: 'airport',
+                source: 'AeroDataBox'
+              });
+            }
+            console.log('AeroDataBox processed', airports.length, 'airports with runway info');
+          }
+        } else {
+          const errorText = await response.text();
+          console.log('AeroDataBox API error:', response.status, errorText);
+        }
+      } catch (error) {
+        console.log('AeroDataBox search error:', error instanceof Error ? error.message : 'Unknown error');
+      }
+    }
+
+    // Fallback to local database if no results
+    if (airports.length === 0) {
+      console.log('No AeroDataBox results, using fallback database...');
     // Use hardcoded database
     const fallbackAirports = [
         { code: 'EYW', name: 'Key West International Airport', city: 'Key West', state: 'FL', country: 'US', type: 'Commercial', runwayLength: 4801, source: 'Fallback Database' },
