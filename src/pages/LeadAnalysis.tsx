@@ -110,10 +110,44 @@ export default function LeadAnalysis() {
     }
   }, [id]);
 
+  const extractAirportCode = async (airportString: string): Promise<string | null> => {
+    try {
+      // Try simple extraction first - common formats: "SEA (Seattle)", "JFK - New York", etc.
+      const simpleMatch = airportString.match(/^([A-Z]{3})/);
+      if (simpleMatch) {
+        return simpleMatch[1];
+      }
+
+      // If that doesn't work, use AI to extract
+      console.log('Using AI to extract airport code from:', airportString);
+      const { data, error } = await supabase.functions.invoke('extract-airports', {
+        body: { text: `Extract airport code from: ${airportString}` }
+      });
+
+      if (error || data.error) {
+        console.error('Error extracting airport code:', error || data.error);
+        return null;
+      }
+
+      // Return the first code extracted (departure or arrival, doesn't matter which)
+      return data.departure || data.arrival || null;
+    } catch (error) {
+      console.error('Error extracting airport code:', error);
+      return null;
+    }
+  };
+
   const fetchAirportData = async (airportString: string): Promise<Airport | null> => {
     try {
-      // Extract airport code from format "TEB - Teterboro, Teterboro"
-      const airportCode = airportString.split(' - ')[0].trim();
+      // Extract clean airport code using AI if needed
+      const airportCode = await extractAirportCode(airportString);
+      
+      if (!airportCode) {
+        console.error('Could not extract airport code from:', airportString);
+        return null;
+      }
+
+      console.log('Extracted airport code:', airportCode, 'from:', airportString);
       
       const { data, error } = await supabase.functions.invoke('search-airports', {
         body: { query: airportCode }
