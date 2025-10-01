@@ -183,6 +183,7 @@ serve(async (req) => {
               let runwayLength = 0;
               try {
                 const runwayUrl = `https://aerodatabox.p.rapidapi.com/airports/icao/${airport.icao}/runways`;
+                console.log(`Fetching runway data from: ${runwayUrl}`);
                 const runwayResponse = await fetch(runwayUrl, {
                   headers: {
                     'X-RapidAPI-Key': aerodataboxApiKey,
@@ -191,11 +192,20 @@ serve(async (req) => {
                   signal: AbortSignal.timeout(5000)
                 });
                 
+                console.log(`Runway response status for ${airport.icao}:`, runwayResponse.status);
+                
                 if (runwayResponse.ok) {
                   const runways = await runwayResponse.json();
+                  console.log(`Runway data for ${airport.icao}:`, JSON.stringify(runways));
                   if (runways && Array.isArray(runways) && runways.length > 0) {
                     runwayLength = Math.max(...runways.map((r: any) => r.lengthFt || 0));
+                    console.log(`Calculated runway length for ${airport.icao}:`, runwayLength);
+                  } else {
+                    console.log(`No runway array found for ${airport.icao}`);
                   }
+                } else {
+                  const errorText = await runwayResponse.text();
+                  console.log(`Runway API error for ${airport.icao}:`, runwayResponse.status, errorText);
                 }
               } catch (runwayError) {
                 console.log(`Failed to fetch runway for ${airport.icao}:`, runwayError instanceof Error ? runwayError.message : 'Unknown error');
