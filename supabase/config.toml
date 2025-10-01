@@ -14,3 +14,6 @@ verify_jwt = false
 
 [functions.parse-lead-data]
 verify_jwt = false
+
+[functions.calculate-average-flight-time]
+verify_jwt = false
