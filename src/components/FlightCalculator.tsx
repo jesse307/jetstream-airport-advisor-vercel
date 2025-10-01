@@ -70,6 +70,8 @@ export function FlightCalculator({ departure, arrival, departureAirport: propDep
   const [passengers, setPassengers] = useState<number>(initialPassengers || 1);
   const [isLoadingAviapages, setIsLoadingAviapages] = useState(false);
   const [recommendedAircraft, setRecommendedAircraft] = useState<AviapagesFlightResult[]>([]);
+  const [isRoundTrip, setIsRoundTrip] = useState(false);
+  const [returnAircraft, setReturnAircraft] = useState<AviapagesFlightResult[]>([]);
 
   const parseAirportString = (airportString: string): Airport | null => {
     if (!airportString) return null;
@@ -291,11 +293,50 @@ export function FlightCalculator({ departure, arrival, departureAirport: propDep
 
       console.log('All results:', results);
       setRecommendedAircraft(results);
+      
+      // If round trip, also calculate return leg
+      if (isRoundTrip) {
+        const returnResults = await Promise.all(
+          models.map(async (aircraft) => {
+            try {
+              const result = await calculateFlightTimeWithAviapages(
+                arrivalAirport.code,
+                departureAirport.code,
+                aircraft.name,
+                passengers
+              );
+
+              console.log(`Return flight time result for ${aircraft.name}:`, result);
+
+              return {
+                aircraft: aircraft.name,
+                category: aircraft.category,
+                flightTime: result.success ? result.flightTime?.time?.airway : undefined,
+                distance: result.success ? result.flightTime?.distance?.airway : undefined,
+                success: result.success,
+                error: result.error
+              };
+            } catch (error) {
+              console.error(`Return error for ${aircraft.name}:`, error);
+              return {
+                aircraft: aircraft.name,
+                category: aircraft.category,
+                success: false,
+                error: error instanceof Error ? error.message : 'Unknown error'
+              };
+            }
+          })
+        );
+        setReturnAircraft(returnResults);
+      } else {
+        setReturnAircraft([]);
+      }
+      
       setIsLoadingAviapages(false);
     };
 
     fetchRecommendations();
-  }, [departureAirport, arrivalAirport, distance, passengers]);
+  }, [departureAirport, arrivalAirport, distance, passengers, isRoundTrip]);
 
   return (
     <Card className="shadow-aviation">
@@ -322,7 +363,15 @@ export function FlightCalculator({ departure, arrival, departureAirport: propDep
               onChange={(e) => setPassengers(Math.max(1, Math.min(20, parseInt(e.target.value) || 1)))}
               className="w-24 bg-card shadow-card-custom"
             />
-            
+            <Button
+              variant={isRoundTrip ? "default" : "outline"}
+              size="sm"
+              onClick={() => setIsRoundTrip(!isRoundTrip)}
+              className="gap-2"
+            >
+              <Route className="h-4 w-4" />
+              {isRoundTrip ? "Round Trip" : "One Way"}
+            </Button>
           </div>
         </div>
 
@@ -374,32 +423,46 @@ export function FlightCalculator({ departure, arrival, departureAirport: propDep
                     <div key={category} className="space-y-2">
                       <Badge variant="outline" className="mb-2">{category}</Badge>
                       <div className="grid gap-3">
-                        {aircraft.map((ac) => (
-                          <div 
-                            key={ac.aircraft}
-                            className="rounded-lg bg-card border border-border p-4 hover:border-primary transition-colors"
-                          >
-                            <div className="flex items-center justify-between">
-                              <div className="flex-1">
-                                <div className="font-semibold text-primary">{ac.aircraft}</div>
-                                {ac.success && ac.flightTime ? (
-                                  <div className="text-sm text-muted-foreground mt-1">
-                                    Flight Time: <span className="font-bold text-primary">
-                                      {Math.floor(ac.flightTime / 60)}h {Math.round(ac.flightTime % 60)}m
-                                    </span>
-                                  </div>
-                                ) : (
-                                  <div className="text-sm text-destructive mt-1">
-                                    {ac.error || 'Flight time unavailable'}
-                                  </div>
+                        {aircraft.map((ac) => {
+                          const returnAc = returnAircraft.find(r => r.aircraft === ac.aircraft);
+                          return (
+                            <div 
+                              key={ac.aircraft}
+                              className="rounded-lg bg-card border border-border p-4 hover:border-primary transition-colors"
+                            >
+                              <div className="flex items-center justify-between">
+                                <div className="flex-1">
+                                  <div className="font-semibold text-primary">{ac.aircraft}</div>
+                                  {ac.success && ac.flightTime ? (
+                                    <div className="text-sm text-muted-foreground mt-1">
+                                      <div>
+                                        <span className="font-medium">Outbound:</span>{" "}
+                                        <span className="font-bold text-primary">
+                                          {Math.floor(ac.flightTime / 60)}h {Math.round(ac.flightTime % 60)}m
+                                        </span>
+                                      </div>
+                                      {isRoundTrip && returnAc?.success && returnAc.flightTime && (
+                                        <div>
+                                          <span className="font-medium">Return:</span>{" "}
+                                          <span className="font-bold text-primary">
+                                            {Math.floor(returnAc.flightTime / 60)}h {Math.round(returnAc.flightTime % 60)}m
+                                          </span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <div className="text-sm text-destructive mt-1">
+                                      {ac.error || "Flight time unavailable"}
+                                    </div>
+                                  )}
+                                </div>
+                                {ac.success && (
+                                  <Clock className="h-5 w-5 text-primary" />
                                 )}
                               </div>
-                              {ac.success && (
-                                <Clock className="h-5 w-5 text-primary" />
-                              )}
                             </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   ));
