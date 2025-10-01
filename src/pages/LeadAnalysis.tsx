@@ -156,18 +156,27 @@ export default function LeadAnalysis() {
       setLead(data as Lead);
 
       // Fetch airport data with coordinates
-      if (data.departure_airport) {
-        const depAirport = await fetchAirportData(data.departure_airport);
-        if (depAirport) {
-          setDepartureAirportData(depAirport);
+      try {
+        if (data.departure_airport) {
+          const depAirport = await fetchAirportData(data.departure_airport);
+          if (depAirport) {
+            setDepartureAirportData(depAirport);
+          } else {
+            console.warn('Could not fetch departure airport data for:', data.departure_airport);
+          }
         }
-      }
 
-      if (data.arrival_airport) {
-        const arrAirport = await fetchAirportData(data.arrival_airport);
-        if (arrAirport) {
-          setArrivalAirportData(arrAirport);
+        if (data.arrival_airport) {
+          const arrAirport = await fetchAirportData(data.arrival_airport);
+          if (arrAirport) {
+            setArrivalAirportData(arrAirport);
+          } else {
+            console.warn('Could not fetch arrival airport data for:', data.arrival_airport);
+          }
         }
+      } catch (airportError) {
+        console.error("Error fetching airport data:", airportError);
+        toast.error("Could not load airport information");
       }
 
     } catch (error) {
@@ -381,7 +390,15 @@ export default function LeadAnalysis() {
               </p>
             </CardHeader>
             <CardContent>
-              {departureAirportData && arrivalAirportData ? (
+              {!loading && (!departureAirportData || !arrivalAirportData) ? (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground">Could not load complete airport data. Please check the airport codes.</p>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Departure: {lead.departure_airport} {departureAirportData ? '✓' : '✗'}<br/>
+                    Arrival: {lead.arrival_airport} {arrivalAirportData ? '✓' : '✗'}
+                  </p>
+                </div>
+              ) : departureAirportData && arrivalAirportData ? (
                 <FlightCalculator 
                   departure={lead.departure_airport} 
                   arrival={lead.arrival_airport}
