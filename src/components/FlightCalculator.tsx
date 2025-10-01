@@ -213,26 +213,26 @@ export function FlightCalculator({ departure, arrival, departureAirport: propDep
       // Check if we can carry enough fuel for this trip
       const fuelCapacityOk = totalFuelNeeded <= maxFuelWithPayload;
       
-      // Calculate effective range with Part 135 fuel requirements
-      // Available fuel for trip = maxFuelWithPayload - taxi - reserves - alternate
-      const fixedOverhead = taxiFuel + reserveFuel + alternateFuel;
-      const availableForCruiseAndClimb = maxFuelWithPayload - fixedOverhead;
+      // For Part 135, use stated range with heavy penalties for payload and reserves
+      // Stated range assumes max fuel, minimal payload, and optimal conditions
+      const payloadPenalty = (totalPayload / aircraft.maxPayload) * 0.40; // Up to 40% reduction for full payload
+      const reservePenalty = 0.30; // 30% reduction for Part 135 fuel reserves (dest + 200nm alternate + 45min)
+      const safetyMargin = 0.90; // Additional 10% safety margin
       
-      // Since climb/descent is 20% of cruise, available = cruise * 1.2
-      const maxCruiseFuel = availableForCruiseAndClimb / 1.2;
-      const effectiveRangeNM = (maxCruiseFuel / aircraft.fuelConsumption) * aircraft.speed;
+      const effectiveRangeNM = aircraft.range * (1 - payloadPenalty - reservePenalty) * safetyMargin;
       const rangeCapable = distance <= effectiveRangeNM;
       
-      if (aircraft.name === "Phenom 100" || aircraft.name === "Citation M2" || aircraft.name === "Hawker 800XP") {
-        console.log(`${aircraft.name} Part 135 range check:`, {
+      if (aircraft.category === "Light Jet" || aircraft.name === "Hawker 800XP") {
+        console.log(`${aircraft.name} Part 135 conservative range:`, {
           distance,
-          maxFuelWithPayload: Math.round(maxFuelWithPayload),
-          fixedOverhead: Math.round(fixedOverhead),
-          availableForCruiseAndClimb: Math.round(availableForCruiseAndClimb),
-          maxCruiseFuel: Math.round(maxCruiseFuel),
+          statedRange: aircraft.range,
+          payloadPenalty: Math.round(payloadPenalty * 100) + '%',
           effectiveRangeNM: Math.round(effectiveRangeNM),
           rangeCapable,
-          passengers
+          passengers,
+          maxPassengers: aircraft.passengers,
+          totalPayload,
+          maxPayload: aircraft.maxPayload
         });
       }
       
