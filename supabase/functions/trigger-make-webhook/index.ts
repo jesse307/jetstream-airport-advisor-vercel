@@ -23,6 +23,9 @@ interface LeadData {
   leadId: string;
   createdAt: string;
   status: string;
+  distance?: number;
+  flightTime?: string;
+  aiAnalysis?: string;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -66,6 +69,9 @@ const handler = async (req: Request): Promise<Response> => {
     formData.append('leadId', leadData.leadId);
     formData.append('createdAt', leadData.createdAt);
     formData.append('status', leadData.status);
+    formData.append('distance', leadData.distance?.toString() || '');
+    formData.append('flightTime', leadData.flightTime || '');
+    formData.append('aiAnalysis', leadData.aiAnalysis || '');
 
     // Save to database first
     const { data: logEntry, error: dbError } = await supabase

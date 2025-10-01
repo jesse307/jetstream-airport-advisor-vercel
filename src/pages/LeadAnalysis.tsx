@@ -53,12 +53,62 @@ export default function LeadAnalysis() {
   const [arrivalAirportData, setArrivalAirportData] = useState<Airport | null>(null);
   const [loading, setLoading] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
+  const [distance, setDistance] = useState<number>(0);
 
   const handleStartProcess = async () => {
-    if (!lead) return;
+    if (!lead || !departureAirportData || !arrivalAirportData) return;
     
     setIsExporting(true);
     try {
+      // Calculate distance
+      const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+        const R = 3440.065; // Earth's radius in nautical miles
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        
+        const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                  Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                  Math.sin(dLon/2) * Math.sin(dLon/2);
+        
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        return Math.round(R * c);
+      };
+
+      const calculatedDistance = calculateDistance(
+        departureAirportData.latitude || 0,
+        departureAirportData.longitude || 0,
+        arrivalAirportData.latitude || 0,
+        arrivalAirportData.longitude || 0
+      );
+
+      // Estimate flight time (using average speed of 450 knots)
+      const flightTimeHours = calculatedDistance / 450;
+      const hours = Math.floor(flightTimeHours);
+      const minutes = Math.round((flightTimeHours - hours) * 60);
+      const flightTimeStr = `${hours}h ${minutes}m`;
+
+      console.log('Generating AI analysis...');
+      // Generate AI analysis
+      const { data: analysisData, error: analysisError } = await supabase.functions.invoke('generate-flight-analysis', {
+        body: {
+          departure: lead.departure_airport,
+          arrival: lead.arrival_airport,
+          distance: calculatedDistance,
+          passengers: lead.passengers,
+          flightTime: flightTimeStr
+        }
+      });
+
+      if (analysisError) {
+        console.error('Analysis error:', analysisError);
+        toast.error('Failed to generate analysis');
+        setIsExporting(false);
+        return;
+      }
+
+      const aiAnalysis = analysisData?.analysis || '';
+      console.log('AI Analysis generated:', aiAnalysis);
+
       // Prepare data for Make webhook
       const exportData = {
         // Contact Information
@@ -77,6 +127,11 @@ export default function LeadAnalysis() {
         returnTime: lead.return_time || '',
         passengers: lead.passengers,
         notes: lead.notes || '',
+        
+        // Analysis Data
+        distance: calculatedDistance,
+        flightTime: flightTimeStr,
+        aiAnalysis: aiAnalysis,
         
         // Meta Information
         leadId: lead.id,
@@ -195,6 +250,21 @@ export default function LeadAnalysis() {
           const depAirport = await fetchAirportData(data.departure_airport);
           if (depAirport) {
             setDepartureAirportData(depAirport);
+            
+            // Calculate distance if we have both airports
+            if (arrivalAirportData && depAirport.latitude && depAirport.longitude && 
+                arrivalAirportData.latitude && arrivalAirportData.longitude) {
+              const R = 3440.065; // Earth's radius in nautical miles
+              const dLat = (arrivalAirportData.latitude - depAirport.latitude) * Math.PI / 180;
+              const dLon = (arrivalAirportData.longitude - depAirport.longitude) * Math.PI / 180;
+              
+              const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                        Math.cos(depAirport.latitude * Math.PI / 180) * Math.cos(arrivalAirportData.latitude * Math.PI / 180) *
+                        Math.sin(dLon/2) * Math.sin(dLon/2);
+              
+              const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+              setDistance(Math.round(R * c));
+            }
           } else {
             console.warn('Could not fetch departure airport data for:', data.departure_airport);
           }
@@ -204,6 +274,21 @@ export default function LeadAnalysis() {
           const arrAirport = await fetchAirportData(data.arrival_airport);
           if (arrAirport) {
             setArrivalAirportData(arrAirport);
+            
+            // Calculate distance if we have both airports
+            if (departureAirportData && arrAirport.latitude && arrAirport.longitude && 
+                departureAirportData.latitude && departureAirportData.longitude) {
+              const R = 3440.065; // Earth's radius in nautical miles
+              const dLat = (arrAirport.latitude - departureAirportData.latitude) * Math.PI / 180;
+              const dLon = (arrAirport.longitude - departureAirportData.longitude) * Math.PI / 180;
+              
+              const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                        Math.cos(departureAirportData.latitude * Math.PI / 180) * Math.cos(arrAirport.latitude * Math.PI / 180) *
+                        Math.sin(dLon/2) * Math.sin(dLon/2);
+              
+              const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+              setDistance(Math.round(R * c));
+            }
           } else {
             console.warn('Could not fetch arrival airport data for:', data.arrival_airport);
           }
