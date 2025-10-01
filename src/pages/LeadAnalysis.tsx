@@ -58,6 +58,10 @@ export default function LeadAnalysis() {
     isValid: null,
     loading: false
   });
+  const [phoneValidation, setPhoneValidation] = useState<{ isValid: boolean | null; loading: boolean }>({
+    isValid: null,
+    loading: false
+  });
 
   const handleStartProcess = async () => {
     if (!lead || !departureAirportData || !arrivalAirportData) return;
@@ -198,6 +202,36 @@ export default function LeadAnalysis() {
 
     validateEmail();
   }, [lead?.email]);
+
+  useEffect(() => {
+    const validatePhone = async () => {
+      if (!lead?.phone) return;
+      
+      setPhoneValidation({ isValid: null, loading: true });
+      
+      try {
+        const { data, error } = await supabase.functions.invoke('validate-phone', {
+          body: { phone: lead.phone }
+        });
+
+        if (error) {
+          console.error('Phone validation error:', error);
+          setPhoneValidation({ isValid: null, loading: false });
+          return;
+        }
+
+        setPhoneValidation({ 
+          isValid: data.isValid, 
+          loading: false 
+        });
+      } catch (error) {
+        console.error('Phone validation error:', error);
+        setPhoneValidation({ isValid: null, loading: false });
+      }
+    };
+
+    validatePhone();
+  }, [lead?.phone]);
 
   const extractAirportCode = async (airportString: string): Promise<string | null> => {
     try {
@@ -433,6 +467,13 @@ export default function LeadAnalysis() {
                   <a href={`tel:${lead.phone}`} className="hover:underline">
                     {lead.phone}
                   </a>
+                  {phoneValidation.loading ? (
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                  ) : phoneValidation.isValid === true ? (
+                    <CheckCircle2 className="h-4 w-4 text-green-600" />
+                  ) : phoneValidation.isValid === false ? (
+                    <XCircle className="h-4 w-4 text-red-600" />
+                  ) : null}
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <Users className="h-4 w-4 text-muted-foreground" />

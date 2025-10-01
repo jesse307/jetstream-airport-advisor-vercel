@@ -12,6 +12,9 @@ verify_jwt = false
 [functions.validate-email]
 verify_jwt = false
 
+[functions.validate-phone]
+verify_jwt = false
+
 [functions.get-make-api-key]
 verify_jwt = false
 
