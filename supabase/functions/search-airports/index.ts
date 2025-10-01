@@ -277,8 +277,9 @@ serve(async (req) => {
       return codeMatch || nameMatch || cityMatch;
     });
 
-    airports = filteredFallback.slice(0, 10);
-    console.log('Found', airports.length, 'airports in database');
+      airports = filteredFallback.slice(0, 10);
+      console.log('Found', airports.length, 'airports in database');
+    }
 
     console.log('=== SEARCH COMPLETE ===');
     console.log('Total airports found:', airports.length);
