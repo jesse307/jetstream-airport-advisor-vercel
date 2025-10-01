@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.calculate-average-flight-time]
 verify_jwt = false
+
+[functions.extract-airports]
+verify_jwt = false
