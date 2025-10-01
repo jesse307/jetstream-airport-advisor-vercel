@@ -46,22 +46,21 @@ serve(async (req) => {
 
     // If this is a flight time calculation request
     if (calculateFlightTime) {
-      console.log('=== AVIAPAGES FLIGHT TIME CALCULATION ===');
+      console.log('=== AERODATABOX FLIGHT TIME CALCULATION ===');
       console.log('Flight time calculation requested');
       console.log('Departure:', departure);
       console.log('Arrival:', arrival);
       console.log('Aircraft Type:', aircraftType);
       console.log('Passengers:', passengers);
       
-      const aviapagesApiToken = Deno.env.get('AVIAPAGES_API_TOKEN');
-      console.log('AVIAPAGES_API_TOKEN configured:', !!aviapagesApiToken);
-      console.log('AVIAPAGES_API_TOKEN length:', aviapagesApiToken?.length || 0);
+      const aerodataboxApiKey = Deno.env.get('AERODATABOX_API_KEY');
+      console.log('AERODATABOX_API_KEY configured:', !!aerodataboxApiKey);
       
-      if (!aviapagesApiToken) {
-        console.log('ERROR: AVIAPAGES_API_TOKEN not configured');
+      if (!aerodataboxApiKey) {
+        console.log('ERROR: AERODATABOX_API_KEY not configured');
         return new Response(JSON.stringify({
           success: false,
-          error: 'Aviapages API token not configured'
+          error: 'AeroDataBox API key not configured'
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
@@ -70,58 +69,67 @@ serve(async (req) => {
       try {
         const mappedAircraftName = mapAircraftName(aircraftType);
         console.log(`Mapped aircraft: ${aircraftType} -> ${mappedAircraftName}`);
-        console.log(`Making API call to aviapages with: ${departure} to ${arrival}, aircraft: ${mappedAircraftName}, passengers: ${passengers}`);
+        console.log(`Making API call to AeroDataBox with: ${departure} to ${arrival}, aircraft: ${mappedAircraftName}`);
 
-        const requestBody = {
-          departure_airport: departure,
-          arrival_airport: arrival,
-          aircraft: mappedAircraftName,
-          pax: passengers || 2,
-          great_circle_time: true,
-          great_circle_distance: true,
-          airway_time: true
-        };
-        console.log('Request body:', JSON.stringify(requestBody));
+        // AeroDataBox uses ICAO codes - ensure we're using the right format
+        const departureCode = departure.length === 4 ? departure : `K${departure}`;
+        const arrivalCode = arrival.length === 4 ? arrival : `K${arrival}`;
+        
+        const url = `https://aerodatabox.p.rapidapi.com/airports/icao/${departureCode}/distance-time/${arrivalCode}?flightTimeModel=ML01&aircraftName=${encodeURIComponent(mappedAircraftName)}`;
+        console.log('Request URL:', url);
 
-        const aviapagesResponse = await fetch('https://frc.aviapages.com/api/flight_calculator/', {
-          method: 'POST',
+        const aerodataboxResponse = await fetch(url, {
+          method: 'GET',
           headers: {
-            'Authorization': `Token ${aviapagesApiToken}`,
-            'Content-Type': 'application/json',
+            'X-RapidAPI-Key': aerodataboxApiKey,
+            'X-RapidAPI-Host': 'aerodatabox.p.rapidapi.com'
           },
-          body: JSON.stringify(requestBody),
           signal: AbortSignal.timeout(15000)
         });
 
-        console.log('Aviapages response status:', aviapagesResponse.status);
-        console.log('Aviapages response headers:', JSON.stringify([...aviapagesResponse.headers.entries()]));
+        console.log('AeroDataBox response status:', aerodataboxResponse.status);
 
-        if (aviapagesResponse.ok) {
-          const flightData = await aviapagesResponse.json();
-          console.log('Aviapages API SUCCESS - response length:', JSON.stringify(flightData).length);
-          console.log('Aviapages API response preview:', JSON.stringify(flightData).substring(0, 500));
+        if (aerodataboxResponse.ok) {
+          const flightData = await aerodataboxResponse.json();
+          console.log('AeroDataBox API SUCCESS:', JSON.stringify(flightData));
+          
+          // Transform AeroDataBox response to match expected format
+          const transformedData = {
+            time: {
+              airway: flightData.flightTime ? Math.round(flightData.flightTime / 60) : null,
+              great_circle: flightData.flightTime ? Math.round(flightData.flightTime / 60) : null
+            },
+            distance: {
+              airway: flightData.greatCircleDistance?.nm || null,
+              great_circle: flightData.greatCircleDistance?.nm || null
+            },
+            airport: {
+              departure_airport: departure,
+              arrival_airport: arrival
+            },
+            aircraft: mappedAircraftName
+          };
           
           return new Response(JSON.stringify({
             success: true,
-            flightTime: flightData
+            flightTime: transformedData
           }), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           });
         } else {
-          const errorText = await aviapagesResponse.text();
-          console.log('Aviapages API FAILED - Status:', aviapagesResponse.status);
-          console.log('Aviapages API FAILED - Error body:', errorText);
+          const errorText = await aerodataboxResponse.text();
+          console.log('AeroDataBox API FAILED - Status:', aerodataboxResponse.status);
+          console.log('AeroDataBox API FAILED - Error body:', errorText);
           return new Response(JSON.stringify({
             success: false,
-            error: `Aviapages API error: ${aviapagesResponse.status} - ${errorText}`
+            error: `AeroDataBox API error: ${aerodataboxResponse.status} - ${errorText}`
           }), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           });
         }
       } catch (error) {
-        console.error('Aviapages API EXCEPTION:', error);
+        console.error('AeroDataBox API EXCEPTION:', error);
         console.error('Error details:', error instanceof Error ? error.message : 'Unknown error type');
-        console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
         return new Response(JSON.stringify({
           success: false,
           error: `Failed to calculate flight time: ${error instanceof Error ? error.message : 'Unknown error'}`
