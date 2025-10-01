@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, User, Phone, Mail, Calendar, Clock, Plane, Users, MapPin } from "lucide-react";
+import { ArrowLeft, User, Phone, Mail, Calendar, Clock, Plane, Users, MapPin, CheckCircle2, XCircle } from "lucide-react";
 import { format } from "date-fns";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -54,6 +54,10 @@ export default function LeadAnalysis() {
   const [loading, setLoading] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
   const [distance, setDistance] = useState<number>(0);
+  const [emailValidation, setEmailValidation] = useState<{ isValid: boolean | null; loading: boolean }>({
+    isValid: null,
+    loading: false
+  });
 
   const handleStartProcess = async () => {
     if (!lead || !departureAirportData || !arrivalAirportData) return;
@@ -164,6 +168,36 @@ export default function LeadAnalysis() {
       fetchLead(id);
     }
   }, [id]);
+
+  useEffect(() => {
+    const validateEmail = async () => {
+      if (!lead?.email) return;
+      
+      setEmailValidation({ isValid: null, loading: true });
+      
+      try {
+        const { data, error } = await supabase.functions.invoke('validate-email', {
+          body: { email: lead.email }
+        });
+
+        if (error) {
+          console.error('Email validation error:', error);
+          setEmailValidation({ isValid: null, loading: false });
+          return;
+        }
+
+        setEmailValidation({ 
+          isValid: data.isValid, 
+          loading: false 
+        });
+      } catch (error) {
+        console.error('Email validation error:', error);
+        setEmailValidation({ isValid: null, loading: false });
+      }
+    };
+
+    validateEmail();
+  }, [lead?.email]);
 
   const extractAirportCode = async (airportString: string): Promise<string | null> => {
     try {
@@ -386,6 +420,13 @@ export default function LeadAnalysis() {
                   <a href={`mailto:${lead.email}`} className="hover:underline">
                     {lead.email}
                   </a>
+                  {emailValidation.loading ? (
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                  ) : emailValidation.isValid === true ? (
+                    <CheckCircle2 className="h-4 w-4 text-green-600" />
+                  ) : emailValidation.isValid === false ? (
+                    <XCircle className="h-4 w-4 text-red-600" />
+                  ) : null}
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <Phone className="h-4 w-4 text-muted-foreground" />
