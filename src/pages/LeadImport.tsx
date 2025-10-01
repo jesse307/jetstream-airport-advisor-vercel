@@ -1,11 +1,20 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Loader2, Sparkles } from "lucide-react";
+import { ArrowLeft, Loader2, Sparkles, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+
+interface PendingImport {
+  id: string;
+  raw_data: string;
+  created_at: string;
+  source: string;
+}
 
 const LeadImport = () => {
   const navigate = useNavigate();
@@ -13,6 +22,49 @@ const LeadImport = () => {
   const [isParsing, setIsParsing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [parsedData, setParsedData] = useState<any>(null);
+  const [pendingImports, setPendingImports] = useState<PendingImport[]>([]);
+  const [isLoadingImports, setIsLoadingImports] = useState(true);
+
+  useEffect(() => {
+    fetchPendingImports();
+  }, []);
+
+  const fetchPendingImports = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('pending_lead_imports')
+        .select('*')
+        .eq('processed', false)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setPendingImports(data || []);
+    } catch (error: any) {
+      console.error('Error fetching pending imports:', error);
+      toast.error("Failed to load pending imports");
+    } finally {
+      setIsLoadingImports(false);
+    }
+  };
+
+  const handleLoadImport = async (importItem: PendingImport) => {
+    setUnstructuredData(importItem.raw_data);
+    setParsedData(null);
+    
+    // Mark as processed
+    try {
+      await supabase
+        .from('pending_lead_imports')
+        .update({ processed: true, processed_at: new Date().toISOString() })
+        .eq('id', importItem.id);
+      
+      // Remove from pending list
+      setPendingImports(prev => prev.filter(item => item.id !== importItem.id));
+      toast.success("Import loaded! Click 'Parse with AI' to continue.");
+    } catch (error: any) {
+      console.error('Error marking import as processed:', error);
+    }
+  };
 
   const handleParse = async () => {
     if (!unstructuredData.trim()) {
@@ -125,7 +177,7 @@ const LeadImport = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
+      <div className="container mx-auto px-4 py-8 max-w-7xl">
         <div className="mb-6">
           <Button
             variant="ghost"
@@ -137,11 +189,54 @@ const LeadImport = () => {
           </Button>
           <h1 className="text-3xl font-bold text-foreground">Import Lead Data</h1>
           <p className="text-muted-foreground mt-2">
-            Paste unstructured data from Salesforce and let AI parse it into structured fields
+            Paste unstructured data or select from pending imports sent by Make.com
           </p>
         </div>
 
-        <div className="space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* Pending Imports Sidebar */}
+          {pendingImports.length > 0 && (
+            <div className="lg:col-span-1">
+              <Card className="p-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-semibold text-sm">Pending Imports</h3>
+                  <Badge variant="secondary">{pendingImports.length}</Badge>
+                </div>
+                <ScrollArea className="h-[500px]">
+                  <div className="space-y-2">
+                    {isLoadingImports ? (
+                      <div className="text-center py-4">
+                        <Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
+                      </div>
+                    ) : (
+                      pendingImports.map((item) => (
+                        <button
+                          key={item.id}
+                          onClick={() => handleLoadImport(item)}
+                          className="w-full text-left p-3 rounded-lg border hover:bg-accent transition-colors"
+                        >
+                          <div className="flex items-start gap-2">
+                            <Clock className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs text-muted-foreground">
+                                {new Date(item.created_at).toLocaleString()}
+                              </p>
+                              <p className="text-sm mt-1 line-clamp-2 break-words">
+                                {item.raw_data.substring(0, 60)}...
+                              </p>
+                            </div>
+                          </div>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                </ScrollArea>
+              </Card>
+            </div>
+          )}
+
+          {/* Main Content */}
+          <div className={`space-y-6 ${pendingImports.length > 0 ? 'lg:col-span-3' : 'lg:col-span-4'}`}>
           <Card className="p-6">
             <h2 className="text-xl font-semibold mb-4">Paste Data</h2>
             <Textarea
@@ -262,6 +357,7 @@ Notes: VIP client, prefers window seats"
               </Button>
             </Card>
           )}
+          </div>
         </div>
       </div>
     </div>

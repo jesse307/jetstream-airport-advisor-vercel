@@ -233,6 +233,33 @@ export type Database = {
         }
         Relationships: []
       }
+      pending_lead_imports: {
+        Row: {
+          created_at: string
+          id: string
+          processed: boolean
+          processed_at: string | null
+          raw_data: string
+          source: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          processed?: boolean
+          processed_at?: string | null
+          raw_data: string
+          source?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          processed?: boolean
+          processed_at?: string | null
+          raw_data?: string
+          source?: string | null
+        }
+        Relationships: []
+      }
       webhook_logs: {
         Row: {
           created_at: string
