@@ -179,32 +179,41 @@ export function FlightCalculator({ departure, arrival, departureAirport: propDep
       const departureCompatible = checkRunwayCompatibility(depRunway, aircraft.minRunway);
       const arrivalCompatible = checkRunwayCompatibility(arrRunway, aircraft.minRunway);
       
-      // Use the aircraft's stated range with 85% margin for reserves
-      const rangeCapable = distance <= (aircraft.range * 0.85);
-      
       const passengerCapable = passengers <= aircraft.passengers;
       
-      // Calculate fuel requirements with proper reserves
+      // Calculate payload (passengers + baggage)
+      const passengerWeight = passengers * 180;
+      const baggageWeight = passengers * 75;
+      const totalPayload = passengerWeight + baggageWeight;
+      const payloadCapable = totalPayload <= aircraft.maxPayload;
+      
+      // Calculate maximum fuel we can carry given the payload
+      const maxFuelWithPayload = Math.min(
+        aircraft.fuelCapacity,
+        aircraft.maxTakeoffWeight - aircraft.emptyWeight - totalPayload
+      );
+      
+      // Calculate fuel needed for this trip
       const flightTimeHours = distance / aircraft.speed;
       const cruiseFuelLbs = flightTimeHours * aircraft.fuelConsumption;
-      
-      // Add contingency fuel: taxi (15 min), climb/descent (20% of cruise), 45 min reserve
-      const taxiFuel = (15 / 60) * aircraft.fuelConsumption * 0.5; // Lower power for taxi
-      const climbDescentFuel = cruiseFuelLbs * 0.2; // Climb uses more, descent less
-      const reserveFuel = (45 / 60) * aircraft.fuelConsumption; // 45 min at cruise power
-      const alternateFuel = (30 / 60) * aircraft.fuelConsumption; // 30 min to alternate
+      const taxiFuel = (15 / 60) * aircraft.fuelConsumption * 0.5;
+      const climbDescentFuel = cruiseFuelLbs * 0.2;
+      const reserveFuel = (45 / 60) * aircraft.fuelConsumption;
+      const alternateFuel = (30 / 60) * aircraft.fuelConsumption;
       
       const totalFuelNeeded = cruiseFuelLbs + taxiFuel + climbDescentFuel + reserveFuel + alternateFuel;
-      const fuelCapacityOk = totalFuelNeeded <= aircraft.fuelCapacity;
       
-      // Calculate weight with passengers AND baggage
-      const passengerWeight = passengers * 180; // Average passenger weight
-      const baggageWeight = passengers * 75; // Average baggage per passenger (conservative)
-      const totalPayload = passengerWeight + baggageWeight;
+      // Check if we can carry enough fuel for this trip
+      const fuelCapacityOk = totalFuelNeeded <= maxFuelWithPayload;
       
+      // Calculate effective range with this payload
+      const usableFuel = maxFuelWithPayload - taxiFuel - reserveFuel - alternateFuel;
+      const effectiveRangeNM = (usableFuel / aircraft.fuelConsumption) * aircraft.speed * 0.85;
+      const rangeCapable = distance <= effectiveRangeNM;
+      
+      // Final weight check
       const totalWeight = aircraft.emptyWeight + totalPayload + totalFuelNeeded;
       const weightCapable = totalWeight <= aircraft.maxTakeoffWeight;
-      const payloadCapable = totalPayload <= aircraft.maxPayload;
       
       const outboundCapable = departureCompatible && arrivalCompatible && rangeCapable && 
              weightCapable && payloadCapable && fuelCapacityOk && passengerCapable;
