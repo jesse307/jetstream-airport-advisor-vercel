@@ -209,7 +209,7 @@ export function FlightCalculator({ departure, arrival, departureAirport: propDep
       // Calculate effective range with this payload
       // The stated range assumes full fuel tanks. Scale proportionally based on fuel we can actually carry.
       const fuelRatio = maxFuelWithPayload / aircraft.fuelCapacity;
-      const effectiveRangeNM = aircraft.range * fuelRatio * 0.85; // 85% safety margin for reserves
+      const effectiveRangeNM = aircraft.range * fuelRatio * 0.765; // 85% for reserves * 90% safety margin = 76.5%
       const rangeCapable = distance <= effectiveRangeNM;
       
       if (aircraft.name === "Phenom 100" || aircraft.name === "Citation M2") {
