@@ -385,6 +385,8 @@ export default function LeadAnalysis() {
                 <FlightCalculator 
                   departure={lead.departure_airport} 
                   arrival={lead.arrival_airport}
+                  departureAirport={departureAirportData}
+                  arrivalAirport={arrivalAirportData}
                   initialPassengers={lead.passengers}
                 />
               ) : (
