@@ -198,7 +198,7 @@ export function FlightCalculator({ departure, arrival, departureAirport: propDep
       const fuelCapacityOk = totalFuelNeeded <= aircraft.fuelCapacity;
       
       // Calculate weight with passengers AND baggage
-      const passengerWeight = passengers * 230; // Average passenger weight
+      const passengerWeight = passengers * 180; // Average passenger weight
       const baggageWeight = passengers * 75; // Average baggage per passenger (conservative)
       const totalPayload = passengerWeight + baggageWeight;
       
