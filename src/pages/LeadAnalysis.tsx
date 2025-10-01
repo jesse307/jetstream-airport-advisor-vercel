@@ -374,6 +374,24 @@ export default function LeadAnalysis() {
     }
   };
 
+  const formatTime = (timeString: string): string => {
+    if (!timeString) return '';
+    
+    // Parse time string (format: "HH:mm:ss" or "HH:mm")
+    const timeParts = timeString.split(':');
+    let hours = parseInt(timeParts[0]);
+    const minutes = timeParts[1];
+    
+    // Determine AM/PM
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    
+    // Convert to 12-hour format
+    hours = hours % 12;
+    hours = hours ? hours : 12; // 0 should be 12
+    
+    return `${hours}:${minutes} ${ampm}`;
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "new": return "bg-blue-100 text-blue-800";
@@ -518,7 +536,7 @@ export default function LeadAnalysis() {
                   <div className="flex items-center gap-2 text-sm">
                     <Clock className="h-4 w-4 text-muted-foreground" />
                     <span className="font-medium">Time:</span>
-                    <span>{lead.departure_time}</span>
+                    <span>{formatTime(lead.departure_time)}</span>
                   </div>
                 </div>
                 {lead.trip_type === "round-trip" && lead.return_date && (
@@ -533,7 +551,7 @@ export default function LeadAnalysis() {
                       <div className="flex items-center gap-2 text-sm">
                         <Clock className="h-4 w-4 text-muted-foreground" />
                         <span className="font-medium">Time:</span>
-                        <span>{lead.return_time}</span>
+                        <span>{formatTime(lead.return_time || '')}</span>
                       </div>
                     </div>
                   </>
