@@ -171,12 +171,14 @@ export type Database = {
           departure_date: string
           departure_time: string | null
           email: string
+          email_valid: boolean | null
           first_name: string
           id: string
           last_name: string
           notes: string | null
           passengers: number
           phone: string | null
+          phone_valid: boolean | null
           return_date: string | null
           return_time: string | null
           status: string
@@ -192,12 +194,14 @@ export type Database = {
           departure_date: string
           departure_time?: string | null
           email: string
+          email_valid?: boolean | null
           first_name: string
           id?: string
           last_name: string
           notes?: string | null
           passengers?: number
           phone?: string | null
+          phone_valid?: boolean | null
           return_date?: string | null
           return_time?: string | null
           status?: string
@@ -213,12 +217,14 @@ export type Database = {
           departure_date?: string
           departure_time?: string | null
           email?: string
+          email_valid?: boolean | null
           first_name?: string
           id?: string
           last_name?: string
           notes?: string | null
           passengers?: number
           phone?: string | null
+          phone_valid?: boolean | null
           return_date?: string | null
           return_time?: string | null
           status?: string

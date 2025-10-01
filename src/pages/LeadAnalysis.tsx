@@ -32,6 +32,8 @@ interface Lead {
   analysis_data: any;
   created_at: string;
   updated_at: string;
+  email_valid?: boolean | null;
+  phone_valid?: boolean | null;
 }
 
 interface Airport {
@@ -68,13 +70,15 @@ export default function LeadAnalysis() {
   const handleStartProcess = async () => {
     if (!lead || !departureAirportData || !arrivalAirportData) return;
     
-    // Check if phone is validated
-    if (phoneValidation.isValid === false) {
+    // Check if phone is validated (use stored value from database)
+    const phoneIsValid = lead.phone_valid ?? phoneValidation.isValid;
+    
+    if (phoneIsValid === false) {
       toast.error("Cannot start process with invalid phone number");
       return;
     }
     
-    if (phoneValidation.isValid === null) {
+    if (phoneIsValid === null) {
       toast.error("Phone validation in progress, please wait");
       return;
     }
@@ -223,6 +227,12 @@ export default function LeadAnalysis() {
     const validateEmail = async () => {
       if (!lead?.email) return;
       
+      // If we already have validation from database, use it
+      if (lead.email_valid !== null && lead.email_valid !== undefined) {
+        setEmailValidation({ isValid: lead.email_valid, loading: false });
+        return;
+      }
+      
       setEmailValidation({ isValid: null, loading: true });
       
       try {
@@ -236,10 +246,17 @@ export default function LeadAnalysis() {
           return;
         }
 
+        const isValid = data.isValid;
         setEmailValidation({ 
-          isValid: data.isValid, 
+          isValid, 
           loading: false 
         });
+
+        // Update database with validation result
+        await supabase
+          .from('leads')
+          .update({ email_valid: isValid })
+          .eq('id', lead.id);
       } catch (error) {
         console.error('Email validation error:', error);
         setEmailValidation({ isValid: null, loading: false });
@@ -247,11 +264,17 @@ export default function LeadAnalysis() {
     };
 
     validateEmail();
-  }, [lead?.email]);
+  }, [lead?.email, lead?.id, lead?.email_valid]);
 
   useEffect(() => {
     const validatePhone = async () => {
       if (!lead?.phone) return;
+      
+      // If we already have validation from database, use it
+      if (lead.phone_valid !== null && lead.phone_valid !== undefined) {
+        setPhoneValidation({ isValid: lead.phone_valid, loading: false });
+        return;
+      }
       
       setPhoneValidation({ isValid: null, loading: true });
       
@@ -266,10 +289,17 @@ export default function LeadAnalysis() {
           return;
         }
 
+        const isValid = data.isValid;
         setPhoneValidation({ 
-          isValid: data.isValid, 
+          isValid, 
           loading: false 
         });
+
+        // Update database with validation result
+        await supabase
+          .from('leads')
+          .update({ phone_valid: isValid })
+          .eq('id', lead.id);
       } catch (error) {
         console.error('Phone validation error:', error);
         setPhoneValidation({ isValid: null, loading: false });
@@ -277,7 +307,7 @@ export default function LeadAnalysis() {
     };
 
     validatePhone();
-  }, [lead?.phone]);
+  }, [lead?.phone, lead?.id, lead?.phone_valid]);
 
   const extractAirportCode = async (airportString: string): Promise<string | null> => {
     try {

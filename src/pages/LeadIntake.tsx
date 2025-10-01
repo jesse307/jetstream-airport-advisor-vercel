@@ -151,7 +151,43 @@ export default function LeadIntake() {
         return;
       }
 
-      toast.success(`Lead created successfully! Lead ID: ${result.id.slice(0, 8)}`);
+      // Validate email and phone
+      const validationPromises = [];
+      
+      if (data.email) {
+        validationPromises.push(
+          supabase.functions.invoke('validate-email', {
+            body: { email: data.email }
+          }).then(({ data }) => ({ email: data?.isValid || false }))
+          .catch(() => ({ email: null }))
+        );
+      } else {
+        validationPromises.push(Promise.resolve({ email: null }));
+      }
+
+      if (data.phone) {
+        validationPromises.push(
+          supabase.functions.invoke('validate-phone', {
+            body: { phone: data.phone }
+          }).then(({ data }) => ({ phone: data?.isValid || false }))
+          .catch(() => ({ phone: null }))
+        );
+      } else {
+        validationPromises.push(Promise.resolve({ phone: null }));
+      }
+
+      const [emailResult, phoneResult] = await Promise.all(validationPromises);
+
+      // Update lead with validation results
+      await supabase
+        .from('leads')
+        .update({
+          email_valid: emailResult.email,
+          phone_valid: phoneResult.phone
+        })
+        .eq('id', result.id);
+
+      toast.success(`Lead created and validated! Lead ID: ${result.id.slice(0, 8)}`);
       
       // Navigate to lead dashboard or analysis page
       navigate(`/leads/${result.id}`);

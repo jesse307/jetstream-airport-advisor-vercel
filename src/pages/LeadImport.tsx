@@ -73,7 +73,43 @@ const LeadImport = () => {
 
       if (error) throw error;
 
-      toast.success("Lead created successfully!");
+      // Validate email and phone
+      const validationPromises = [];
+      
+      if (parsedData.email) {
+        validationPromises.push(
+          supabase.functions.invoke('validate-email', {
+            body: { email: parsedData.email }
+          }).then(({ data }) => ({ email: data?.isValid || false }))
+          .catch(() => ({ email: null }))
+        );
+      } else {
+        validationPromises.push(Promise.resolve({ email: null }));
+      }
+
+      if (parsedData.phone) {
+        validationPromises.push(
+          supabase.functions.invoke('validate-phone', {
+            body: { phone: parsedData.phone }
+          }).then(({ data }) => ({ phone: data?.isValid || false }))
+          .catch(() => ({ phone: null }))
+        );
+      } else {
+        validationPromises.push(Promise.resolve({ phone: null }));
+      }
+
+      const [emailResult, phoneResult] = await Promise.all(validationPromises);
+
+      // Update lead with validation results
+      await supabase
+        .from('leads')
+        .update({
+          email_valid: emailResult.email,
+          phone_valid: phoneResult.phone
+        })
+        .eq('id', lead.id);
+
+      toast.success("Lead created and validated successfully!");
       navigate(`/leads/${lead.id}`);
     } catch (error: any) {
       console.error('Submit error:', error);
