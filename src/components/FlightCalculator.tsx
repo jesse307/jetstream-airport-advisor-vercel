@@ -207,13 +207,24 @@ export function FlightCalculator({ departure, arrival, departureAirport: propDep
       const fuelCapacityOk = totalFuelNeeded <= maxFuelWithPayload;
       
       // Calculate effective range with this payload
-      // Account for fixed overhead (taxi, reserve, alternate) and climb/descent (20% of cruise fuel)
-      const fixedOverhead = taxiFuel + reserveFuel + alternateFuel;
-      const availableForCruiseAndClimb = maxFuelWithPayload - fixedOverhead;
-      // Since climb/descent is 20% of cruise, total = cruise * 1.2
-      const cruiseFuel = availableForCruiseAndClimb / 1.2;
-      const effectiveRangeNM = (cruiseFuel / aircraft.fuelConsumption) * aircraft.speed;
+      // The stated range assumes full fuel tanks. Scale proportionally based on fuel we can actually carry.
+      const fuelRatio = maxFuelWithPayload / aircraft.fuelCapacity;
+      const effectiveRangeNM = aircraft.range * fuelRatio * 0.85; // 85% safety margin for reserves
       const rangeCapable = distance <= effectiveRangeNM;
+      
+      if (aircraft.name === "Phenom 100" || aircraft.name === "Citation M2") {
+        console.log(`${aircraft.name} range check:`, {
+          distance,
+          maxFuelWithPayload,
+          fuelCapacity: aircraft.fuelCapacity,
+          fuelRatio,
+          statedRange: aircraft.range,
+          effectiveRangeNM,
+          rangeCapable,
+          totalPayload,
+          passengers
+        });
+      }
       
       // Final weight check
       const totalWeight = aircraft.emptyWeight + totalPayload + totalFuelNeeded;
