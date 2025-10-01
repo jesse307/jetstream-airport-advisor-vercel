@@ -99,6 +99,40 @@ export default function LeadAnalysis() {
     toast.error("Validation in progress, please wait");
   };
 
+  const handleUpdateItinerary = async (updatedData: any) => {
+    if (!lead) return;
+    
+    const leadUpdates: any = {};
+    if (updatedData.departureAirport) leadUpdates.departure_airport = updatedData.departureAirport;
+    if (updatedData.arrivalAirport) leadUpdates.arrival_airport = updatedData.arrivalAirport;
+    if (updatedData.departureDate) leadUpdates.departure_date = updatedData.departureDate;
+    if (updatedData.departureTime) leadUpdates.departure_time = updatedData.departureTime;
+    if (updatedData.returnDate) leadUpdates.return_date = updatedData.returnDate;
+    if (updatedData.returnTime) leadUpdates.return_time = updatedData.returnTime;
+    if (updatedData.passengers) leadUpdates.passengers = updatedData.passengers;
+
+    const { error: updateError } = await supabase
+      .from('leads')
+      .update(leadUpdates)
+      .eq('id', lead.id);
+
+    if (updateError) {
+      console.error('Error updating lead:', updateError);
+      toast.error('Failed to update itinerary');
+    } else {
+      // Refresh lead data
+      const { data: updatedLead } = await supabase
+        .from('leads')
+        .select('*')
+        .eq('id', lead.id)
+        .single();
+      
+      if (updatedLead) {
+        setLead(updatedLead as Lead);
+      }
+    }
+  };
+
   const handleCallNotesContinue = async (callNotes: string, updatedData?: any) => {
     if (!lead || !departureAirportData || !arrivalAirportData) return;
     
@@ -754,6 +788,7 @@ export default function LeadAnalysis() {
         phoneNumber={lead.phone}
         leadData={lead}
         onContinue={handleCallNotesContinue}
+        onUpdateItinerary={handleUpdateItinerary}
       />
     </div>
   );

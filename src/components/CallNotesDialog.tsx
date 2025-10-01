@@ -14,6 +14,7 @@ interface CallNotesDialogProps {
   phoneNumber: string;
   leadData: any;
   onContinue: (notes: string, updatedData?: any) => void;
+  onUpdateItinerary?: (changes: any) => void;
 }
 
 interface Message {
@@ -27,6 +28,7 @@ export function CallNotesDialog({
   phoneNumber,
   leadData,
   onContinue,
+  onUpdateItinerary,
 }: CallNotesDialogProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -91,11 +93,10 @@ export function CallNotesDialog({
       return;
     }
     
-    const conversationNotes = messages
-      .map((m) => `${m.role === "user" ? "Rep" : "AI"}: ${m.content}`)
-      .join("\n");
-    
-    onContinue(conversationNotes, extractedChanges);
+    if (onUpdateItinerary) {
+      onUpdateItinerary(extractedChanges);
+      toast.success("Itinerary updated");
+    }
   };
 
   const handleAddToNotes = () => {
@@ -147,7 +148,7 @@ export function CallNotesDialog({
                     className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
                   >
                     <div
-                      className={`max-w-[80%] rounded-lg px-3 py-2 text-sm ${
+                      className={`max-w-[80%] rounded-lg px-3 py-2 text-sm break-words ${
                         msg.role === "user"
                           ? "bg-primary text-primary-foreground"
                           : "bg-muted"
