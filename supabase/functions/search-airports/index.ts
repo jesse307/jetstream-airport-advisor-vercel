@@ -198,7 +198,7 @@ serve(async (req) => {
                   const runways = await runwayResponse.json();
                   console.log(`Runway data for ${airport.icao}:`, JSON.stringify(runways));
                   if (runways && Array.isArray(runways) && runways.length > 0) {
-                    runwayLength = Math.max(...runways.map((r: any) => r.lengthFt || 0));
+                    runwayLength = Math.max(...runways.map((r: any) => r.length?.feet || 0));
                     console.log(`Calculated runway length for ${airport.icao}:`, runwayLength);
                   } else {
                     console.log(`No runway array found for ${airport.icao}`);
