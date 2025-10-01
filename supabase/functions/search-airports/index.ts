@@ -93,11 +93,20 @@ serve(async (req) => {
           const flightData = await aerodataboxResponse.json();
           console.log('AeroDataBox API SUCCESS:', JSON.stringify(flightData));
           
+          // Parse approxFlightTime from "HH:MM:SS" format to minutes
+          let flightTimeMinutes = null;
+          if (flightData.approxFlightTime) {
+            const timeParts = flightData.approxFlightTime.split(':');
+            const hours = parseInt(timeParts[0]) || 0;
+            const minutes = parseInt(timeParts[1]) || 0;
+            flightTimeMinutes = (hours * 60) + minutes;
+          }
+          
           // Transform AeroDataBox response to match expected format
           const transformedData = {
             time: {
-              airway: flightData.flightTime ? Math.round(flightData.flightTime / 60) : null,
-              great_circle: flightData.flightTime ? Math.round(flightData.flightTime / 60) : null
+              airway: flightTimeMinutes,
+              great_circle: flightTimeMinutes
             },
             distance: {
               airway: flightData.greatCircleDistance?.nm || null,
