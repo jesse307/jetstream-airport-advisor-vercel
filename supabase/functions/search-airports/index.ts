@@ -148,99 +148,11 @@ serve(async (req) => {
 
     console.log('=== AIRPORT SEARCH DEBUG ===');
     console.log('Query:', query);
-    console.log('Query length:', query.length);
-    console.log('Query type:', typeof query);
-
-    // For queries shorter than 3 characters, skip API calls and go directly to fallback
-    if (query.length < 3) {
-      console.log('Query too short for API calls, using fallback database only');
-    }
+    console.log('Using fallback database...');
 
     let airports: any[] = [];
-
-    // Check environment variables
-    const aviapagesToken = Deno.env.get('AVIAPAGES_API_TOKEN');
-    
-    console.log('AVIAPAGES_API_TOKEN configured:', !!aviapagesToken);
-
-    // Try Aviapages Airport API (if configured and query is long enough)
-    if (aviapagesToken && query.length >= 3) {
-      console.log('Trying Aviapages Airport API...');
-      console.log('API Token configured, length:', aviapagesToken.length);
-      
-      try {
-        // Build the search URL with query parameters
-        const searchUrl = `https://dir.aviapages.com/api/airports/?search=${encodeURIComponent(query)}`;
-        console.log('Using endpoint:', searchUrl);
-        
-        const aviapagesResponse = await fetch(searchUrl, {
-          headers: {
-            'Authorization': `Token ${aviapagesToken}`,
-            'Content-Type': 'application/json',
-          },
-          signal: AbortSignal.timeout(8000)
-        });
-        
-        console.log('Aviapages Airport API response status:', aviapagesResponse.status);
-        
-        if (aviapagesResponse.ok) {
-          const data = await aviapagesResponse.json();
-          console.log('Aviapages response type:', typeof data);
-          console.log('Aviapages response keys:', Object.keys(data));
-          
-          // The API likely returns results in a 'results' or 'airports' array
-          const results = data.results || data.airports || data;
-          
-          if (Array.isArray(results) && results.length > 0) {
-            console.log('Aviapages found', results.length, 'airports');
-            
-            results.forEach((airport: any) => {
-              // Extract runway length from runways array if available
-              let runwayLength = 0;
-              if (airport.runways && Array.isArray(airport.runways) && airport.runways.length > 0) {
-                runwayLength = Math.max(...airport.runways.map((r: any) => parseInt(r.length_ft || r.length) || 0));
-              } else if (airport.runway_length) {
-                runwayLength = parseInt(airport.runway_length);
-              }
-              
-              airports.push({
-                code: airport.iata || airport.icao || airport.lid || 'N/A',
-                icao_code: airport.icao,
-                name: airport.name || 'Unknown',
-                city: airport.city?.name || airport.municipality || airport.city || 'Unknown',
-                state: airport.state || airport.region || '',
-                country: airport.country?.iso_alpha2 || airport.country?.name || airport.iso_country || 'Unknown',
-                latitude: parseFloat(airport.latitude || airport.lat) || null,
-                longitude: parseFloat(airport.longitude || airport.lon || airport.lng) || null,
-                elevation: airport.elevation ? parseInt(airport.elevation) : null,
-                runwayLength: runwayLength,
-                type: airport.type || 'airport',
-                source: 'Aviapages'
-              });
-            });
-            
-            console.log('Aviapages processed', airports.length, 'airports');
-          } else {
-            console.log('Aviapages returned no results or unexpected format');
-          }
-        } else {
-          const errorText = await aviapagesResponse.text();
-          console.log('Aviapages API error response:', errorText);
-        }
-      } catch (error) {
-        console.log('Aviapages API error:', error instanceof Error ? error.message : 'Unknown error');
-      }
-    }
-
-    // Remove any debug entries if we have real results
-    const realResults = airports.filter(a => a.type !== 'DEBUG');
-    const debugEntries = airports.filter(a => a.type === 'DEBUG');
-    
-    if (realResults.length === 0) {
-      console.log('No real results, using fallback database...');
-      
-      // Fallback to hardcoded database
-      const fallbackAirports = [
+    // Use hardcoded database
+    const fallbackAirports = [
         { code: 'EYW', name: 'Key West International Airport', city: 'Key West', state: 'FL', country: 'US', type: 'Commercial', runwayLength: 4801, source: 'Fallback Database' },
         { code: 'KEYW', name: 'Key West International Airport', city: 'Key West', state: 'FL', country: 'US', type: 'Commercial', runwayLength: 4801, source: 'Fallback Database' },
         { code: 'LAX', name: 'Los Angeles International Airport', city: 'Los Angeles', state: 'CA', country: 'US', type: 'Commercial', runwayLength: 12091, source: 'Fallback Database' },
@@ -277,20 +189,17 @@ serve(async (req) => {
         { code: 'KTEB', name: 'Teterboro', city: 'Teterboro', state: 'NJ', country: 'US', type: 'Commercial', runwayLength: 7014, source: 'Fallback Database' },
         { code: 'OGG', name: 'Kahului', city: 'Kahului', state: 'HI', country: 'US', type: 'Commercial', runwayLength: 7021, source: 'Fallback Database' },
         { code: 'PHOG', name: 'Kahului', city: 'Kahului', state: 'HI', country: 'US', type: 'Commercial', runwayLength: 7021, source: 'Fallback Database' }
-      ];
+    ];
 
-      const filteredFallback = fallbackAirports.filter(airport => {
-        const codeMatch = airport.code.toLowerCase().includes(query.toLowerCase());
-        const nameMatch = airport.name.toLowerCase().includes(query.toLowerCase());
-        const cityMatch = airport.city.toLowerCase().includes(query.toLowerCase());
-        return codeMatch || nameMatch || cityMatch;
-      });
+    const filteredFallback = fallbackAirports.filter(airport => {
+      const codeMatch = airport.code.toLowerCase().includes(query.toLowerCase());
+      const nameMatch = airport.name.toLowerCase().includes(query.toLowerCase());
+      const cityMatch = airport.city.toLowerCase().includes(query.toLowerCase());
+      return codeMatch || nameMatch || cityMatch;
+    });
 
-      airports = filteredFallback.slice(0, 10);
-      console.log('Fallback found', airports.length, 'airports');
-    } else {
-      airports = realResults;
-    }
+    airports = filteredFallback.slice(0, 10);
+    console.log('Found', airports.length, 'airports in database');
 
     console.log('=== SEARCH COMPLETE ===');
     console.log('Total airports found:', airports.length);
