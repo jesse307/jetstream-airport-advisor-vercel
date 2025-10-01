@@ -173,6 +173,12 @@ export function FlightCalculator({ departure, arrival, departureAirport: propDep
   const getRecommendedAircraftModels = () => {
     if (!departureAirport || !arrivalAirport || distance === 0) return [];
     
+    console.log('=== AIRCRAFT FILTERING DEBUG ===');
+    console.log('Distance:', distance, 'NM');
+    console.log('Passengers:', passengers);
+    console.log('Departure runway:', departureAirport.runway || departureAirport.runwayLength);
+    console.log('Arrival runway:', arrivalAirport.runway || arrivalAirport.runwayLength);
+    
     const capableAircraft = CHARTER_AIRCRAFT.filter(aircraft => {
       const depRunway = departureAirport.runway || departureAirport.runwayLength;
       const arrRunway = arrivalAirport.runway || arrivalAirport.runwayLength;
@@ -222,17 +228,17 @@ export function FlightCalculator({ departure, arrival, departureAirport: propDep
       const effectiveRangeNM = aircraft.range * (1 - payloadPenalty - reservePenalty) * safetyMargin;
       const rangeCapable = distance <= effectiveRangeNM;
       
-      if (aircraft.category === "Light Jet" || aircraft.name === "Hawker 800XP") {
-        console.log(`${aircraft.name} Part 135 conservative range:`, {
-          distance,
+      // Log why Ultra Long Range aircraft are being filtered
+      if (aircraft.category === "Ultra Long Range") {
+        console.log(`${aircraft.name}:`, {
           statedRange: aircraft.range,
-          payloadPenalty: Math.round(payloadPenalty * 100) + '%',
-          effectiveRangeNM: Math.round(effectiveRangeNM),
+          effectiveRange: Math.round(effectiveRangeNM),
+          distance,
           rangeCapable,
-          passengers,
-          maxPassengers: aircraft.passengers,
-          totalPayload,
-          maxPayload: aircraft.maxPayload
+          departureRunway: departureCompatible,
+          arrivalRunway: arrivalCompatible,
+          fuelCapacityOk,
+          passengers: passengerCapable
         });
       }
       
@@ -252,6 +258,8 @@ export function FlightCalculator({ departure, arrival, departureAirport: propDep
       
       return outboundCapable;
     });
+
+    console.log('Capable aircraft found:', capableAircraft.length);
 
     if (capableAircraft.length === 0) return [];
 
@@ -560,7 +568,18 @@ export function FlightCalculator({ departure, arrival, departureAirport: propDep
               <Alert>
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>
-                  No suitable aircraft found for this route with {passengers} passenger{passengers > 1 ? 's' : ''}.
+                  <strong>No suitable aircraft found for this route.</strong>
+                  <br />
+                  <br />
+                  This route covers {distance} nautical miles. Most private jets have effective ranges between 1,500-5,000 NM with required fuel reserves.
+                  <br />
+                  <br />
+                  <strong>Options:</strong>
+                  <ul className="list-disc pl-5 mt-2 space-y-1">
+                    <li>Consider adding a refueling stop</li>
+                    <li>Use ultra-long-range aircraft (if available)</li>
+                    <li>Split into multiple shorter legs</li>
+                  </ul>
                 </AlertDescription>
               </Alert>
             ) : null}
