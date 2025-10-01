@@ -267,6 +267,8 @@ export function FlightCalculator({ departure, arrival, departureAirport: propDep
               passengers
             );
 
+            console.log(`Flight time result for ${aircraft.name}:`, result);
+
             return {
               aircraft: aircraft.name,
               category: aircraft.category,
@@ -276,6 +278,7 @@ export function FlightCalculator({ departure, arrival, departureAirport: propDep
               error: result.error
             };
           } catch (error) {
+            console.error(`Error for ${aircraft.name}:`, error);
             return {
               aircraft: aircraft.name,
               category: aircraft.category,
@@ -286,6 +289,7 @@ export function FlightCalculator({ departure, arrival, departureAirport: propDep
         })
       );
 
+      console.log('All results:', results);
       setRecommendedAircraft(results);
       setIsLoadingAviapages(false);
     };

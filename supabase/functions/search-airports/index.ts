@@ -119,6 +119,8 @@ serve(async (req) => {
             aircraft: mappedAircraftName
           };
           
+          console.log('Transformed data:', JSON.stringify(transformedData));
+          
           return new Response(JSON.stringify({
             success: true,
             flightTime: transformedData
