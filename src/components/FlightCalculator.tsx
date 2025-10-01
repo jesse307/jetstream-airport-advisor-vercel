@@ -203,8 +203,8 @@ export function FlightCalculator({ departure, arrival, departureAirport: propDep
       // Part 135.223: 45 minutes reserve at normal cruise (not 30 minutes)
       const reserveFuel = (45 / 60) * aircraft.fuelConsumption; 
       
-      // Part 135.223: Must have fuel to reach alternate airport (assume 100 NM diversion)
-      const alternateDistance = 100; // NM
+      // Part 135.223: Must have fuel to reach alternate airport (assume 200 NM diversion for safety)
+      const alternateDistance = 200; // NM - conservative estimate
       const alternateFlightTime = alternateDistance / aircraft.speed;
       const alternateFuel = alternateFlightTime * aircraft.fuelConsumption;
       
