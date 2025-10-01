@@ -72,6 +72,7 @@ export function FlightCalculator({ departure, arrival, departureAirport: propDep
   const [recommendedAircraft, setRecommendedAircraft] = useState<AviapagesFlightResult[]>([]);
   const [isRoundTrip, setIsRoundTrip] = useState(false);
   const [returnAircraft, setReturnAircraft] = useState<AviapagesFlightResult[]>([]);
+  const [hasCalculated, setHasCalculated] = useState(false);
 
   const parseAirportString = (airportString: string): Airport | null => {
     if (!airportString) return null;
@@ -233,43 +234,75 @@ export function FlightCalculator({ departure, arrival, departureAirport: propDep
   };
 
   // Auto-calculate recommendations when distance/passengers change
-  useEffect(() => {
-    const fetchRecommendations = async () => {
-      console.log('fetchRecommendations called', { 
-        departureAirport: departureAirport?.code, 
-        arrivalAirport: arrivalAirport?.code, 
-        distance,
-        passengers 
-      });
+  const handleCalculate = async () => {
+    if (!departureAirport || !arrivalAirport || distance === 0) {
+      console.log('Cannot calculate: missing data', { departureAirport: !!departureAirport, arrivalAirport: !!arrivalAirport, distance });
+      toast.error("Please ensure both airports are selected");
+      return;
+    }
 
-      if (!departureAirport || !arrivalAirport || distance === 0) {
-        console.log('Skipping: missing data', { departureAirport: !!departureAirport, arrivalAirport: !!arrivalAirport, distance });
-        setRecommendedAircraft([]);
-        return;
-      }
+    const models = getRecommendedAircraftModels();
+    console.log('Recommended models:', models.map(m => m.name));
+    
+    if (models.length === 0) {
+      console.log('No capable aircraft found');
+      setRecommendedAircraft([]);
+      setReturnAircraft([]);
+      setHasCalculated(true);
+      return;
+    }
 
-      const models = getRecommendedAircraftModels();
-      console.log('Recommended models:', models.map(m => m.name));
-      
-      if (models.length === 0) {
-        console.log('No capable aircraft found');
-        setRecommendedAircraft([]);
-        return;
-      }
+    setIsLoadingAviapages(true);
+    setHasCalculated(false);
+    
+    const results = await Promise.all(
+      models.map(async (aircraft) => {
+        try {
+          const result = await calculateFlightTimeWithAviapages(
+            departureAirport.code,
+            arrivalAirport.code,
+            aircraft.name,
+            passengers
+          );
 
-      setIsLoadingAviapages(true);
-      
-      const results = await Promise.all(
+          console.log(`Flight time result for ${aircraft.name}:`, result);
+
+          return {
+            aircraft: aircraft.name,
+            category: aircraft.category,
+            flightTime: result.success ? result.flightTime?.time?.airway : undefined,
+            distance: result.success ? result.flightTime?.distance?.airway : undefined,
+            success: result.success,
+            error: result.error
+          };
+        } catch (error) {
+          console.error(`Error for ${aircraft.name}:`, error);
+          return {
+            aircraft: aircraft.name,
+            category: aircraft.category,
+            success: false,
+            error: error instanceof Error ? error.message : 'Unknown error'
+          };
+        }
+      })
+    );
+
+    console.log('All results:', results);
+    setRecommendedAircraft(results);
+    
+    // If round trip, also calculate return leg
+    if (isRoundTrip) {
+      const returnResults = await Promise.all(
         models.map(async (aircraft) => {
           try {
             const result = await calculateFlightTimeWithAviapages(
-              departureAirport.code,
               arrivalAirport.code,
+              departureAirport.code,
               aircraft.name,
               passengers
             );
 
-            console.log(`Flight time result for ${aircraft.name}:`, result);
+            console.log(`Return flight time result for ${aircraft.name}:`, result);
 
             return {
               aircraft: aircraft.name,
@@ -280,7 +313,7 @@ export function FlightCalculator({ departure, arrival, departureAirport: propDep
               error: result.error
             };
           } catch (error) {
-            console.error(`Error for ${aircraft.name}:`, error);
+            console.error(`Return error for ${aircraft.name}:`, error);
             return {
               aircraft: aircraft.name,
               category: aircraft.category,
@@ -290,53 +323,14 @@ export function FlightCalculator({ departure, arrival, departureAirport: propDep
           }
         })
       );
-
-      console.log('All results:', results);
-      setRecommendedAircraft(results);
-      
-      // If round trip, also calculate return leg
-      if (isRoundTrip) {
-        const returnResults = await Promise.all(
-          models.map(async (aircraft) => {
-            try {
-              const result = await calculateFlightTimeWithAviapages(
-                arrivalAirport.code,
-                departureAirport.code,
-                aircraft.name,
-                passengers
-              );
-
-              console.log(`Return flight time result for ${aircraft.name}:`, result);
-
-              return {
-                aircraft: aircraft.name,
-                category: aircraft.category,
-                flightTime: result.success ? result.flightTime?.time?.airway : undefined,
-                distance: result.success ? result.flightTime?.distance?.airway : undefined,
-                success: result.success,
-                error: result.error
-              };
-            } catch (error) {
-              console.error(`Return error for ${aircraft.name}:`, error);
-              return {
-                aircraft: aircraft.name,
-                category: aircraft.category,
-                success: false,
-                error: error instanceof Error ? error.message : 'Unknown error'
-              };
-            }
-          })
-        );
-        setReturnAircraft(returnResults);
-      } else {
-        setReturnAircraft([]);
-      }
-      
-      setIsLoadingAviapages(false);
-    };
-
-    fetchRecommendations();
-  }, [departureAirport, arrivalAirport, distance, passengers, isRoundTrip]);
+      setReturnAircraft(returnResults);
+    } else {
+      setReturnAircraft([]);
+    }
+    
+    setIsLoadingAviapages(false);
+    setHasCalculated(true);
+  };
 
   return (
     <Card className="shadow-aviation">
@@ -371,6 +365,14 @@ export function FlightCalculator({ departure, arrival, departureAirport: propDep
             >
               <Route className="h-4 w-4" />
               {isRoundTrip ? "Round Trip" : "One Way"}
+            </Button>
+            <Button
+              onClick={handleCalculate}
+              disabled={isLoadingAviapages || !departureAirport || !arrivalAirport}
+              className="ml-auto gap-2"
+            >
+              <Calculator className="h-4 w-4" />
+              Calculate Flight Options
             </Button>
           </div>
         </div>
@@ -468,7 +470,7 @@ export function FlightCalculator({ departure, arrival, departureAirport: propDep
                   ));
                 })()}
               </div>
-            ) : distance > 0 ? (
+            ) : hasCalculated && distance > 0 ? (
               <Alert>
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>
