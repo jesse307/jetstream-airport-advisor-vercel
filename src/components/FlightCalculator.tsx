@@ -207,8 +207,12 @@ export function FlightCalculator({ departure, arrival, departureAirport: propDep
       const fuelCapacityOk = totalFuelNeeded <= maxFuelWithPayload;
       
       // Calculate effective range with this payload
-      const usableFuel = maxFuelWithPayload - taxiFuel - reserveFuel - alternateFuel;
-      const effectiveRangeNM = (usableFuel / aircraft.fuelConsumption) * aircraft.speed * 0.85;
+      // Account for fixed overhead (taxi, reserve, alternate) and climb/descent (20% of cruise fuel)
+      const fixedOverhead = taxiFuel + reserveFuel + alternateFuel;
+      const availableForCruiseAndClimb = maxFuelWithPayload - fixedOverhead;
+      // Since climb/descent is 20% of cruise, total = cruise * 1.2
+      const cruiseFuel = availableForCruiseAndClimb / 1.2;
+      const effectiveRangeNM = (cruiseFuel / aircraft.fuelConsumption) * aircraft.speed;
       const rangeCapable = distance <= effectiveRangeNM;
       
       // Final weight check
