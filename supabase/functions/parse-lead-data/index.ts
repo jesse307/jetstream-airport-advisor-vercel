@@ -106,6 +106,14 @@ serve(async (req) => {
     }
 
     const parsedData = JSON.parse(toolCall.function.arguments);
+    
+    // Format trip type to proper case
+    if (parsedData.trip_type === 'one-way') {
+      parsedData.trip_type = 'One Way';
+    } else if (parsedData.trip_type === 'round-trip') {
+      parsedData.trip_type = 'Round Trip';
+    }
+    
     console.log('Parsed lead data:', parsedData);
 
     // Enrich airport data with codes and cities from aviapages
