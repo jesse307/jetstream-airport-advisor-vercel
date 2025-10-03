@@ -28,13 +28,16 @@ const LeadImport = () => {
   useEffect(() => {
     fetchPendingImports();
     
-    // Check for bookmarklet data in localStorage
-    const bookmarkletData = localStorage.getItem('bookmarklet_capture');
-    if (bookmarkletData) {
-      setUnstructuredData(bookmarkletData);
-      localStorage.removeItem('bookmarklet_capture');
-      toast.success("Content captured from bookmarklet!");
-    }
+    // Poll for new imports every 3 seconds for the first 15 seconds
+    const pollInterval = setInterval(() => {
+      fetchPendingImports();
+    }, 3000);
+    
+    setTimeout(() => {
+      clearInterval(pollInterval);
+    }, 15000);
+    
+    return () => clearInterval(pollInterval);
   }, []);
 
   const fetchPendingImports = async () => {
