@@ -455,54 +455,41 @@ export default function LeadAnalysis() {
         setIsSpam(true);
       }
 
-      // Fetch airport data with coordinates
+      // Fetch both airports in parallel
       try {
-        if (data.departure_airport) {
-          const depAirport = await fetchAirportData(data.departure_airport);
-          if (depAirport) {
-            setDepartureAirportData(depAirport);
-            
-            // Calculate distance if we have both airports
-            if (arrivalAirportData && depAirport.latitude && depAirport.longitude && 
-                arrivalAirportData.latitude && arrivalAirportData.longitude) {
-              const R = 3440.065; // Earth's radius in nautical miles
-              const dLat = (arrivalAirportData.latitude - depAirport.latitude) * Math.PI / 180;
-              const dLon = (arrivalAirportData.longitude - depAirport.longitude) * Math.PI / 180;
-              
-              const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                        Math.cos(depAirport.latitude * Math.PI / 180) * Math.cos(arrivalAirportData.latitude * Math.PI / 180) *
-                        Math.sin(dLon/2) * Math.sin(dLon/2);
-              
-              const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-              setDistance(Math.round(R * c));
-            }
-          } else {
-            console.warn('Could not fetch departure airport data for:', data.departure_airport);
-          }
+        const [depAirport, arrAirport] = await Promise.all([
+          data.departure_airport ? fetchAirportData(data.departure_airport) : Promise.resolve(null),
+          data.arrival_airport ? fetchAirportData(data.arrival_airport) : Promise.resolve(null)
+        ]);
+
+        if (depAirport) {
+          setDepartureAirportData(depAirport);
+        } else if (data.departure_airport) {
+          console.warn('Could not fetch departure airport data for:', data.departure_airport);
         }
 
-        if (data.arrival_airport) {
-          const arrAirport = await fetchAirportData(data.arrival_airport);
-          if (arrAirport) {
-            setArrivalAirportData(arrAirport);
-            
-            // Calculate distance if we have both airports
-            if (departureAirportData && arrAirport.latitude && arrAirport.longitude && 
-                departureAirportData.latitude && departureAirportData.longitude) {
-              const R = 3440.065; // Earth's radius in nautical miles
-              const dLat = (arrAirport.latitude - departureAirportData.latitude) * Math.PI / 180;
-              const dLon = (arrAirport.longitude - departureAirportData.longitude) * Math.PI / 180;
-              
-              const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                        Math.cos(departureAirportData.latitude * Math.PI / 180) * Math.cos(arrAirport.latitude * Math.PI / 180) *
-                        Math.sin(dLon/2) * Math.sin(dLon/2);
-              
-              const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-              setDistance(Math.round(R * c));
-            }
-          } else {
-            console.warn('Could not fetch arrival airport data for:', data.arrival_airport);
-          }
+        if (arrAirport) {
+          setArrivalAirportData(arrAirport);
+        } else if (data.arrival_airport) {
+          console.warn('Could not fetch arrival airport data for:', data.arrival_airport);
+        }
+
+        // Calculate distance if we have both airports with coordinates
+        if (depAirport && arrAirport && 
+            depAirport.latitude && depAirport.longitude &&
+            arrAirport.latitude && arrAirport.longitude) {
+          const R = 3440.065; // Earth's radius in nautical miles
+          const dLat = (arrAirport.latitude - depAirport.latitude) * Math.PI / 180;
+          const dLon = (arrAirport.longitude - depAirport.longitude) * Math.PI / 180;
+          
+          const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                    Math.cos(depAirport.latitude * Math.PI / 180) * Math.cos(arrAirport.latitude * Math.PI / 180) *
+                    Math.sin(dLon/2) * Math.sin(dLon/2);
+          
+          const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+          const calculatedDistance = Math.round(R * c);
+          setDistance(calculatedDistance);
+          console.log('Distance calculated:', calculatedDistance, 'NM');
         }
       } catch (airportError) {
         console.error("Error fetching airport data:", airportError);
