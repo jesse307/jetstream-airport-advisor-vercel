@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { ArrowLeft, Loader2, Sparkles, Clock, Plane } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -251,50 +250,46 @@ const LeadImport = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-          {/* Pending Imports Sidebar */}
+        <div className="space-y-4">
+          {/* Pending Imports - Compact */}
           {pendingImports.length > 0 && (
-            <div className="lg:col-span-1">
-              <div className="bg-card rounded-lg border border-border shadow-sm p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-semibold text-sm">Pending Imports</h3>
-                  <Badge variant="secondary" className="text-xs">{pendingImports.length}</Badge>
-                </div>
-                <ScrollArea className="h-[500px]">
-                  <div className="space-y-2">
-                    {isLoadingImports ? (
-                      <div className="text-center py-4">
-                        <Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
-                      </div>
-                    ) : (
-                      pendingImports.map((item) => (
-                        <button
-                          key={item.id}
-                          onClick={() => handleLoadImport(item)}
-                          className="w-full text-left p-2.5 rounded-md border border-border hover:bg-accent hover:border-accent transition-colors"
-                        >
-                          <div className="flex items-start gap-2">
-                            <Clock className="h-3.5 w-3.5 text-muted-foreground mt-0.5 flex-shrink-0" />
-                            <div className="flex-1 min-w-0">
-                              <p className="text-xs text-muted-foreground">
-                                {new Date(item.created_at).toLocaleString()}
-                              </p>
-                              <p className="text-xs mt-1 line-clamp-2 break-words">
-                                {item.raw_data.substring(0, 60)}...
-                              </p>
-                            </div>
-                          </div>
-                        </button>
-                      ))
-                    )}
+            <div className="bg-card rounded-lg border border-border shadow-sm p-3">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="font-semibold text-xs text-muted-foreground uppercase tracking-wide">Pending Imports</h3>
+                <Badge variant="secondary" className="text-xs h-5">{pendingImports.length}</Badge>
+              </div>
+              <div className="space-y-1.5">
+                {isLoadingImports ? (
+                  <div className="text-center py-3">
+                    <Loader2 className="h-5 w-5 animate-spin mx-auto text-muted-foreground" />
                   </div>
-                </ScrollArea>
+                ) : (
+                  pendingImports.map((item) => (
+                    <button
+                      key={item.id}
+                      onClick={() => handleLoadImport(item)}
+                      className="w-full text-left p-2 rounded-md border border-border hover:bg-accent hover:border-primary transition-colors"
+                    >
+                      <div className="flex items-start gap-2">
+                        <Clock className="h-3 w-3 text-muted-foreground mt-0.5 flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs text-muted-foreground">
+                            {new Date(item.created_at).toLocaleString()}
+                          </p>
+                          <p className="text-xs mt-0.5 line-clamp-1 break-words text-foreground">
+                            {item.raw_data.substring(0, 80)}...
+                          </p>
+                        </div>
+                      </div>
+                    </button>
+                  ))
+                )}
               </div>
             </div>
           )}
 
           {/* Main Content */}
-          <div className={`space-y-4 ${pendingImports.length > 0 ? 'lg:col-span-3' : 'lg:col-span-4'}`}>
+          <div className="space-y-4">
           <div className="bg-card rounded-lg border border-border shadow-sm p-5">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-base font-semibold">Paste Data</h3>
@@ -425,8 +420,8 @@ Notes: VIP client, prefers window seats"
           )}
           </div>
         </div>
-      </div>
-    </div>
+          </div>
+        </div>
   );
 };
 
