@@ -107,6 +107,16 @@ serve(async (req) => {
 
     const parsedData = JSON.parse(toolCall.function.arguments);
     
+    // Format names to proper case (capitalize first letter, lowercase rest)
+    if (parsedData.first_name) {
+      parsedData.first_name = parsedData.first_name.charAt(0).toUpperCase() + 
+                              parsedData.first_name.slice(1).toLowerCase();
+    }
+    if (parsedData.last_name) {
+      parsedData.last_name = parsedData.last_name.charAt(0).toUpperCase() + 
+                             parsedData.last_name.slice(1).toLowerCase();
+    }
+    
     // Format trip type to proper case
     if (parsedData.trip_type === 'one-way') {
       parsedData.trip_type = 'One Way';

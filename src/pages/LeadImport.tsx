@@ -350,7 +350,7 @@ Notes: VIP client, prefers window seats"
                   </div>
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">Trip Type</label>
-                    <p className="text-foreground capitalize">{parsedData.trip_type}</p>
+                    <p className="text-foreground">{parsedData.trip_type}</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">Passengers</label>
