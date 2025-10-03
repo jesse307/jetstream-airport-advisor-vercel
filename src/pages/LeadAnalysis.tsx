@@ -7,8 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { FlightCalculator } from "@/components/FlightCalculator";
 import { CallNotesDialog } from "@/components/CallNotesDialog";
+import { AircraftSuggestions } from "@/components/AircraftSuggestions";
 
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -755,7 +755,7 @@ export default function LeadAnalysis() {
               </p>
             </CardHeader>
             <CardContent>
-              {!loading && (!departureAirportData || !arrivalAirportData) ? (
+              {!loading && (!departureAirportData || !arrivalAirportData || distance === 0) ? (
                 <div className="text-center py-8">
                   <p className="text-muted-foreground">Could not load complete airport data. Please check the airport codes.</p>
                   <p className="text-sm text-muted-foreground mt-2">
@@ -763,13 +763,14 @@ export default function LeadAnalysis() {
                     Arrival: {lead.arrival_airport} {arrivalAirportData ? '✓' : '✗'}
                   </p>
                 </div>
-              ) : departureAirportData && arrivalAirportData ? (
-                <FlightCalculator 
-                  departure={lead.departure_airport} 
+              ) : departureAirportData && arrivalAirportData && distance > 0 ? (
+                <AircraftSuggestions
+                  distance={distance}
+                  passengers={lead.passengers}
+                  departure={lead.departure_airport}
                   arrival={lead.arrival_airport}
-                  departureAirport={departureAirportData}
-                  arrivalAirport={arrivalAirportData}
-                  initialPassengers={lead.passengers}
+                  departureDate={lead.departure_date}
+                  returnDate={lead.return_date}
                 />
               ) : (
                 <div className="text-center py-8">
