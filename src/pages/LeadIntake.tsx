@@ -25,7 +25,7 @@ const leadSchema = z.object({
   lastName: z.string().min(1, "Last name is required").max(50, "Last name too long"),
   email: z.string().email("Invalid email address").max(255, "Email too long"),
   phone: z.string().min(10, "Phone number too short").max(20, "Phone number too long"),
-  tripType: z.enum(["one-way", "round-trip"], {
+  tripType: z.enum(["One Way", "Round Trip"], {
     required_error: "Please select trip type",
   }),
   departureAirport: z.string().min(1, "Departure airport is required"),
@@ -52,7 +52,7 @@ export default function LeadIntake() {
     resolver: zodResolver(leadSchema),
     defaultValues: {
       passengers: 4,
-      tripType: "round-trip",
+      tripType: "Round Trip",
       notes: "",
     },
   });
@@ -98,7 +98,7 @@ export default function LeadIntake() {
 
   // Custom validation for round-trip dates
   const validateDates = (data: LeadFormData) => {
-    if (data.tripType === "round-trip") {
+    if (data.tripType === "Round Trip") {
       if (!data.returnDate) {
         form.setError("returnDate", { message: "Return date is required for round-trip" });
         return false;
@@ -315,11 +315,11 @@ export default function LeadIntake() {
                               className="flex gap-6"
                             >
                               <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="one-way" id="one-way" />
+                                <RadioGroupItem value="One Way" id="one-way" />
                                 <Label htmlFor="one-way">One Way</Label>
                               </div>
                               <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="round-trip" id="round-trip" />
+                                <RadioGroupItem value="Round Trip" id="round-trip" />
                                 <Label htmlFor="round-trip">Round Trip</Label>
                               </div>
                             </RadioGroup>
@@ -458,7 +458,7 @@ export default function LeadIntake() {
                     </div>
 
                     {/* Return Date & Time (conditional) */}
-                    {watchTripType === "round-trip" && (
+                    {watchTripType === "Round Trip" && (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField
                           control={form.control}
