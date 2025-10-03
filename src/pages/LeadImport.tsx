@@ -27,6 +27,14 @@ const LeadImport = () => {
 
   useEffect(() => {
     fetchPendingImports();
+    
+    // Check for bookmarklet data in localStorage
+    const bookmarkletData = localStorage.getItem('bookmarklet_capture');
+    if (bookmarkletData) {
+      setUnstructuredData(bookmarkletData);
+      localStorage.removeItem('bookmarklet_capture');
+      toast.success("Content captured from bookmarklet!");
+    }
   }, []);
 
   const fetchPendingImports = async () => {
