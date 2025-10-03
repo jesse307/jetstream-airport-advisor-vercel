@@ -719,7 +719,7 @@ export default function LeadAnalysis() {
                 <div className="pt-4 space-y-2">
                   <Button 
                     className="w-full" 
-                    variant="aviation"
+                    variant="default"
                     onClick={handleStartProcess}
                     disabled={isExporting}
                   >

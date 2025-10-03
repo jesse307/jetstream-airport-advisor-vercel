@@ -339,7 +339,7 @@ export function AirportDropdown({ airport, onSelect, type }: AirportDropdownProp
                             </p>
                           </div>
                           <Button 
-                            variant="aviation" 
+                            variant="default" 
                             size="sm"
                             className="text-xs h-7"
                             onClick={() => onSelect(altAirport)}

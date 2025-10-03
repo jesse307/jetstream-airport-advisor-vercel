@@ -6,53 +6,54 @@
 
 @layer base {
   :root {
-    /* Aviation Blue Theme */
-    --background: 215 25% 97%;
-    --foreground: 215 25% 15%;
+    /* Stratos Jets Color Theme */
+    --background: 0 0% 98%;
+    --foreground: 210 20% 20%;
 
     --card: 0 0% 100%;
-    --card-foreground: 215 25% 15%;
+    --card-foreground: 210 20% 20%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 215 25% 15%;
+    --popover-foreground: 210 20% 20%;
 
-    /* Primary: Aviation Blue */
-    --primary: 215 75% 35%;
-    --primary-foreground: 0 0% 98%;
-    --primary-hover: 215 75% 30%;
+    /* Primary: Stratos Orange */
+    --primary: 14 100% 60%;
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 14 100% 55%;
 
-    /* Secondary: Sky Gray */
-    --secondary: 215 15% 92%;
-    --secondary-foreground: 215 25% 25%;
+    /* Secondary: Stratos Navy */
+    --secondary: 207 35% 25%;
+    --secondary-foreground: 0 0% 100%;
 
-    /* Muted: Light Sky */
-    --muted: 215 20% 95%;
-    --muted-foreground: 215 15% 45%;
+    /* Muted: Neutral Gray */
+    --muted: 210 10% 94%;
+    --muted-foreground: 210 10% 45%;
 
-    /* Accent: Deep Sky Blue */
-    --accent: 205 85% 45%;
-    --accent-foreground: 0 0% 98%;
+    /* Accent: Stratos Teal */
+    --accent: 195 40% 35%;
+    --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 215 20% 88%;
-    --input: 215 20% 92%;
-    --ring: 215 75% 35%;
+    --border: 210 15% 88%;
+    --input: 210 10% 94%;
+    --ring: 14 100% 60%;
 
-    /* Professional Aviation Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(215, 75%, 35%), hsl(205, 85%, 45%));
-    --gradient-sky: linear-gradient(180deg, hsl(215, 40%, 98%), hsl(215, 25%, 97%));
-    --gradient-horizon: linear-gradient(135deg, hsl(215, 35%, 92%), hsl(205, 25%, 95%));
+    /* Professional Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(14, 100%, 60%), hsl(14, 100%, 65%));
+    --gradient-navy: linear-gradient(135deg, hsl(207, 35%, 25%), hsl(207, 35%, 30%));
+    --gradient-subtle: linear-gradient(180deg, hsl(0, 0%, 100%), hsl(0, 0%, 98%));
 
-    /* Aviation Shadows */
-    --shadow-aviation: 0 4px 20px -4px hsl(215, 75%, 35% / 0.2);
-    --shadow-card: 0 2px 12px -2px hsl(215, 25%, 15% / 0.1);
+    /* Professional Shadows */
+    --shadow-sm: 0 1px 2px 0 hsl(210, 20%, 20% / 0.05);
+    --shadow-md: 0 4px 6px -1px hsl(210, 20%, 20% / 0.1);
+    --shadow-lg: 0 10px 15px -3px hsl(210, 20%, 20% / 0.1);
 
     /* Smooth Transitions */
-    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-smooth: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 
-    --radius: 0.5rem;
+    --radius: 0.375rem;
 
     --sidebar-background: 0 0% 98%;
 
@@ -122,37 +123,32 @@
 
   /* Professional Typography Hierarchy */
   h1, h2, h3, h4, h5, h6 {
-    @apply font-heading;
+    @apply font-sans;
     font-feature-settings: 'lnum' 1;
   }
 
   h1 {
-    @apply text-4xl font-semibold tracking-tight;
+    @apply text-3xl md:text-4xl font-bold tracking-tight text-foreground;
   }
 
   h2 {
-    @apply text-3xl font-semibold tracking-tight;
+    @apply text-2xl md:text-3xl font-semibold tracking-tight text-foreground;
   }
 
   h3 {
-    @apply text-2xl font-medium tracking-tight;
+    @apply text-xl md:text-2xl font-semibold tracking-tight text-foreground;
   }
 
   h4 {
-    @apply text-xl font-medium;
+    @apply text-lg font-semibold text-foreground;
   }
 
   h5 {
-    @apply text-lg font-medium;
+    @apply text-base font-semibold text-foreground;
   }
 
   h6 {
-    @apply text-base font-medium;
-  }
-
-  /* Enhanced button styling */
-  .btn-luxury {
-    @apply font-display font-medium tracking-wide;
+    @apply text-sm font-semibold text-foreground;
   }
 
   /* Email preview styling */
@@ -163,7 +159,7 @@
   .email-preview h1,
   .email-preview h2,
   .email-preview h3 {
-    @apply font-heading;
+    @apply font-sans;
   }
 
   /* Professional form styling */

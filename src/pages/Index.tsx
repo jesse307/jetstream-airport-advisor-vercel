@@ -23,44 +23,42 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-sky">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b border-border bg-card/95 backdrop-blur-sm shadow-card-custom sticky top-0 z-40">
-        <div className="container mx-auto px-4 py-4">
+      <header className="border-b border-border bg-card sticky top-0 z-40 shadow-sm">
+        <div className="container mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="rounded-lg bg-gradient-primary p-2">
-                <Plane className="h-6 w-6 text-primary-foreground" />
+            <div className="flex items-center gap-2">
+              <div className="rounded-md bg-primary p-2">
+                <Plane className="h-5 w-5 text-primary-foreground" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-foreground">Charter Pro</h1>
-                <p className="text-sm text-muted-foreground">Private Jet Flight Planning</p>
+                <h1 className="text-lg font-bold text-foreground">Charter Pro</h1>
+                <p className="text-xs text-muted-foreground">Flight Planning</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Button asChild variant="aviation" size="sm">
+              <Button asChild size="sm">
                 <Link to="/leads/new">
-                  <UserPlus className="h-4 w-4 mr-2" />
+                  <UserPlus className="h-4 w-4 mr-1" />
                   New Lead
                 </Link>
               </Button>
               <Button asChild variant="outline" size="sm">
                 <Link to="/leads/import">
-                  <Upload className="h-4 w-4 mr-2" />
-                  Import Data
+                  <Upload className="h-4 w-4 mr-1" />
+                  Import
                 </Link>
               </Button>
-              <Button variant="professional" size="sm">
-                <Settings className="h-4 w-4 mr-2" />
-                Settings
+              <Button variant="ghost" size="sm">
+                <Settings className="h-4 w-4" />
               </Button>
               <Button 
-                variant="outline" 
+                variant="ghost" 
                 size="sm"
                 onClick={() => setShowApiTest(!showApiTest)}
               >
-                <TestTube className="h-4 w-4 mr-2" />
-                API Test
+                <TestTube className="h-4 w-4" />
               </Button>
             </div>
           </div>
@@ -68,46 +66,49 @@ const Index = () => {
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
-        <div className="space-y-8">
+      <main className="container mx-auto px-4 py-6">
+        <div className="space-y-6">
           {/* API Test Panel */}
           {showApiTest && <ApiTest />}
           
           {/* Airport Selection */}
-          <div className="grid md:grid-cols-2 gap-6">
-            <div className="space-y-4">
-              <AirportSearch
-                value={departure}
-                onChange={(value, airport) => {
-                  setDeparture(value);
-                  setDepartureAirport(airport);
-                }}
-                label="Departure Airport"
-                placeholder="Search by city or airport code"
-              />
-            </div>
-            
-            <div className="flex items-start gap-3">
-              <div className="flex-1 space-y-4">
+          <div className="bg-card rounded-lg shadow-sm border border-border p-6">
+            <h2 className="text-lg font-semibold mb-4">Route Planning</h2>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
                 <AirportSearch
-                  value={arrival}
+                  value={departure}
                   onChange={(value, airport) => {
-                    setArrival(value);
-                    setArrivalAirport(airport);
+                    setDeparture(value);
+                    setDepartureAirport(airport);
                   }}
-                  label="Arrival Airport"
+                  label="Departure Airport"
                   placeholder="Search by city or airport code"
                 />
               </div>
-              <Button
-                variant="professional"
-                size="sm"
-                className="mt-7"
-                onClick={handleSwapAirports}
-                disabled={!departure && !arrival}
-              >
-                <Navigation className="h-4 w-4" />
-              </Button>
+              
+              <div className="flex items-start gap-2">
+                <div className="flex-1">
+                  <AirportSearch
+                    value={arrival}
+                    onChange={(value, airport) => {
+                      setArrival(value);
+                      setArrivalAirport(airport);
+                    }}
+                    label="Arrival Airport"
+                    placeholder="Search by city or airport code"
+                  />
+                </div>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="mt-7"
+                  onClick={handleSwapAirports}
+                  disabled={!departure && !arrival}
+                >
+                  <Navigation className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </div>
 
@@ -122,15 +123,15 @@ const Index = () => {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-border bg-card/95 backdrop-blur-sm mt-16">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex items-center justify-between text-sm text-muted-foreground">
+      <footer className="border-t border-border bg-card mt-12">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
             <div className="flex items-center gap-2">
-              <Plane className="h-4 w-4" />
-              <span>Charter Pro © 2024 - Professional Flight Planning Tools</span>
+              <Plane className="h-3 w-3" />
+              <span>Charter Pro © 2024</span>
             </div>
             <div className="flex items-center gap-1">
-              <MapPin className="h-4 w-4" />
+              <MapPin className="h-3 w-3" />
               <span>Aviation Data Powered</span>
             </div>
           </div>

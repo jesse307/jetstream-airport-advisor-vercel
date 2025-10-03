@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Loader2, Sparkles, Clock } from "lucide-react";
+import { ArrowLeft, Loader2, Sparkles, Clock, Plane } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -218,31 +218,48 @@ const LeadImport = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
+    <div className="min-h-screen bg-background">
+      <header className="border-b border-border bg-card sticky top-0 z-40 shadow-sm">
+        <div className="container mx-auto px-4 py-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="rounded-md bg-primary p-2">
+                <Plane className="h-5 w-5 text-primary-foreground" />
+              </div>
+              <div>
+                <h1 className="text-lg font-bold text-foreground">Charter Pro</h1>
+                <p className="text-xs text-muted-foreground">Lead Import</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <div className="container mx-auto px-4 py-6 max-w-6xl">
         <div className="mb-6">
           <Button
             variant="ghost"
             onClick={() => navigate('/')}
-            className="mb-4"
+            size="sm"
+            className="mb-2"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back
           </Button>
-          <h1 className="text-3xl font-bold text-foreground">Import Lead Data</h1>
-          <p className="text-muted-foreground mt-2">
-            Paste unstructured data or select from pending imports sent by Make.com
+          <h2 className="text-2xl font-bold">Import Lead Data</h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            Paste unstructured data or select from pending imports
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
           {/* Pending Imports Sidebar */}
           {pendingImports.length > 0 && (
             <div className="lg:col-span-1">
-              <Card className="p-4">
-                <div className="flex items-center justify-between mb-4">
+              <div className="bg-card rounded-lg border border-border shadow-sm p-4">
+                <div className="flex items-center justify-between mb-3">
                   <h3 className="font-semibold text-sm">Pending Imports</h3>
-                  <Badge variant="secondary">{pendingImports.length}</Badge>
+                  <Badge variant="secondary" className="text-xs">{pendingImports.length}</Badge>
                 </div>
                 <ScrollArea className="h-[500px]">
                   <div className="space-y-2">
@@ -255,15 +272,15 @@ const LeadImport = () => {
                         <button
                           key={item.id}
                           onClick={() => handleLoadImport(item)}
-                          className="w-full text-left p-3 rounded-lg border hover:bg-accent transition-colors"
+                          className="w-full text-left p-2.5 rounded-md border border-border hover:bg-accent hover:border-accent transition-colors"
                         >
                           <div className="flex items-start gap-2">
-                            <Clock className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                            <Clock className="h-3.5 w-3.5 text-muted-foreground mt-0.5 flex-shrink-0" />
                             <div className="flex-1 min-w-0">
                               <p className="text-xs text-muted-foreground">
                                 {new Date(item.created_at).toLocaleString()}
                               </p>
-                              <p className="text-sm mt-1 line-clamp-2 break-words">
+                              <p className="text-xs mt-1 line-clamp-2 break-words">
                                 {item.raw_data.substring(0, 60)}...
                               </p>
                             </div>
@@ -273,15 +290,15 @@ const LeadImport = () => {
                     )}
                   </div>
                 </ScrollArea>
-              </Card>
+              </div>
             </div>
           )}
 
           {/* Main Content */}
-          <div className={`space-y-6 ${pendingImports.length > 0 ? 'lg:col-span-3' : 'lg:col-span-4'}`}>
-          <Card className="p-6">
+          <div className={`space-y-4 ${pendingImports.length > 0 ? 'lg:col-span-3' : 'lg:col-span-4'}`}>
+          <div className="bg-card rounded-lg border border-border shadow-sm p-5">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold">Paste Data</h2>
+              <h3 className="text-base font-semibold">Paste Data</h3>
               <Button
                 type="button"
                 variant="outline"
@@ -305,13 +322,12 @@ Departure: 2025-10-15 at 10:00 AM
 Return: 2025-10-20 at 3:00 PM
 Passengers: 4
 Notes: VIP client, prefers window seats"
-              className="min-h-[200px] font-mono text-sm"
+              className="min-h-[180px] font-mono text-sm"
             />
             <Button
               onClick={handleParse}
               disabled={isParsing || !unstructuredData.trim()}
               className="mt-4"
-              variant="aviation"
             >
               {isParsing ? (
                 <>
@@ -325,70 +341,70 @@ Notes: VIP client, prefers window seats"
                 </>
               )}
             </Button>
-          </Card>
+          </div>
 
           {parsedData && (
-            <Card className="p-6">
-              <h2 className="text-xl font-semibold mb-4">Parsed Data</h2>
+            <div className="bg-card rounded-lg border border-border shadow-sm p-5">
+              <h3 className="text-base font-semibold mb-4">Parsed Data</h3>
               <div className="space-y-3 mb-6">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="text-sm font-medium text-muted-foreground">First Name</label>
-                    <p className="text-foreground">{parsedData.first_name}</p>
+                    <label className="text-xs font-medium text-muted-foreground">First Name</label>
+                    <p className="text-sm text-foreground mt-0.5">{parsedData.first_name}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-muted-foreground">Last Name</label>
-                    <p className="text-foreground">{parsedData.last_name}</p>
+                    <label className="text-xs font-medium text-muted-foreground">Last Name</label>
+                    <p className="text-sm text-foreground mt-0.5">{parsedData.last_name}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-muted-foreground">Email</label>
-                    <p className="text-foreground">{parsedData.email}</p>
+                    <label className="text-xs font-medium text-muted-foreground">Email</label>
+                    <p className="text-sm text-foreground mt-0.5">{parsedData.email}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-muted-foreground">Phone</label>
-                    <p className="text-foreground">{parsedData.phone || 'N/A'}</p>
+                    <label className="text-xs font-medium text-muted-foreground">Phone</label>
+                    <p className="text-sm text-foreground mt-0.5">{parsedData.phone || 'N/A'}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-muted-foreground">Trip Type</label>
-                    <p className="text-foreground">{parsedData.trip_type}</p>
+                    <label className="text-xs font-medium text-muted-foreground">Trip Type</label>
+                    <p className="text-sm text-foreground mt-0.5">{parsedData.trip_type}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-muted-foreground">Passengers</label>
-                    <p className="text-foreground">{parsedData.passengers}</p>
+                    <label className="text-xs font-medium text-muted-foreground">Passengers</label>
+                    <p className="text-sm text-foreground mt-0.5">{parsedData.passengers}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-muted-foreground">Departure Airport</label>
-                    <p className="text-foreground">{parsedData.departure_airport}</p>
+                    <label className="text-xs font-medium text-muted-foreground">Departure Airport</label>
+                    <p className="text-sm text-foreground mt-0.5">{parsedData.departure_airport}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-muted-foreground">Arrival Airport</label>
-                    <p className="text-foreground">{parsedData.arrival_airport}</p>
+                    <label className="text-xs font-medium text-muted-foreground">Arrival Airport</label>
+                    <p className="text-sm text-foreground mt-0.5">{parsedData.arrival_airport}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-muted-foreground">Departure Date</label>
-                    <p className="text-foreground">{new Date(parsedData.departure_date).toLocaleDateString('en-US')}</p>
+                    <label className="text-xs font-medium text-muted-foreground">Departure Date</label>
+                    <p className="text-sm text-foreground mt-0.5">{new Date(parsedData.departure_date).toLocaleDateString('en-US')}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-muted-foreground">Departure Time</label>
-                    <p className="text-foreground">{parsedData.departure_time || 'Not specified'}</p>
+                    <label className="text-xs font-medium text-muted-foreground">Departure Time</label>
+                    <p className="text-sm text-foreground mt-0.5">{parsedData.departure_time || 'Not specified'}</p>
                   </div>
                   {parsedData.return_date && (
                     <>
                       <div>
-                        <label className="text-sm font-medium text-muted-foreground">Return Date</label>
-                        <p className="text-foreground">{new Date(parsedData.return_date).toLocaleDateString('en-US')}</p>
+                        <label className="text-xs font-medium text-muted-foreground">Return Date</label>
+                        <p className="text-sm text-foreground mt-0.5">{new Date(parsedData.return_date).toLocaleDateString('en-US')}</p>
                       </div>
                       <div>
-                        <label className="text-sm font-medium text-muted-foreground">Return Time</label>
-                        <p className="text-foreground">{parsedData.return_time || 'Not specified'}</p>
+                        <label className="text-xs font-medium text-muted-foreground">Return Time</label>
+                        <p className="text-sm text-foreground mt-0.5">{parsedData.return_time || 'Not specified'}</p>
                       </div>
                     </>
                   )}
                 </div>
                 {parsedData.notes && (
                   <div>
-                    <label className="text-sm font-medium text-muted-foreground">Notes</label>
-                    <p className="text-foreground">{parsedData.notes}</p>
+                    <label className="text-xs font-medium text-muted-foreground">Notes</label>
+                    <p className="text-sm text-foreground mt-0.5">{parsedData.notes}</p>
                   </div>
                 )}
               </div>
@@ -396,7 +412,6 @@ Notes: VIP client, prefers window seats"
                 onClick={handleSubmit}
                 disabled={isSubmitting}
                 className="w-full"
-                variant="default"
               >
                 {isSubmitting ? (
                   <>
@@ -407,7 +422,7 @@ Notes: VIP client, prefers window seats"
                   'Create Lead & Start Flow'
                 )}
               </Button>
-            </Card>
+            </div>
           )}
           </div>
         </div>

@@ -65,10 +65,9 @@ export default {
 				}
 			},
 			fontFamily: {
-				'sans': ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-				'heading': ['Playfair Display', 'Georgia', 'serif'],
-				'display': ['Montserrat', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-				'body': ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif']
+				'sans': ['-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'sans-serif'],
+				'display': ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+				'body': ['-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'sans-serif']
 			},
 			fontSize: {
 				'xs': ['0.75rem', { lineHeight: '1rem' }],
@@ -84,12 +83,13 @@ export default {
 			},
 			backgroundImage: {
 				'gradient-primary': 'var(--gradient-primary)',
-				'gradient-sky': 'var(--gradient-sky)',
-				'gradient-horizon': 'var(--gradient-horizon)'
+				'gradient-navy': 'var(--gradient-navy)',
+				'gradient-subtle': 'var(--gradient-subtle)'
 			},
 			boxShadow: {
-				'aviation': 'var(--shadow-aviation)',
-				'card-custom': 'var(--shadow-card)'
+				'sm': 'var(--shadow-sm)',
+				'md': 'var(--shadow-md)',
+				'lg': 'var(--shadow-lg)'
 			},
 			transitionProperty: {
 				'smooth': 'var(--transition-smooth)'
