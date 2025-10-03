@@ -17,7 +17,6 @@
     button {
       width: 100%;
       padding: 12px;
-      background: #0066cc;
       color: white;
       border: none;
       border-radius: 6px;
@@ -26,8 +25,17 @@
       cursor: pointer;
       margin-bottom: 8px;
     }
-    button:hover {
+    button.primary {
+      background: #0066cc;
+    }
+    button.primary:hover {
       background: #0052a3;
+    }
+    button.secondary {
+      background: #28a745;
+    }
+    button.secondary:hover {
+      background: #218838;
     }
     button:disabled {
       background: #cccccc;
@@ -74,7 +82,8 @@
 </head>
 <body>
   <h1>Lead Capture</h1>
-  <button id="captureBtn">Capture Page Data</button>
+  <button id="pushToSiteBtn" class="primary">Push to Site</button>
+  <button id="completeWorkflowBtn" class="secondary">Complete Workflow</button>
   <div id="status" class="status"></div>
   <script src="popup.js"></script>
 </body>

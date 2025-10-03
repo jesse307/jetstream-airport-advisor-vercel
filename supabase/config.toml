@@ -38,3 +38,6 @@ verify_jwt = false
 
 [functions.suggest-aircraft]
 verify_jwt = false
+
+[functions.process-lead-complete]
+verify_jwt = false

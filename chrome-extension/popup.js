@@ -1,9 +1,24 @@
-document.getElementById('captureBtn').addEventListener('click', async () => {
-  const button = document.getElementById('captureBtn');
+// Push to Site button - sends data to pending imports for manual review
+document.getElementById('pushToSiteBtn').addEventListener('click', async () => {
+  await handleCapture('push-to-site');
+});
+
+// Complete Workflow button - automated processing all the way to Make.com
+document.getElementById('completeWorkflowBtn').addEventListener('click', async () => {
+  await handleCapture('complete-workflow');
+});
+
+async function handleCapture(mode) {
+  const pushBtn = document.getElementById('pushToSiteBtn');
+  const completeBtn = document.getElementById('completeWorkflowBtn');
   const status = document.getElementById('status');
   
-  button.disabled = true;
-  button.innerHTML = '<span class="loader"></span>Capturing...';
+  pushBtn.disabled = true;
+  completeBtn.disabled = true;
+  
+  const activeBtn = mode === 'push-to-site' ? pushBtn : completeBtn;
+  const originalText = activeBtn.textContent;
+  activeBtn.innerHTML = '<span class="loader"></span>Processing...';
   status.className = 'status';
   status.style.display = 'none';
 
@@ -19,8 +34,13 @@ document.getElementById('captureBtn').addEventListener('click', async () => {
 
     const pageData = results[0].result;
 
+    // Choose endpoint based on mode
+    const endpoint = mode === 'complete-workflow' 
+      ? 'process-lead-complete'
+      : 'receive-lead-webhook';
+
     // Send to webhook
-    const response = await fetch('https://hwemookrxvflpinfpkrj.supabase.co/functions/v1/receive-lead-webhook', {
+    const response = await fetch(`https://hwemookrxvflpinfpkrj.supabase.co/functions/v1/${endpoint}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -34,23 +54,29 @@ document.getElementById('captureBtn').addEventListener('click', async () => {
 
     if (response.ok) {
       status.className = 'status success';
-      status.textContent = '✓ Data captured successfully!';
       
-      // Open the Lead Import page
-      chrome.tabs.create({
-        url: 'https://300e3d3f-6393-4fa8-9ea2-e17c21482f24.lovableproject.com/leads/import'
-      });
+      if (mode === 'push-to-site') {
+        status.textContent = '✓ Data captured successfully!';
+        // Open the Lead Import page
+        chrome.tabs.create({
+          url: 'https://300e3d3f-6393-4fa8-9ea2-e17c21482f24.lovableproject.com/leads/import'
+        });
+      } else {
+        status.textContent = '✓ Lead processed and sent to Make.com!';
+      }
     } else {
-      throw new Error(result.error || 'Failed to send data');
+      throw new Error(result.error || 'Failed to process data');
     }
   } catch (error) {
     status.className = 'status error';
     status.textContent = '✗ Error: ' + error.message;
   } finally {
-    button.disabled = false;
-    button.textContent = 'Capture Page Data';
+    pushBtn.disabled = false;
+    completeBtn.disabled = false;
+    activeBtn.textContent = originalText;
+    status.style.display = 'block';
   }
-});
+}
 
 // This function runs in the context of the web page
 function capturePage() {
