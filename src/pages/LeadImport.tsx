@@ -77,6 +77,37 @@ const LeadImport = () => {
     }
   };
 
+  const testWebhook = async () => {
+    try {
+      const testData = {
+        rawData: "TEST DATA\nThis is a test from the Lead Import page\nURL: https://test.com\nEmail: test@example.com"
+      };
+      
+      console.log("Testing webhook with data:", testData);
+      
+      const response = await fetch("https://hwemookrxvflpinfpkrj.supabase.co/functions/v1/receive-lead-webhook", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(testData)
+      });
+      
+      const result = await response.json();
+      console.log("Webhook response:", result);
+      
+      if (response.ok) {
+        toast.success("Webhook test successful! Check pending imports.");
+        fetchPendingImports();
+      } else {
+        toast.error(`Webhook test failed: ${result.error || 'Unknown error'}`);
+      }
+    } catch (error: any) {
+      console.error("Webhook test error:", error);
+      toast.error(`Webhook test error: ${error.message}`);
+    }
+  };
+
   const handleParse = async () => {
     if (!unstructuredData.trim()) {
       toast.error("Please paste some data first");
@@ -249,7 +280,17 @@ const LeadImport = () => {
           {/* Main Content */}
           <div className={`space-y-6 ${pendingImports.length > 0 ? 'lg:col-span-3' : 'lg:col-span-4'}`}>
           <Card className="p-6">
-            <h2 className="text-xl font-semibold mb-4">Paste Data</h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold">Paste Data</h2>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={testWebhook}
+              >
+                Test Webhook
+              </Button>
+            </div>
             <Textarea
               value={unstructuredData}
               onChange={(e) => setUnstructuredData(e.target.value)}
