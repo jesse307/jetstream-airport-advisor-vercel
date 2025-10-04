@@ -7,6 +7,7 @@ import Index from "./pages/Index";
 import LeadIntake from "./pages/LeadIntake";
 import LeadImport from "./pages/LeadImport";
 import ImportHistory from "./pages/ImportHistory";
+import CRM from "./pages/CRM";
 import LeadAnalysis from "./pages/LeadAnalysis";
 import MobileCapture from "./pages/MobileCapture";
 import Settings from "./pages/Settings";
@@ -22,6 +23,7 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
+          <Route path="/crm" element={<CRM />} />
           <Route path="/leads/new" element={<LeadIntake />} />
           <Route path="/leads/import" element={<LeadImport />} />
           <Route path="/leads/import-history" element={<ImportHistory />} />
