@@ -724,6 +724,17 @@ export default function LeadAnalysis() {
                 </div>
               </CardHeader>
               <CardContent>
+                {/* Passenger Count - Prominent Display */}
+                <div className="flex justify-center mb-4">
+                  <div className="flex items-center gap-3 px-6 py-3 rounded-full bg-primary/10 border-2 border-primary/20">
+                    <Users className="h-6 w-6 text-primary" />
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-primary">{lead.passengers}</div>
+                      <div className="text-xs text-muted-foreground">Passenger{lead.passengers !== 1 ? 's' : ''}</div>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="flex items-center justify-between mb-6">
                   <div className="text-center flex-1">
                     <div className="text-3xl font-bold text-primary mb-1">
@@ -752,10 +763,6 @@ export default function LeadAnalysis() {
                       </div>
                       <div className="text-base font-semibold text-primary">
                         {lead.departure_time ? formatTime(lead.departure_time) : 'TBD'}
-                      </div>
-                      <div className="flex items-center justify-center gap-2 mt-2 text-sm font-medium text-muted-foreground">
-                        <Users className="h-4 w-4" />
-                        <span>{lead.passengers} passenger{lead.passengers !== 1 ? 's' : ''}</span>
                       </div>
                     </div>
                     <div className="w-full h-px bg-border relative mb-2">
