@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { CallNotesDialog } from "@/components/CallNotesDialog";
 import { AircraftSuggestions } from "@/components/AircraftSuggestions";
 import { EmailComposer } from "@/components/EmailComposer";
@@ -76,6 +77,8 @@ export default function LeadAnalysis() {
   const [showCallNotesDialog, setShowCallNotesDialog] = useState(false);
   const [isSpam, setIsSpam] = useState(false);
   const [showEmailComposer, setShowEmailComposer] = useState(false);
+  const [showAviapagesPreview, setShowAviapagesPreview] = useState(false);
+  const [isPostingToAviapages, setIsPostingToAviapages] = useState(false);
 
   // Helper function to format date from timestamp
   const formatDate = (datetime: string | undefined, fallbackDate?: string) => {
@@ -113,11 +116,20 @@ export default function LeadAnalysis() {
     toast.success('Added to trip board');
   };
 
-  const handlePostToAviapages = async () => {
+  const handleOpenAviapagesPreview = () => {
     if (!lead || !departureAirportData || !arrivalAirportData) {
       toast.error('Missing airport data');
       return;
     }
+    setShowAviapagesPreview(true);
+  };
+
+  const handleConfirmPostToAviapages = async () => {
+    if (!lead || !departureAirportData || !arrivalAirportData) {
+      return;
+    }
+
+    setIsPostingToAviapages(true);
 
     try {
       const legs = [];
@@ -149,8 +161,6 @@ export default function LeadAnalysis() {
         currency_code: 'USD'
       };
 
-      toast.loading('Posting to Aviapages...');
-
       const { data, error } = await supabase.functions.invoke('request-charter-quotes', {
         body: requestBody
       });
@@ -158,12 +168,14 @@ export default function LeadAnalysis() {
       if (error) {
         console.error('Aviapages error:', error);
         toast.error('Failed to post to Aviapages');
+        setIsPostingToAviapages(false);
         return;
       }
 
       if (!data.success) {
         console.error('Aviapages API error:', data);
         toast.error(`Failed to post: ${data.error || 'Unknown error'}`);
+        setIsPostingToAviapages(false);
         return;
       }
 
@@ -174,10 +186,18 @@ export default function LeadAnalysis() {
         .eq('id', lead.id);
 
       setLead({ ...lead, status: 'qualified' });
-      toast.success('Successfully posted to Aviapages trip board!');
+      setShowAviapagesPreview(false);
+      setIsPostingToAviapages(false);
+      
+      // Show success message
+      toast.success('🎉 Trip successfully posted to Aviapages!', {
+        description: 'Charter operators will now be able to see your trip and provide quotes.',
+        duration: 5000,
+      });
     } catch (error) {
       console.error('Error posting to Aviapages:', error);
       toast.error('Failed to post to Aviapages');
+      setIsPostingToAviapages(false);
     }
   };
 
@@ -1101,7 +1121,7 @@ export default function LeadAnalysis() {
                   <Button 
                     className="w-full" 
                     variant="default"
-                    onClick={handlePostToAviapages}
+                    onClick={handleOpenAviapagesPreview}
                   >
                     <Send className="h-4 w-4 mr-2" />
                     Post to Aviapages
@@ -1152,6 +1172,107 @@ export default function LeadAnalysis() {
           }}
         />
       )}
+
+      {/* Aviapages Preview Dialog */}
+      <Dialog open={showAviapagesPreview} onOpenChange={setShowAviapagesPreview}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Confirm Post to Aviapages Trip Board</DialogTitle>
+            <DialogDescription>
+              Review the trip details before posting to Aviapages. Charter operators will be able to see this information and provide quotes.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            {/* Contact Information */}
+            <div>
+              <h3 className="font-semibold mb-2 text-sm text-muted-foreground">Contact Information</h3>
+              <div className="space-y-1 text-sm">
+                <p><strong>Name:</strong> {lead.first_name} {lead.last_name}</p>
+                <p><strong>Email:</strong> {lead.email}</p>
+                {lead.phone && <p><strong>Phone:</strong> {lead.phone}</p>}
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Flight Details */}
+            <div>
+              <h3 className="font-semibold mb-2 text-sm text-muted-foreground">Flight Details</h3>
+              <div className="space-y-3 text-sm">
+                <div className="flex items-center justify-between bg-muted/50 p-3 rounded-lg">
+                  <div>
+                    <p className="font-semibold text-base">{departureAirportData?.code || lead.departure_airport}</p>
+                    <p className="text-xs text-muted-foreground">{departureAirportData?.name}</p>
+                  </div>
+                  <Plane className="h-5 w-5 text-primary" />
+                  <div className="text-right">
+                    <p className="font-semibold text-base">{arrivalAirportData?.code || lead.arrival_airport}</p>
+                    <p className="text-xs text-muted-foreground">{arrivalAirportData?.name}</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <p className="text-muted-foreground text-xs">Departure</p>
+                    <p className="font-medium">{formatDate(lead.departure_datetime, lead.departure_date)}</p>
+                    <p className="text-xs">{formatTime(getTime(lead.departure_datetime, lead.departure_time))}</p>
+                  </div>
+                  {lead.trip_type === 'Round Trip' && (
+                    <div>
+                      <p className="text-muted-foreground text-xs">Return</p>
+                      <p className="font-medium">{formatDate(lead.return_datetime, lead.return_date)}</p>
+                      <p className="text-xs">{formatTime(getTime(lead.return_datetime, lead.return_time))}</p>
+                    </div>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <p className="text-muted-foreground text-xs">Passengers</p>
+                    <p className="font-medium">{lead.passengers}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground text-xs">Trip Type</p>
+                    <p className="font-medium">{lead.trip_type}</p>
+                  </div>
+                </div>
+
+                {distance > 0 && (
+                  <div>
+                    <p className="text-muted-foreground text-xs">Distance</p>
+                    <p className="font-medium">{distance.toLocaleString()} nm</p>
+                  </div>
+                )}
+
+                {lead.notes && (
+                  <div>
+                    <p className="text-muted-foreground text-xs">Notes</p>
+                    <p className="text-sm">{lead.notes}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowAviapagesPreview(false)}
+              disabled={isPostingToAviapages}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleConfirmPostToAviapages}
+              disabled={isPostingToAviapages}
+            >
+              <Send className="h-4 w-4 mr-2" />
+              {isPostingToAviapages ? 'Posting...' : 'Confirm & Post'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
