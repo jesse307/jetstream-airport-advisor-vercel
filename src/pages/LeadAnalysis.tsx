@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, User, Phone, Mail, Calendar, Clock, Plane, Users, MapPin, CheckCircle2, XCircle } from "lucide-react";
+import { ArrowLeft, ArrowRight, User, Phone, Mail, Calendar, Clock, Plane, Users, MapPin, CheckCircle2, XCircle } from "lucide-react";
 import { format } from "date-fns";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -632,73 +632,42 @@ export default function LeadAnalysis() {
                     <XCircle className="h-4 w-4 text-red-600" />
                   ) : null}
                 </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <Users className="h-4 w-4 text-muted-foreground" />
-                  <span>{lead.passengers} passenger{lead.passengers !== 1 ? 's' : ''}</span>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Flight Information */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Plane className="h-5 w-5 text-primary" />
-                  Flight Details
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Badge variant="outline" className="mb-2">
-                    {lead.trip_type}
-                  </Badge>
-                </div>
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm">
-                    <MapPin className="h-4 w-4 text-muted-foreground" />
-                    <span className="font-medium">From:</span>
-                    <span>{lead.departure_airport}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <MapPin className="h-4 w-4 text-muted-foreground" />
-                    <span className="font-medium">To:</span>
-                    <span>{lead.arrival_airport}</span>
-                  </div>
-                </div>
+                
                 <Separator />
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm">
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
-                    <span className="font-medium">Departure:</span>
-                    <span>{format(new Date(lead.departure_date), "MMM dd, yyyy")}</span>
+                
+                {/* Flight TL;DR */}
+                <div className="space-y-2 bg-primary/5 p-3 rounded-lg border border-primary/10">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Plane className="h-4 w-4 text-primary" />
+                    <span className="text-xs font-semibold text-primary uppercase tracking-wide">Flight Summary</span>
                   </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <Clock className="h-4 w-4 text-muted-foreground" />
-                    <span className="font-medium">Time:</span>
-                    <span>{formatTime(lead.departure_time)}</span>
+                  <div className="flex items-center justify-between text-sm">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-primary">{departureAirportData?.code || lead.departure_airport.split(' ')[0]}</span>
+                      <ArrowRight className="h-3 w-3 text-muted-foreground" />
+                      <span className="font-bold text-primary">{arrivalAirportData?.code || lead.arrival_airport.split(' ')[0]}</span>
+                    </div>
+                    <Badge variant="outline" className="text-xs">
+                      {lead.trip_type}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Calendar className="h-3 w-3" />
+                    <span>{format(new Date(lead.departure_date), "MMM dd, yyyy")} @ {formatTime(lead.departure_time)}</span>
+                  </div>
+                  {lead.trip_type === "Round Trip" && lead.return_date && (
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <Calendar className="h-3 w-3" />
+                      <span>{format(new Date(lead.return_date), "MMM dd, yyyy")} @ {formatTime(lead.return_time || '')}</span>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Users className="h-3 w-3" />
+                    <span>{lead.passengers} Passenger{lead.passengers !== 1 ? 's' : ''}</span>
                   </div>
                 </div>
-                {lead.trip_type === "Round Trip" && lead.return_date && (
-                  <>
-                    <Separator />
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2 text-sm">
-                        <Calendar className="h-4 w-4 text-muted-foreground" />
-                        <span className="font-medium">Return:</span>
-                        <span>{format(new Date(lead.return_date), "MMM dd, yyyy")}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <Clock className="h-4 w-4 text-muted-foreground" />
-                        <span className="font-medium">Time:</span>
-                        <span>{formatTime(lead.return_time || '')}</span>
-                      </div>
-                    </div>
-                  </>
-                )}
               </CardContent>
             </Card>
-
-            </div>
 
             {/* Route Overview with Distance */}
             <Card className="bg-gradient-to-br from-primary/5 to-accent/5">
@@ -707,27 +676,6 @@ export default function LeadAnalysis() {
                   <Plane className="h-5 w-5 text-primary" />
                   Route Overview
                 </CardTitle>
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20">
-                    <Users className="h-4 w-4 text-primary" />
-                    <span className="font-semibold text-primary text-sm">{lead.passengers} Passenger{lead.passengers !== 1 ? 's' : ''}</span>
-                  </div>
-                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20">
-                    <div className="flex gap-1">
-                      {lead.trip_type === "Round Trip" ? (
-                        <>
-                          <Plane className="h-4 w-4 text-primary rotate-90" />
-                          <Plane className="h-4 w-4 text-primary -rotate-90" />
-                        </>
-                      ) : (
-                        <Plane className="h-4 w-4 text-primary rotate-90" />
-                      )}
-                    </div>
-                    <span className="font-semibold text-primary text-sm">
-                      {lead.trip_type}
-                    </span>
-                  </div>
-                </div>
               </CardHeader>
               <CardContent>
 
@@ -847,6 +795,8 @@ export default function LeadAnalysis() {
 
               </CardContent>
             </Card>
+
+            </div>
 
             {/* Aircraft Class Recommendations */}
             <Card>
