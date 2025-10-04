@@ -44,3 +44,9 @@ verify_jwt = false
 
 [functions.lead-chat]
 verify_jwt = false
+
+[functions.request-charter-quotes]
+verify_jwt = false
+
+[functions.get-charter-quote-replies]
+verify_jwt = false

@@ -12,6 +12,7 @@ import { AircraftSuggestions } from "@/components/AircraftSuggestions";
 import { EmailComposer } from "@/components/EmailComposer";
 import { LeadChatbot } from "@/components/LeadChatbot";
 import { AircraftClassRecommendations } from "@/components/AircraftClassRecommendations";
+import { CharterQuoteRequest } from "@/components/CharterQuoteRequest";
 
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -880,6 +881,9 @@ export default function LeadAnalysis() {
               )}
             </CardContent>
           </Card>
+
+          {/* Charter Quote Request */}
+          <CharterQuoteRequest leadData={lead} />
           </div>
 
           {/* Right Column - Chatbot & Actions */}
