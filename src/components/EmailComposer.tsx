@@ -41,6 +41,8 @@ export function EmailComposer({ isOpen, onClose, leadData }: EmailComposerProps)
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [isHtmlEditor, setIsHtmlEditor] = useState(false);
+  const [isSavingTemplate, setIsSavingTemplate] = useState(false);
+  const [templateId, setTemplateId] = useState<string | null>(null);
   const [emailTemplate, setEmailTemplate] = useState(`Subject: Stratos Jets - Confirming Flight Details
 
 Hi {{first_name}},
@@ -70,13 +72,40 @@ Best,
 Jesse`);
   const [makeWebhookUrl] = useState("https://hook.us2.make.com/ywmt9116r48viqppk2lqhhf9s7x57q4w");
 
+  // Load template from database on mount
+  React.useEffect(() => {
+    const loadTemplate = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('email_templates')
+          .select('*')
+          .eq('is_default', true)
+          .single();
+
+        if (error) {
+          console.error('Error loading template:', error);
+          return;
+        }
+
+        if (data) {
+          setEmailTemplate(data.template_content);
+          setTemplateId(data.id);
+        }
+      } catch (error) {
+        console.error('Error loading template:', error);
+      }
+    };
+
+    loadTemplate();
+  }, []);
+
   // Reset email content when dialog opens
   React.useEffect(() => {
     if (isOpen) {
       const populatedTemplate = populateTemplate(emailTemplate, leadData);
       setEmailContent(populatedTemplate);
     }
-  }, [isOpen]); // Reset content every time dialog opens
+  }, [isOpen, emailTemplate]); // Reset content every time dialog opens
 
   const populateTemplate = (template: string, data: any) => {
     let populated = template;
@@ -365,6 +394,53 @@ Jesse`);
     }
   };
 
+  const handleSaveTemplate = async () => {
+    setIsSavingTemplate(true);
+    try {
+      if (templateId) {
+        // Update existing template
+        const { error } = await supabase
+          .from('email_templates')
+          .update({ template_content: emailTemplate })
+          .eq('id', templateId);
+
+        if (error) {
+          console.error('Error updating template:', error);
+          toast.error("Failed to save template");
+          return;
+        }
+      } else {
+        // Create new template (shouldn't happen normally)
+        const { data, error } = await supabase
+          .from('email_templates')
+          .insert({
+            name: 'Default Lead Email',
+            template_content: emailTemplate,
+            is_default: true
+          })
+          .select()
+          .single();
+
+        if (error) {
+          console.error('Error creating template:', error);
+          toast.error("Failed to save template");
+          return;
+        }
+
+        if (data) {
+          setTemplateId(data.id);
+        }
+      }
+
+      toast.success("Template saved successfully!");
+    } catch (error) {
+      console.error('Error saving template:', error);
+      toast.error("An error occurred while saving the template");
+    } finally {
+      setIsSavingTemplate(false);
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -444,14 +520,27 @@ Jesse`;
               >
                 Reset Formatting
               </Button>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => setIsShowingTemplate(!isShowingTemplate)}
-                className="text-sm"
-              >
-                {isShowingTemplate ? "Hide Template" : "Change Template"}
-              </Button>
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setIsShowingTemplate(!isShowingTemplate)}
+                  className="text-sm"
+                >
+                  {isShowingTemplate ? "Hide Template" : "Change Template"}
+                </Button>
+                {isShowingTemplate && (
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={handleSaveTemplate}
+                    disabled={isSavingTemplate}
+                    className="text-sm"
+                  >
+                    {isSavingTemplate ? "Saving..." : "Save Template"}
+                  </Button>
+                )}
+              </div>
             </div>
 
             {/* Template Editor (conditionally shown) */}
