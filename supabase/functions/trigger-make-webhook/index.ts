@@ -7,25 +7,23 @@ const corsHeaders = {
 };
 
 interface LeadData {
-  firstName: string;
-  lastName: string;
+  id: string;
+  first_name: string;
+  last_name: string;
   email: string;
   phone: string;
-  tripType: string;
-  departureAirport: string;
-  arrivalAirport: string;
-  departureDate: string;
-  departureTime: string | null;
-  returnDate: string;
-  returnTime: string;
+  trip_type: string;
+  departure_airport: string;
+  arrival_airport: string;
+  departure_date: string;
+  departure_time: string | null;
+  return_date: string | null;
+  return_time: string | null;
   passengers: number;
   notes: string;
-  leadId: string;
-  createdAt: string;
+  created_at: string;
   status: string;
-  distance?: number;
-  flightTime?: string;
-  aiAnalysis?: string;
+  analysis_data?: any;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -53,31 +51,31 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Create form data with individual fields for Make webhook
     const formData = new URLSearchParams();
-    formData.append('firstName', leadData.firstName);
-    formData.append('lastName', leadData.lastName);
+    formData.append('firstName', leadData.first_name);
+    formData.append('lastName', leadData.last_name);
     formData.append('email', leadData.email);
-    formData.append('phone', leadData.phone);
-    formData.append('tripType', leadData.tripType);
-    formData.append('departureAirport', leadData.departureAirport);
-    formData.append('arrivalAirport', leadData.arrivalAirport);
-    formData.append('departureDate', leadData.departureDate);
-    formData.append('departureTime', leadData.departureTime || '');
-    formData.append('returnDate', leadData.returnDate);
-    formData.append('returnTime', leadData.returnTime || '');
+    formData.append('phone', leadData.phone || '');
+    formData.append('tripType', leadData.trip_type);
+    formData.append('departureAirport', leadData.departure_airport);
+    formData.append('arrivalAirport', leadData.arrival_airport);
+    formData.append('departureDate', leadData.departure_date);
+    formData.append('departureTime', leadData.departure_time || '');
+    formData.append('returnDate', leadData.return_date || '');
+    formData.append('returnTime', leadData.return_time || '');
     formData.append('passengers', leadData.passengers.toString());
     formData.append('notes', leadData.notes || '');
-    formData.append('leadId', leadData.leadId);
-    formData.append('createdAt', leadData.createdAt);
+    formData.append('leadId', leadData.id);
+    formData.append('createdAt', leadData.created_at);
     formData.append('status', leadData.status);
-    formData.append('distance', leadData.distance?.toString() || '');
-    formData.append('flightTime', leadData.flightTime || '');
-    formData.append('aiAnalysis', leadData.aiAnalysis || '');
+    formData.append('distance', leadData.analysis_data?.distance?.toString() || '');
+    formData.append('flightTime', leadData.analysis_data?.flight_time || '');
+    formData.append('aiAnalysis', leadData.analysis_data?.analysis || '');
 
     // Save to database first
     const { data: logEntry, error: dbError } = await supabase
       .from('webhook_logs')
       .insert({
-        lead_id: leadData.leadId,
+        lead_id: leadData.id,
         webhook_url: "https://hook.us2.make.com/j8qtzo8gui8ieqaye9dxprb2cgxqydlb",
         payload: leadData,
       })
