@@ -48,13 +48,86 @@ export function EmailComposer({ isOpen, onClose, leadData }: EmailComposerProps)
 
 Thank you for your interest in Stratos Jets. In order for me to be the most efficient in providing guidance, please confirm the details below and answer any additional questions.
 
-**FLIGHT DETAILS**
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-✈️  **Route**: {{departure_airport}} → {{arrival_airport}}
-🔄  **Trip Type**: {{trip_type}}
-👥  **Passengers**: {{passengers}} passenger{{IF passengers_gt_1}}s{{ENDIF}}
-📅  **Departure**: {{departure_date}} at {{departure_time}}{{IF is_roundtrip}}
-📅  **Return**: {{return_date}} at {{return_time}}{{ENDIF}}
+<table width="100%" cellpadding="0" cellspacing="0" style="margin: 30px 0; border-collapse: collapse;">
+  <tr>
+    <td style="background: linear-gradient(135deg, #1a3a4a 0%, #2d5165 100%); padding: 25px; border-radius: 12px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;">
+      
+      <!-- Header -->
+      <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 20px;">
+        <tr>
+          <td style="color: #ffffff; font-size: 18px; font-weight: 600; letter-spacing: 0.5px; padding-bottom: 15px; border-bottom: 2px solid rgba(255,255,255,0.2);">
+            YOUR FLIGHT DETAILS
+          </td>
+        </tr>
+      </table>
+
+      <!-- Route Graphic -->
+      <table width="100%" cellpadding="0" cellspacing="0" style="margin: 25px 0;">
+        <tr>
+          <td align="center">
+            <table cellpadding="0" cellspacing="0" style="background: rgba(255,255,255,0.1); border-radius: 8px; padding: 20px; backdrop-filter: blur(10px);">
+              <tr>
+                <td align="center" style="padding: 0 15px;">
+                  <!-- Departure -->
+                  <div style="text-align: center;">
+                    <div style="background: #ff6b35; color: #ffffff; font-size: 24px; font-weight: 700; padding: 12px 20px; border-radius: 8px; min-width: 80px; box-shadow: 0 4px 12px rgba(255,107,53,0.3);">
+                      {{departure_airport}}
+                    </div>
+                    <div style="color: rgba(255,255,255,0.8); font-size: 12px; margin-top: 8px; font-weight: 500;">
+                      {{departure_date}}<br/>{{departure_time}}
+                    </div>
+                  </div>
+                </td>
+                
+                <td align="center" style="padding: 0 20px;">
+                  <!-- Arrow & Plane -->
+                  <div style="text-align: center; min-width: 100px;">
+                    <div style="font-size: 32px; margin-bottom: 5px;">✈️</div>
+                    <div style="height: 2px; background: linear-gradient(90deg, #ff6b35 0%, rgba(255,255,255,0.4) 50%, #ff6b35 100%); margin: 0 auto; width: 80px;"></div>
+                    <div style="background: rgba(255,255,255,0.95); color: #2d5165; font-size: 14px; font-weight: 700; padding: 6px 12px; border-radius: 20px; margin-top: 10px; display: inline-block; box-shadow: 0 2px 8px rgba(0,0,0,0.2);">
+                      👥 {{passengers}} PAX
+                    </div>
+                  </div>
+                </td>
+                
+                <td align="center" style="padding: 0 15px;">
+                  <!-- Arrival -->
+                  <div style="text-align: center;">
+                    <div style="background: #ff6b35; color: #ffffff; font-size: 24px; font-weight: 700; padding: 12px 20px; border-radius: 8px; min-width: 80px; box-shadow: 0 4px 12px rgba(255,107,53,0.3);">
+                      {{arrival_airport}}
+                    </div>
+                    {{IF is_roundtrip}}<div style="color: rgba(255,255,255,0.8); font-size: 12px; margin-top: 8px; font-weight: 500;">
+                      {{return_date}}<br/>{{return_time}}
+                    </div>{{ENDIF}}
+                  </div>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+
+      <!-- Trip Details -->
+      <table width="100%" cellpadding="0" cellspacing="0" style="margin-top: 20px;">
+        <tr>
+          <td style="padding: 15px; background: rgba(255,255,255,0.08); border-radius: 8px;">
+            <table width="100%" cellpadding="8" cellspacing="0">
+              <tr>
+                <td style="color: rgba(255,255,255,0.7); font-size: 13px; font-weight: 500; width: 40%;">Trip Type:</td>
+                <td style="color: #ffffff; font-size: 14px; font-weight: 600;">{{trip_type}}</td>
+              </tr>
+              <tr>
+                <td style="color: rgba(255,255,255,0.7); font-size: 13px; font-weight: 500;">Passengers:</td>
+                <td style="color: #ffffff; font-size: 14px; font-weight: 600;">{{passengers}} passenger{{IF passengers_gt_1}}s{{ENDIF}}</td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+
+    </td>
+  </tr>
+</table>
 
 {{AI: Add flight distance, estimated flight time, and any interesting facts about this specific route}}
 
