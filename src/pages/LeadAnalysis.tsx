@@ -758,14 +758,9 @@ export default function LeadAnalysis() {
                       </div>
                       <div className="text-xs text-muted-foreground">nautical miles</div>
                       {distance > 0 && (
-                        <>
-                          <div className="text-xs text-muted-foreground mt-1">
-                            {Math.round(distance * 1.15).toLocaleString()} statute mi
-                          </div>
-                          <div className="text-sm font-semibold text-primary mt-2">
-                            {formatFlightTime()}
-                          </div>
-                        </>
+                        <div className="text-sm font-semibold text-primary mt-2">
+                          {formatFlightTime()}
+                        </div>
                       )}
                     </div>
                   </div>
@@ -822,6 +817,11 @@ export default function LeadAnalysis() {
                           {distance > 0 ? distance.toLocaleString() : '---'}
                         </div>
                         <div className="text-xs text-muted-foreground">nautical miles</div>
+                        {distance > 0 && (
+                          <div className="text-sm font-semibold text-secondary mt-2">
+                            {formatFlightTime()}
+                          </div>
+                        )}
                       </div>
                     </div>
                     
