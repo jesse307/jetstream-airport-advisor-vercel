@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { CallNotesDialog } from "@/components/CallNotesDialog";
 import { AircraftSuggestions } from "@/components/AircraftSuggestions";
+import { EmailComposer } from "@/components/EmailComposer";
 
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -67,6 +68,7 @@ export default function LeadAnalysis() {
   });
   const [showCallNotesDialog, setShowCallNotesDialog] = useState(false);
   const [isSpam, setIsSpam] = useState(false);
+  const [showEmailComposer, setShowEmailComposer] = useState(false);
 
   const handleStartProcess = async () => {
     if (!lead || !departureAirportData || !arrivalAirportData) return;
@@ -725,6 +727,14 @@ export default function LeadAnalysis() {
                   >
                     {isExporting ? 'Starting...' : 'Start Process'}
                   </Button>
+                  <Button 
+                    className="w-full" 
+                    variant="outline"
+                    onClick={() => setShowEmailComposer(true)}
+                  >
+                    <Mail className="h-4 w-4 mr-2" />
+                    Compose Email
+                  </Button>
                   <Button className="w-full" variant="outline">
                     Update Status
                   </Button>
@@ -778,6 +788,17 @@ export default function LeadAnalysis() {
         onContinue={handleCallNotesContinue}
         onUpdateItinerary={handleUpdateItinerary}
       />
+
+      {lead && (
+        <EmailComposer
+          isOpen={showEmailComposer}
+          onClose={() => setShowEmailComposer(false)}
+          leadData={{
+            ...lead,
+            trip_type: lead.trip_type === "Round Trip" ? "round-trip" : "one-way"
+          }}
+        />
+      )}
     </div>
   );
 }
