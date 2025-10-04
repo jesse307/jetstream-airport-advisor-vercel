@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, ArrowRight, User, Phone, Mail, Calendar, Clock, Plane, Users, MapPin, CheckCircle2, XCircle, Settings } from "lucide-react";
+import { ArrowLeft, ArrowRight, User, Phone, Mail, Calendar, Clock, Plane, Users, MapPin, CheckCircle2, XCircle, Settings, ClipboardList } from "lucide-react";
 import { format } from "date-fns";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -94,6 +94,23 @@ export default function LeadAnalysis() {
       return format(new Date(datetime), "HH:mm:ss");
     }
     return fallbackTime || "12:00:00";
+  };
+
+  const handleAddToTripBoard = async () => {
+    if (!lead) return;
+    
+    const { error } = await supabase
+      .from('leads')
+      .update({ status: 'qualified' })
+      .eq('id', lead.id);
+    
+    if (error) {
+      toast.error('Failed to add to trip board');
+      return;
+    }
+    
+    setLead({ ...lead, status: 'qualified' });
+    toast.success('Added to trip board');
   };
 
   const handleStartProcess = async () => {
@@ -1013,8 +1030,14 @@ export default function LeadAnalysis() {
                     <Mail className="h-4 w-4 mr-2" />
                     Email
                   </Button>
-                  <Button className="w-full" variant="outline">
-                    Update Status
+                  <Button 
+                    className="w-full" 
+                    variant="outline"
+                    onClick={handleAddToTripBoard}
+                    disabled={lead.status === 'qualified'}
+                  >
+                    <ClipboardList className="h-4 w-4 mr-2" />
+                    {lead.status === 'qualified' ? 'On Trip Board' : 'Add to Trip Board'}
                   </Button>
                 </div>
               </CardContent>
