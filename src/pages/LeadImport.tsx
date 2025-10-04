@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +16,7 @@ interface PendingImport {
 
 const LeadImport = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [unstructuredData, setUnstructuredData] = useState("");
   const [isParsing, setIsParsing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -24,6 +25,14 @@ const LeadImport = () => {
   const [isLoadingImports, setIsLoadingImports] = useState(true);
 
   useEffect(() => {
+    // Check if we're coming from import history with data
+    if (location.state?.importData) {
+      setUnstructuredData(location.state.importData);
+      toast.success("Import loaded from history");
+      // Clear the location state
+      window.history.replaceState({}, document.title);
+    }
+    
     fetchPendingImports();
     
     // Poll for new imports every 3 seconds for the first 15 seconds

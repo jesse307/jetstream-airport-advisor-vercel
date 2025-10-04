@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import LeadIntake from "./pages/LeadIntake";
 import LeadImport from "./pages/LeadImport";
+import ImportHistory from "./pages/ImportHistory";
 import LeadAnalysis from "./pages/LeadAnalysis";
 import MobileCapture from "./pages/MobileCapture";
 import Settings from "./pages/Settings";
@@ -23,6 +24,7 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/leads/new" element={<LeadIntake />} />
           <Route path="/leads/import" element={<LeadImport />} />
+          <Route path="/leads/import-history" element={<ImportHistory />} />
           <Route path="/leads/:id" element={<LeadAnalysis />} />
           <Route path="/mobile-capture" element={<MobileCapture />} />
           <Route path="/settings" element={<Settings />} />
