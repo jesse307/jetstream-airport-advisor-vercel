@@ -242,7 +242,10 @@ Jesse
     console.log('Return date:', data.return_date);
     console.log('Return time:', data.return_time);
     
-    if (data.trip_type === 'round-trip' && data.return_date) {
+    // Normalize trip type for comparison (handle both "Round Trip" and "round-trip")
+    const isRoundTrip = data.trip_type?.toLowerCase().includes('round');
+    
+    if (isRoundTrip && data.return_date) {
       console.log('Processing round-trip conditionals');
       populated = populated.replace(/\{\{IF is_roundtrip\}\}/g, '');
       populated = populated.replace(/\{\{ENDIF\}\}/g, '');
