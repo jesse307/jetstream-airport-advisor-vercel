@@ -274,9 +274,28 @@ export const CharterQuoteRequest = ({ leadData }: CharterQuoteRequestProps) => {
         };
       };
 
-      const { date, time } = getDepartureDateTime();
+      const getReturnDateTime = () => {
+        if (leadData.return_datetime) {
+          const dt = new Date(leadData.return_datetime);
+          return {
+            date: dt.toISOString().split('T')[0],
+            time: dt.toTimeString().split(' ')[0]
+          };
+        }
+        if (leadData.return_date) {
+          return {
+            date: leadData.return_date,
+            time: leadData.return_time || '12:00:00'
+          };
+        }
+        return null;
+      };
 
-      const priceBody = {
+      const { date, time } = getDepartureDateTime();
+      const isRoundTrip = leadData.trip_type === 'round-trip' || !!leadData.return_date;
+
+      // Outbound leg
+      const outboundBody = {
         legs: [
           {
             departure_airport,
@@ -290,24 +309,62 @@ export const CharterQuoteRequest = ({ leadData }: CharterQuoteRequestProps) => {
         range: true
       };
 
-      const { data, error } = await supabase.functions.invoke('get-charter-price', {
-        body: priceBody
+      const { data: outboundData, error: outboundError } = await supabase.functions.invoke('get-charter-price', {
+        body: outboundBody
       });
 
-      if (error) {
-        console.error('Error fetching price estimate:', error);
+      if (outboundError) {
+        console.error('Error fetching outbound price:', outboundError);
         setIsFetchingPrice(false);
         return;
       }
 
-      if (data.success && data.data) {
-        setPriceEstimate({
-          price: data.data.price,
-          price_min: data.data.price_min,
-          price_max: data.data.price_max,
-          currency: data.data.currency_code
-        });
+      let totalPrice = 0;
+      let totalPriceMin = 0;
+      let totalPriceMax = 0;
+
+      if (outboundData?.success && outboundData.data) {
+        totalPrice = outboundData.data.price;
+        totalPriceMin = outboundData.data.price_min || outboundData.data.price;
+        totalPriceMax = outboundData.data.price_max || outboundData.data.price;
       }
+
+      // If round trip, fetch return leg and add prices
+      if (isRoundTrip) {
+        const returnDateTime = getReturnDateTime();
+        if (returnDateTime) {
+          const returnBody = {
+            legs: [
+              {
+                departure_airport: arrival_airport, // Reversed
+                arrival_airport: departure_airport, // Reversed
+                pax: leadData.passengers,
+                departure_datetime: `${returnDateTime.date}T${returnDateTime.time}`.slice(0, 16)
+              }
+            ],
+            aircraft,
+            currency_code: 'USD',
+            range: true
+          };
+
+          const { data: returnData, error: returnError } = await supabase.functions.invoke('get-charter-price', {
+            body: returnBody
+          });
+
+          if (!returnError && returnData?.success && returnData.data) {
+            totalPrice += returnData.data.price;
+            totalPriceMin += returnData.data.price_min || returnData.data.price;
+            totalPriceMax += returnData.data.price_max || returnData.data.price;
+          }
+        }
+      }
+
+      setPriceEstimate({
+        price: totalPrice,
+        price_min: totalPriceMin > 0 ? totalPriceMin : null,
+        price_max: totalPriceMax > 0 ? totalPriceMax : null,
+        currency: 'USD'
+      });
     } catch (error) {
       console.error('Error fetching price estimate:', error);
     } finally {
