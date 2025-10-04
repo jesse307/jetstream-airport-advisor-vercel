@@ -298,7 +298,7 @@ export const CharterQuoteRequest = ({ leadData }: CharterQuoteRequestProps) => {
           client_email: 'jesse.marsh@stratosjets.com',
           client_phone: '973-756-6183'
         },
-        comment: `Charter request for client: ${leadData.first_name} ${leadData.last_name} (${leadData.email}, ${leadData.phone})${comment ? `\n\nAdditional notes: ${comment}` : ''}`,
+        comment: comment || 'Charter quote request',
         post_to_trip_board: false,
         send_to_self: false
       };
@@ -835,14 +835,6 @@ export const CharterQuoteRequest = ({ leadData }: CharterQuoteRequestProps) => {
                     <p className="text-xs font-semibold text-blue-900 dark:text-blue-100">QUOTE REQUEST FROM</p>
                     <p className="text-sm"><strong>Broker:</strong> Jesse Marsh</p>
                     <p className="text-sm"><strong>Contact:</strong> jesse.marsh@stratosjets.com • 973-756-6183</p>
-                  </div>
-                  
-                  <Separator />
-                  
-                  <div className="space-y-1">
-                    <p className="text-xs font-semibold text-blue-900 dark:text-blue-100">END CLIENT</p>
-                    <p className="text-sm">{leadData.first_name} {leadData.last_name}</p>
-                    <p className="text-sm">{leadData.email} • {leadData.phone}</p>
                   </div>
                   
                   <Separator />
