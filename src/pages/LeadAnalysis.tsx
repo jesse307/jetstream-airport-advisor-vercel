@@ -10,6 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { CallNotesDialog } from "@/components/CallNotesDialog";
 import { AircraftSuggestions } from "@/components/AircraftSuggestions";
 import { EmailComposer } from "@/components/EmailComposer";
+import { LeadChatbot } from "@/components/LeadChatbot";
 
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -585,9 +586,78 @@ export default function LeadAnalysis() {
 
       {/* Main Content */}
       <main className="container py-8">
-        <div className="space-y-8">
-          {/* Lead Information */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left Column - Lead Info */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Route Overview with Distance */}
+            <Card className="bg-gradient-to-br from-primary/5 to-accent/5">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Plane className="h-5 w-5 text-primary" />
+                  Route Overview
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center justify-between mb-6">
+                  <div className="text-center flex-1">
+                    <div className="text-3xl font-bold text-primary mb-1">
+                      {departureAirportData?.code || lead.departure_airport.split(' ')[0]}
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      {departureAirportData?.city || 'Departure'}
+                    </div>
+                  </div>
+                  
+                  <div className="flex-1 flex flex-col items-center px-4">
+                    <div className="w-full h-px bg-border relative mb-2">
+                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+                        <Plane className="h-4 w-4 text-primary rotate-90" />
+                      </div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-foreground">
+                        {distance > 0 ? distance.toLocaleString() : '---'}
+                      </div>
+                      <div className="text-xs text-muted-foreground">nautical miles</div>
+                      {distance > 0 && (
+                        <div className="text-xs text-muted-foreground mt-1">
+                          ~{Math.round(distance * 1.15)} statute miles
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="text-center flex-1">
+                    <div className="text-3xl font-bold text-primary mb-1">
+                      {arrivalAirportData?.code || lead.arrival_airport.split(' ')[0]}
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      {arrivalAirportData?.city || 'Arrival'}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 pt-4 border-t">
+                  <div className="space-y-1">
+                    <div className="text-xs text-muted-foreground">Est. Flight Time</div>
+                    <div className="text-lg font-semibold">
+                      {distance > 0 ? `${Math.floor(distance / 450)}h ${Math.round(((distance / 450) % 1) * 60)}m` : '---'}
+                    </div>
+                    <div className="text-xs text-muted-foreground">@ 450 knots avg</div>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="text-xs text-muted-foreground">Passengers</div>
+                    <div className="text-lg font-semibold flex items-center gap-2">
+                      <Users className="h-4 w-4 text-primary" />
+                      {lead.passengers}
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Lead Information Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Contact Information */}
             <Card>
               <CardHeader>
@@ -694,6 +764,46 @@ export default function LeadAnalysis() {
               </CardContent>
             </Card>
 
+            </div>
+
+            {/* Flight Analysis */}
+            <Card>
+            <CardHeader>
+              <CardTitle>Flight Analysis & Aircraft Recommendations</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Based on the route and passenger requirements
+              </p>
+            </CardHeader>
+            <CardContent>
+              {!loading && (!departureAirportData || !arrivalAirportData || distance === 0) ? (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground">Could not load complete airport data. Please check the airport codes.</p>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Departure: {lead.departure_airport} {departureAirportData ? '✓' : '✗'}<br/>
+                    Arrival: {lead.arrival_airport} {arrivalAirportData ? '✓' : '✗'}
+                  </p>
+                </div>
+              ) : departureAirportData && arrivalAirportData && distance > 0 ? (
+                <AircraftSuggestions
+                  distance={distance}
+                  passengers={lead.passengers}
+                  departure={lead.departure_airport}
+                  arrival={lead.arrival_airport}
+                  departureDate={lead.departure_date}
+                  returnDate={lead.return_date}
+                />
+              ) : (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                  <p className="text-muted-foreground">Loading airport data for analysis...</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+          </div>
+
+          {/* Right Column - Chatbot & Actions */}
+          <div className="space-y-6">
             {/* Lead Status & Actions */}
             <Card>
               <CardHeader>
@@ -741,42 +851,21 @@ export default function LeadAnalysis() {
                 </div>
               </CardContent>
             </Card>
-          </div>
 
-          {/* Flight Analysis */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Flight Analysis & Aircraft Recommendations</CardTitle>
-              <p className="text-sm text-muted-foreground">
-                Based on the route and passenger requirements
-              </p>
-            </CardHeader>
-            <CardContent>
-              {!loading && (!departureAirportData || !arrivalAirportData || distance === 0) ? (
-                <div className="text-center py-8">
-                  <p className="text-muted-foreground">Could not load complete airport data. Please check the airport codes.</p>
-                  <p className="text-sm text-muted-foreground mt-2">
-                    Departure: {lead.departure_airport} {departureAirportData ? '✓' : '✗'}<br/>
-                    Arrival: {lead.arrival_airport} {arrivalAirportData ? '✓' : '✗'}
-                  </p>
-                </div>
-              ) : departureAirportData && arrivalAirportData && distance > 0 ? (
-                <AircraftSuggestions
-                  distance={distance}
-                  passengers={lead.passengers}
-                  departure={lead.departure_airport}
-                  arrival={lead.arrival_airport}
-                  departureDate={lead.departure_date}
-                  returnDate={lead.return_date}
-                />
-              ) : (
-                <div className="text-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-                  <p className="text-muted-foreground">Loading airport data for analysis...</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+            {/* AI Chatbot */}
+            <div className="h-[600px]">
+              <LeadChatbot
+                lead={lead}
+                departureAirport={departureAirportData}
+                arrivalAirport={arrivalAirportData}
+                distance={distance}
+                onUpdateLead={(updates) => {
+                  // Handle lead updates from chatbot
+                  console.log('Lead updates from chatbot:', updates);
+                }}
+              />
+            </div>
+          </div>
         </div>
       </main>
 
