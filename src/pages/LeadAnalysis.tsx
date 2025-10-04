@@ -154,10 +154,10 @@ export default function LeadAnalysis() {
 
       const requestBody = {
         legs,
-        contact_name: `${lead.first_name} ${lead.last_name}`,
-        contact_email: lead.email,
-        contact_phone: lead.phone || '',
-        notes: lead.notes || '',
+        contact_name: 'Jesse Marsh - Stratos Jets',
+        contact_email: 'jesse@stratosjets.com',
+        contact_phone: '973-784-8000',
+        notes: `Client: ${lead.first_name} ${lead.last_name} (${lead.email}${lead.phone ? ', ' + lead.phone : ''})${lead.notes ? '\n\nNotes: ' + lead.notes : ''}`,
         currency_code: 'USD'
       };
 
@@ -1184,9 +1184,21 @@ export default function LeadAnalysis() {
           </DialogHeader>
 
           <div className="space-y-4 py-4">
-            {/* Contact Information */}
+            {/* Contact Information (Your Business) */}
             <div>
-              <h3 className="font-semibold mb-2 text-sm text-muted-foreground">Contact Information</h3>
+              <h3 className="font-semibold mb-2 text-sm text-muted-foreground">Posted By (Your Contact Info)</h3>
+              <div className="space-y-1 text-sm">
+                <p><strong>Name:</strong> Jesse Marsh - Stratos Jets</p>
+                <p><strong>Email:</strong> jesse@stratosjets.com</p>
+                <p><strong>Phone:</strong> 973-784-8000</p>
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Client Information */}
+            <div>
+              <h3 className="font-semibold mb-2 text-sm text-muted-foreground">Client Information</h3>
               <div className="space-y-1 text-sm">
                 <p><strong>Name:</strong> {lead.first_name} {lead.last_name}</p>
                 <p><strong>Email:</strong> {lead.email}</p>
