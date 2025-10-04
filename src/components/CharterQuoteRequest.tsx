@@ -15,7 +15,7 @@ interface CharterQuoteRequestProps {
 interface Operator {
   id: number;
   name: string;
-  country?: string;
+  country?: string | { id: number; name: string };
   base_airports?: string[];
   avg_response_rate?: number;
   avg_response_time?: number;
@@ -366,7 +366,7 @@ export const CharterQuoteRequest = ({ leadData }: CharterQuoteRequestProps) => {
                         )}
                         {operator.country && (
                           <Badge variant="outline" className="text-xs">
-                            {operator.country}
+                            {typeof operator.country === 'string' ? operator.country : operator.country.name}
                           </Badge>
                         )}
                       </div>
