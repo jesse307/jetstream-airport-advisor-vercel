@@ -258,7 +258,7 @@ export const CharterQuoteRequest = ({ leadData }: CharterQuoteRequestProps) => {
                 departure_datetime: `${date}T${time}`.slice(0, 16)
               }
             ],
-            aircraft,
+            aircraft: [aircraft], // API expects an array
             currency_code: 'USD',
             range: true
           };
@@ -286,19 +286,19 @@ export const CharterQuoteRequest = ({ leadData }: CharterQuoteRequestProps) => {
           if (isRoundTrip) {
             const returnDateTime = getReturnDateTime();
             if (returnDateTime) {
-              const returnBody = {
-                legs: [
-                  {
-                    departure_airport: arrival_airport,
-                    arrival_airport: departure_airport,
-                    pax: leadData.passengers,
-                    departure_datetime: `${returnDateTime.date}T${returnDateTime.time}`.slice(0, 16)
-                  }
-                ],
-                aircraft,
-                currency_code: 'USD',
-                range: true
-              };
+          const returnBody = {
+            legs: [
+              {
+                departure_airport: arrival_airport,
+                arrival_airport: departure_airport,
+                pax: leadData.passengers,
+                departure_datetime: `${returnDateTime.date}T${returnDateTime.time}`.slice(0, 16)
+              }
+            ],
+            aircraft: [aircraft], // API expects an array
+            currency_code: 'USD',
+            range: true
+          };
 
               const { data: returnData, error: returnError } = await supabase.functions.invoke('get-charter-price', {
                 body: returnBody
@@ -573,7 +573,7 @@ export const CharterQuoteRequest = ({ leadData }: CharterQuoteRequestProps) => {
             departure_datetime: `${date}T${time}`.slice(0, 16)
           }
         ],
-        aircraft,
+        aircraft: [aircraft], // API expects an array
         currency_code: 'USD',
         range: true
       };
@@ -611,7 +611,7 @@ export const CharterQuoteRequest = ({ leadData }: CharterQuoteRequestProps) => {
                 departure_datetime: `${returnDateTime.date}T${returnDateTime.time}`.slice(0, 16)
               }
             ],
-            aircraft,
+            aircraft: [aircraft], // API expects an array
             currency_code: 'USD',
             range: true
           };
