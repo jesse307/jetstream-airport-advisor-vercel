@@ -54,12 +54,19 @@ serve(async (req) => {
     const { parsedData }: { parsedData: LeadData } = await parseResponse.json();
     console.log('Parsed lead data:', parsedData);
 
+    // Clean up empty time strings - convert to null for database
+    const cleanedData = {
+      ...parsedData,
+      departure_time: parsedData.departure_time?.trim() || null,
+      return_time: parsedData.return_time?.trim() || null,
+    };
+
     // Step 2: Create lead in database with status "new"
     console.log('Step 2: Creating lead in database');
     const { data: lead, error: leadError } = await supabase
       .from('leads')
       .insert({
-        ...parsedData,
+        ...cleanedData,
         status: 'new',
         source: 'chrome_extension_auto',
       })
