@@ -83,7 +83,7 @@ export const CharterQuoteRequest = ({ leadData }: CharterQuoteRequestProps) => {
             departure_airport,
             arrival_airport,
             pax: leadData.passengers,
-            departure_datetime: `${leadData.departure_date}T${leadData.departure_time || '12:00'}`
+            departure_datetime: `${leadData.departure_date}T${leadData.departure_time || '12:00'}`.slice(0, 16) // Remove seconds
           }
         ],
         aircraft: [
@@ -184,7 +184,7 @@ export const CharterQuoteRequest = ({ leadData }: CharterQuoteRequestProps) => {
             departure_airport,
             arrival_airport,
             pax: leadData.passengers,
-            departure_datetime: `${leadData.departure_date}T${leadData.departure_time || '12:00'}`
+            departure_datetime: `${leadData.departure_date}T${leadData.departure_time || '12:00'}`.slice(0, 16) // Remove seconds
           }
         ],
         aircraft: [
