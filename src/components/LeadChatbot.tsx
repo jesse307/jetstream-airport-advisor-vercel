@@ -41,6 +41,8 @@ export function LeadChatbot({ lead, departureAirport, arrivalAirport, distance, 
     setIsLoading(true);
 
     let assistantContent = "";
+    let detectedUpdates: any = null;
+    let toolCallArgs = "";
 
     const upsertAssistant = (chunk: string) => {
       assistantContent += chunk;
@@ -128,7 +130,33 @@ export function LeadChatbot({ lead, departureAirport, arrivalAirport, distance, 
           try {
             const parsed = JSON.parse(jsonStr);
             const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+            const toolCalls = parsed.choices?.[0]?.delta?.tool_calls;
+            
             if (content) upsertAssistant(content);
+            
+            // Check for tool calls - accumulate arguments
+            if (toolCalls && toolCalls.length > 0) {
+              const toolCall = toolCalls[0];
+              if (toolCall.function?.name === "update_lead_details") {
+                console.log("Tool call detected: update_lead_details");
+              }
+              // Accumulate function arguments as they stream in
+              if (toolCall.function?.arguments) {
+                toolCallArgs += toolCall.function.arguments;
+              }
+            }
+            
+            // Check for finish reason to parse complete tool call
+            const finishReason = parsed.choices?.[0]?.finish_reason;
+            if (finishReason === "tool_calls" && toolCallArgs) {
+              try {
+                const updates = JSON.parse(toolCallArgs);
+                detectedUpdates = updates;
+                console.log("Parsed tool call arguments:", updates);
+              } catch (e) {
+                console.error("Failed to parse complete tool arguments:", e);
+              }
+            }
           } catch {
             textBuffer = line + "\n" + textBuffer;
             break;
@@ -150,6 +178,13 @@ export function LeadChatbot({ lead, departureAirport, arrivalAirport, distance, 
             if (content) upsertAssistant(content);
           } catch { /* ignore */ }
         }
+      }
+
+      // Apply updates if detected
+      if (detectedUpdates && onUpdateLead) {
+        console.log("Applying updates:", detectedUpdates);
+        onUpdateLead(detectedUpdates);
+        toast.success("Lead details updated!");
       }
     } catch (error) {
       console.error("Chat error:", error);
@@ -173,7 +208,7 @@ export function LeadChatbot({ lead, departureAirport, arrivalAirport, distance, 
           {messages.length === 0 ? (
             <div className="text-center text-muted-foreground py-8">
               <Bot className="w-12 h-12 mx-auto mb-2 text-muted" />
-              <p>Ask me about this route or give commands to update details</p>
+              <p>Ask me about this route, give commands to update details, or request insights</p>
             </div>
           ) : (
             <div className="space-y-4">

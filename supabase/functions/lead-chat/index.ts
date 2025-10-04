@@ -49,6 +49,9 @@ Your role is to:
 2. Provide insights about aircraft suitability based on distance and runway requirements
 3. Suggest optimizations or alternative options when asked
 4. Help the broker understand any operational considerations
+5. Detect when the user wants to make changes to the lead details (passengers, airports, dates, etc.)
+
+When the user wants to update lead information, use the update_lead_details tool.
 
 Keep responses concise, professional, and focused on helping the broker serve this client better. Use aviation terminology appropriately.`;
 
@@ -65,6 +68,28 @@ Keep responses concise, professional, and focused on helping the broker serve th
           ...messages,
         ],
         stream: true,
+        tools: [
+          {
+            type: "function",
+            function: {
+              name: "update_lead_details",
+              description: "Update the lead's trip details when the user requests changes",
+              parameters: {
+                type: "object",
+                properties: {
+                  passengers: { type: "number", description: "New passenger count" },
+                  departureAirport: { type: "string", description: "New departure airport code" },
+                  arrivalAirport: { type: "string", description: "New arrival airport code" },
+                  departureDate: { type: "string", description: "New departure date (YYYY-MM-DD)" },
+                  departureTime: { type: "string", description: "New departure time (HH:MM:SS)" },
+                  returnDate: { type: "string", description: "New return date (YYYY-MM-DD)" },
+                  returnTime: { type: "string", description: "New return time (HH:MM:SS)" },
+                  tripType: { type: "string", description: "Trip type (One Way, Round Trip, Multi-Leg)" }
+                }
+              }
+            }
+          }
+        ]
       }),
     });
 

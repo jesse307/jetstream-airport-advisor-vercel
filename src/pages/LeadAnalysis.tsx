@@ -934,10 +934,7 @@ export default function LeadAnalysis() {
                 departureAirport={departureAirportData}
                 arrivalAirport={arrivalAirportData}
                 distance={distance}
-                onUpdateLead={(updates) => {
-                  // Handle lead updates from chatbot
-                  console.log('Lead updates from chatbot:', updates);
-                }}
+                onUpdateLead={handleUpdateItinerary}
               />
             </div>
           </div>
