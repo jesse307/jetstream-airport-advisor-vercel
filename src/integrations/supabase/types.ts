@@ -208,6 +208,7 @@ export type Database = {
           phone_valid: boolean | null
           return_date: string | null
           return_time: string | null
+          source: string | null
           status: string
           trip_type: string
           updated_at: string
@@ -231,6 +232,7 @@ export type Database = {
           phone_valid?: boolean | null
           return_date?: string | null
           return_time?: string | null
+          source?: string | null
           status?: string
           trip_type: string
           updated_at?: string
@@ -254,6 +256,7 @@ export type Database = {
           phone_valid?: boolean | null
           return_date?: string | null
           return_time?: string | null
+          source?: string | null
           status?: string
           trip_type?: string
           updated_at?: string
