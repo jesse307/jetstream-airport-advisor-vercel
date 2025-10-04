@@ -804,24 +804,8 @@ Jesse
                     {isGenerating ? "Using AI..." : "Use AI"}
                   </Button>
                   
-                  {exportWebhookUrl && (
-                    <Button
-                      onClick={handleExport}
-                      disabled={isSending || !emailContent.trim()}
-                      variant="outline"
-                      className="flex items-center gap-2"
-                    >
-                      {isSending ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <FileText className="h-4 w-4" />
-                      )}
-                      Export
-                    </Button>
-                  )}
-                  
                   <Button 
-                    onClick={handleCreateDraft} 
+                    onClick={exportWebhookUrl ? handleExport : handleCreateDraft} 
                     disabled={isSending || !emailContent.trim()}
                     className="flex items-center gap-2"
                   >
@@ -830,7 +814,7 @@ Jesse
                     ) : (
                       <Send className="h-4 w-4" />
                     )}
-                    {isSending ? "Pushing to Gmail..." : "Push to Gmail"}
+                    {isSending ? (exportWebhookUrl ? "Exporting..." : "Pushing to Gmail...") : (exportWebhookUrl ? "Send to Gmail" : "Push to Gmail")}
                   </Button>
                 </div>
               </div>
