@@ -29,8 +29,8 @@ interface QuoteReply {
   state: string | { id: number; name: string };
   aircraft?: {
     tail_number: string;
-    aircraft_type: string;
-    aircraft_class: string;
+    aircraft_type: string | { id: number; name: string };
+    aircraft_class: string | { id: number; name: string };
     max_passengers: number;
   };
   comment?: string;
@@ -481,10 +481,16 @@ export const CharterQuoteRequest = ({ leadData }: CharterQuoteRequestProps) => {
                         {reply.aircraft && (
                           <div className="space-y-1">
                             <h4 className="font-semibold text-lg">
-                              {reply.aircraft.aircraft_type}
+                              {typeof reply.aircraft.aircraft_type === 'string' 
+                                ? reply.aircraft.aircraft_type 
+                                : reply.aircraft.aircraft_type.name}
                             </h4>
                             <div className="flex gap-2 text-sm text-muted-foreground">
-                              <Badge variant="outline">{reply.aircraft.aircraft_class}</Badge>
+                              <Badge variant="outline">
+                                {typeof reply.aircraft.aircraft_class === 'string' 
+                                  ? reply.aircraft.aircraft_class 
+                                  : reply.aircraft.aircraft_class.name}
+                              </Badge>
                               <Badge variant="outline">{reply.aircraft.tail_number}</Badge>
                               <Badge variant="outline">
                                 Max {reply.aircraft.max_passengers} pax
