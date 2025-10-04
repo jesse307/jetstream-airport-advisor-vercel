@@ -707,33 +707,29 @@ export default function LeadAnalysis() {
                   <Plane className="h-5 w-5 text-primary" />
                   Route Overview
                 </CardTitle>
-                <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border-2 border-primary/20">
-                  <div className="flex gap-1">
-                    {lead.trip_type === "Round Trip" ? (
-                      <>
-                        <Plane className="h-5 w-5 text-primary rotate-90" />
-                        <Plane className="h-5 w-5 text-primary -rotate-90" />
-                      </>
-                    ) : (
-                      <Plane className="h-5 w-5 text-primary rotate-90" />
-                    )}
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20">
+                    <Users className="h-4 w-4 text-primary" />
+                    <span className="font-semibold text-primary text-sm">{lead.passengers} pax</span>
                   </div>
-                  <span className="font-semibold text-primary text-sm">
-                    {lead.trip_type}
-                  </span>
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20">
+                    <div className="flex gap-1">
+                      {lead.trip_type === "Round Trip" ? (
+                        <>
+                          <Plane className="h-4 w-4 text-primary rotate-90" />
+                          <Plane className="h-4 w-4 text-primary -rotate-90" />
+                        </>
+                      ) : (
+                        <Plane className="h-4 w-4 text-primary rotate-90" />
+                      )}
+                    </div>
+                    <span className="font-semibold text-primary text-sm">
+                      {lead.trip_type}
+                    </span>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
-                {/* Passenger Count - Prominent Display */}
-                <div className="flex justify-center mb-4">
-                  <div className="flex items-center gap-3 px-6 py-3 rounded-full bg-primary/10 border-2 border-primary/20">
-                    <Users className="h-6 w-6 text-primary" />
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-primary">{lead.passengers}</div>
-                      <div className="text-xs text-muted-foreground">Passenger{lead.passengers !== 1 ? 's' : ''}</div>
-                    </div>
-                  </div>
-                </div>
 
                 <div className="flex items-center justify-between mb-6">
                   <div className="text-center flex-1">
