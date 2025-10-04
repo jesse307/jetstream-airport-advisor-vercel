@@ -232,6 +232,7 @@ export type Database = {
           created_at: string
           departure_airport: string
           departure_date: string
+          departure_datetime: string | null
           departure_time: string | null
           email: string
           email_valid: boolean | null
@@ -243,6 +244,7 @@ export type Database = {
           phone: string | null
           phone_valid: boolean | null
           return_date: string | null
+          return_datetime: string | null
           return_time: string | null
           source: string | null
           status: string
@@ -256,6 +258,7 @@ export type Database = {
           created_at?: string
           departure_airport: string
           departure_date: string
+          departure_datetime?: string | null
           departure_time?: string | null
           email: string
           email_valid?: boolean | null
@@ -267,6 +270,7 @@ export type Database = {
           phone?: string | null
           phone_valid?: boolean | null
           return_date?: string | null
+          return_datetime?: string | null
           return_time?: string | null
           source?: string | null
           status?: string
@@ -280,6 +284,7 @@ export type Database = {
           created_at?: string
           departure_airport?: string
           departure_date?: string
+          departure_datetime?: string | null
           departure_time?: string | null
           email?: string
           email_valid?: boolean | null
@@ -291,6 +296,7 @@ export type Database = {
           phone?: string | null
           phone_valid?: boolean | null
           return_date?: string | null
+          return_datetime?: string | null
           return_time?: string | null
           source?: string | null
           status?: string

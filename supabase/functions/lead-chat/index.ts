@@ -28,8 +28,8 @@ Lead Information:
 - Trip Type: ${leadContext.tripType}
 - Route: ${leadContext.departureAirport} → ${leadContext.arrivalAirport}
 - Distance: ${leadContext.distance} nautical miles
-- Departure: ${leadContext.departureDate} at ${leadContext.departureTime}
-${leadContext.returnDate ? `- Return: ${leadContext.returnDate} at ${leadContext.returnTime}` : ""}
+- Departure: ${leadContext.departureDate}
+${leadContext.returnDate ? `- Return: ${leadContext.returnDate}` : ""}
 - Passengers: ${leadContext.passengers}
 
 Departure Airport Details:
@@ -53,9 +53,9 @@ Your role is to:
 
 CRITICAL INSTRUCTIONS FOR DATE HANDLING:
 - When the user mentions a specific date (e.g., "the 14th", "January 14th", "1/14"), use EXACTLY that date
-- Always format dates as YYYY-MM-DD (e.g., 2025-01-14)
-- Pay close attention to the day number the user specifies
-- If the user says "coming back on the 14th", set returnDate to YYYY-MM-14 (not 13th or 15th)
+- Return timestamps in ISO format (YYYY-MM-DDTHH:MM:SS) for datetime fields
+- The user's timezone is their local timezone - preserve the local date/time they specify
+- If the user says "coming back on the 14th", set returnDatetime to use day 14 in their timezone
 - When converting relative dates like "next Monday" or "3 days from now", calculate from the current departure date
 - Double-check your date calculations before calling the update tool
 
@@ -81,7 +81,7 @@ Keep responses concise, professional, and focused on helping the broker serve th
             type: "function",
             function: {
               name: "update_lead_details",
-              description: "Update the lead's trip details when the user requests changes. IMPORTANT: Pay very close attention to the exact dates the user specifies.",
+              description: "Update the lead's trip details when the user requests changes. IMPORTANT: Return ISO datetime strings for departure and return.",
               parameters: {
                 type: "object",
                 properties: {
@@ -97,21 +97,13 @@ Keep responses concise, professional, and focused on helping the broker serve th
                     type: "string", 
                     description: "New arrival airport code (e.g., 'JFK', 'LAX')" 
                   },
-                  departureDate: { 
+                  departureDatetime: { 
                     type: "string", 
-                    description: "New departure date in YYYY-MM-DD format. CRITICAL: Use the EXACT day number the user specifies. If they say 'the 14th', use day 14, not 13 or 15." 
+                    description: "New departure date and time in ISO format (YYYY-MM-DDTHH:MM:SS). CRITICAL: Use the EXACT date the user specifies in their local timezone." 
                   },
-                  departureTime: { 
+                  returnDatetime: { 
                     type: "string", 
-                    description: "New departure time in HH:MM:SS format (e.g., '14:30:00')" 
-                  },
-                  returnDate: { 
-                    type: "string", 
-                    description: "New return date in YYYY-MM-DD format. CRITICAL: Use the EXACT day number the user specifies. If they say 'coming back on the 14th', use day 14." 
-                  },
-                  returnTime: { 
-                    type: "string", 
-                    description: "New return time in HH:MM:SS format (e.g., '18:00:00')" 
+                    description: "New return date and time in ISO format (YYYY-MM-DDTHH:MM:SS). CRITICAL: Use the EXACT date the user specifies in their local timezone." 
                   },
                   tripType: { 
                     type: "string", 

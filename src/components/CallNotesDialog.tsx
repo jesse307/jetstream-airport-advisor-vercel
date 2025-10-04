@@ -135,13 +135,23 @@ export function CallNotesDialog({
               <p className="text-xs text-muted-foreground mb-1">Route</p>
               <p className="font-medium">{leadData.departure_airport.split(' - ')[0]} → {leadData.arrival_airport.split(' - ')[0]}</p>
               <p className="text-xs text-muted-foreground">
-                Depart: {new Date(leadData.departure_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                {leadData.departure_time && ` at ${leadData.departure_time}`}
+                Depart: {leadData.departure_datetime 
+                  ? new Date(leadData.departure_datetime).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                  : new Date(leadData.departure_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                {(leadData.departure_datetime || leadData.departure_time) && 
+                  ` at ${leadData.departure_datetime 
+                    ? new Date(leadData.departure_datetime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+                    : leadData.departure_time}`}
               </p>
-              {leadData.return_date && (
+              {(leadData.return_datetime || leadData.return_date) && (
                 <p className="text-xs text-muted-foreground">
-                  Return: {new Date(leadData.return_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                  {leadData.return_time && ` at ${leadData.return_time}`}
+                  Return: {leadData.return_datetime
+                    ? new Date(leadData.return_datetime).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                    : new Date(leadData.return_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  {(leadData.return_datetime || leadData.return_time) &&
+                    ` at ${leadData.return_datetime
+                      ? new Date(leadData.return_datetime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+                      : leadData.return_time}`}
                 </p>
               )}
             </div>

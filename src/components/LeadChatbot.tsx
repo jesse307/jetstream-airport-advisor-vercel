@@ -74,10 +74,18 @@ export function LeadChatbot({ lead, departureAirport, arrivalAirport, distance, 
             tripType: lead.trip_type,
             departureAirport: lead.departure_airport,
             arrivalAirport: lead.arrival_airport,
-            departureDate: lead.departure_date,
-            departureTime: lead.departure_time,
-            returnDate: lead.return_date,
-            returnTime: lead.return_time,
+            departureDate: lead.departure_datetime 
+              ? new Date(lead.departure_datetime).toLocaleString('en-US', { 
+                  month: 'short', day: 'numeric', year: 'numeric', 
+                  hour: '2-digit', minute: '2-digit' 
+                })
+              : `${lead.departure_date} at ${lead.departure_time}`,
+            returnDate: lead.return_datetime
+              ? new Date(lead.return_datetime).toLocaleString('en-US', { 
+                  month: 'short', day: 'numeric', year: 'numeric', 
+                  hour: '2-digit', minute: '2-digit' 
+                })
+              : (lead.return_date ? `${lead.return_date} at ${lead.return_time}` : null),
             passengers: lead.passengers,
             distance: distance,
             departureAirportInfo: departureAirport,

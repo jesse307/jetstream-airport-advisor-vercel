@@ -26,6 +26,9 @@ interface Lead {
   trip_type: "One Way" | "Round Trip";
   departure_airport: string;
   arrival_airport: string;
+  departure_datetime?: string;
+  return_datetime?: string;
+  // Legacy columns (kept for backward compatibility)
   departure_date: string;
   departure_time: string;
   return_date?: string;
@@ -74,6 +77,25 @@ export default function LeadAnalysis() {
   const [isSpam, setIsSpam] = useState(false);
   const [showEmailComposer, setShowEmailComposer] = useState(false);
 
+  // Helper function to format date from timestamp
+  const formatDate = (datetime: string | undefined, fallbackDate?: string) => {
+    if (datetime) {
+      return format(new Date(datetime), "MMM dd, yyyy");
+    }
+    if (fallbackDate) {
+      return format(new Date(fallbackDate + 'T00:00:00'), "MMM dd, yyyy");
+    }
+    return "N/A";
+  };
+
+  // Helper function to get time from timestamp
+  const getTime = (datetime: string | undefined, fallbackTime?: string) => {
+    if (datetime) {
+      return format(new Date(datetime), "HH:mm:ss");
+    }
+    return fallbackTime || "12:00:00";
+  };
+
   const handleStartProcess = async () => {
     if (!lead || !departureAirportData || !arrivalAirportData) return;
     
@@ -115,10 +137,38 @@ export default function LeadAnalysis() {
     
     if (updatedData.departureAirport) leadUpdates.departure_airport = updatedData.departureAirport;
     if (updatedData.arrivalAirport) leadUpdates.arrival_airport = updatedData.arrivalAirport;
-    if (updatedData.departureDate) leadUpdates.departure_date = updatedData.departureDate;
-    if (updatedData.departureTime) leadUpdates.departure_time = updatedData.departureTime;
-    if (updatedData.returnDate) leadUpdates.return_date = updatedData.returnDate;
-    if (updatedData.returnTime) leadUpdates.return_time = updatedData.returnTime;
+    
+    // Handle datetime updates from chatbot (new format)
+    if (updatedData.departureDatetime) {
+      const dt = new Date(updatedData.departureDatetime);
+      leadUpdates.departure_datetime = dt.toISOString();
+      leadUpdates.departure_date = dt.toISOString().split('T')[0];
+      leadUpdates.departure_time = dt.toTimeString().split(' ')[0];
+    } else if (updatedData.departureDate || updatedData.departureTime) {
+      // Handle legacy format (old columns)
+      const date = updatedData.departureDate || lead.departure_date;
+      const time = updatedData.departureTime || lead.departure_time;
+      leadUpdates.departure_datetime = new Date(`${date}T${time}`).toISOString();
+      leadUpdates.departure_date = date;
+      leadUpdates.departure_time = time;
+    }
+    
+    if (updatedData.returnDatetime) {
+      const dt = new Date(updatedData.returnDatetime);
+      leadUpdates.return_datetime = dt.toISOString();
+      leadUpdates.return_date = dt.toISOString().split('T')[0];
+      leadUpdates.return_time = dt.toTimeString().split(' ')[0];
+    } else if (updatedData.returnDate || updatedData.returnTime) {
+      // Handle legacy format (old columns)
+      const date = updatedData.returnDate || lead.return_date;
+      const time = updatedData.returnTime || lead.return_time;
+      if (date && time) {
+        leadUpdates.return_datetime = new Date(`${date}T${time}`).toISOString();
+        leadUpdates.return_date = date;
+        leadUpdates.return_time = time;
+      }
+    }
+    
     if (updatedData.passengers) leadUpdates.passengers = updatedData.passengers;
     if (updatedData.tripType) leadUpdates.trip_type = updatedData.tripType;
 
@@ -730,12 +780,12 @@ export default function LeadAnalysis() {
                   </div>
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <Calendar className="h-3 w-3" />
-                    <span>{format(new Date(lead.departure_date + 'T00:00:00'), "MMM dd, yyyy")} @ {formatTime(lead.departure_time)}</span>
+                    <span>{formatDate(lead.departure_datetime, lead.departure_date)} @ {formatTime(getTime(lead.departure_datetime, lead.departure_time))}</span>
                   </div>
-                  {lead.trip_type === "Round Trip" && lead.return_date && (
+                  {lead.trip_type === "Round Trip" && (lead.return_datetime || lead.return_date) && (
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <Calendar className="h-3 w-3" />
-                      <span>{format(new Date(lead.return_date + 'T00:00:00'), "MMM dd, yyyy")} @ {formatTime(lead.return_time || '')}</span>
+                      <span>{formatDate(lead.return_datetime, lead.return_date)} @ {formatTime(getTime(lead.return_datetime, lead.return_time))}</span>
                     </div>
                   )}
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -780,10 +830,10 @@ export default function LeadAnalysis() {
                   <div className="flex-1 flex flex-col items-center px-4">
                     <div className="text-center mb-3">
                       <div className="text-lg font-bold text-foreground mb-1">
-                        {format(new Date(lead.departure_date + 'T00:00:00'), "MMM dd, yyyy")}
+                        {formatDate(lead.departure_datetime, lead.departure_date)}
                       </div>
                       <div className="text-base font-semibold text-primary">
-                        {lead.departure_time ? formatTime(lead.departure_time) : 'TBD'}
+                        {lead.departure_time ? formatTime(getTime(lead.departure_datetime, lead.departure_time)) : 'TBD'}
                       </div>
                     </div>
                     <div className="w-full h-px bg-border relative mb-2">
@@ -826,7 +876,7 @@ export default function LeadAnalysis() {
                 </div>
 
                 {/* Return Route for Round Trips */}
-                {lead.trip_type === "Round Trip" && lead.return_date && (
+                {lead.trip_type === "Round Trip" && (lead.return_datetime || lead.return_date) && (
                   <div className="flex items-center justify-between mb-6 pt-4 border-t">
                     <div className="text-center flex-1">
                       <div className="text-3xl font-bold text-secondary mb-1">
@@ -840,10 +890,10 @@ export default function LeadAnalysis() {
                     <div className="flex-1 flex flex-col items-center px-4">
                       <div className="text-center mb-3">
                         <div className="text-lg font-bold text-foreground mb-1">
-                          {format(new Date(lead.return_date + 'T00:00:00'), "MMM dd, yyyy")}
+                          {formatDate(lead.return_datetime, lead.return_date)}
                         </div>
                         <div className="text-base font-semibold text-secondary">
-                          {lead.return_time ? formatTime(lead.return_time) : 'TBD'}
+                          {lead.return_time ? formatTime(getTime(lead.return_datetime, lead.return_time)) : 'TBD'}
                         </div>
                       </div>
                       <div className="w-full h-px bg-border relative mb-2">

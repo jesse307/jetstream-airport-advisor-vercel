@@ -96,13 +96,30 @@ export const CharterQuoteRequest = ({ leadData }: CharterQuoteRequestProps) => {
       // Build charter search request with selected aircraft classes
       const aircraft = Array.from(selectedAircraftClasses).map(ac_class => ({ ac_class }));
       
+      // Extract date and time for API call
+      const getDepartureDateTime = () => {
+        if (leadData.departure_datetime) {
+          const dt = new Date(leadData.departure_datetime);
+          return {
+            date: dt.toISOString().split('T')[0],
+            time: dt.toTimeString().split(' ')[0]
+          };
+        }
+        return {
+          date: leadData.departure_date,
+          time: leadData.departure_time || '12:00:00'
+        };
+      };
+
+      const { date, time } = getDepartureDateTime();
+
       const searchBody = {
         legs: [
           {
             departure_airport,
             arrival_airport,
             pax: leadData.passengers,
-            departure_datetime: `${leadData.departure_date}T${leadData.departure_time || '12:00'}`.slice(0, 16) // Remove seconds
+            departure_datetime: `${date}T${time}`.slice(0, 16) // Remove seconds
           }
         ],
         aircraft
@@ -842,9 +859,17 @@ export const CharterQuoteRequest = ({ leadData }: CharterQuoteRequestProps) => {
                   <div className="space-y-1">
                     <p className="text-xs font-semibold text-blue-900 dark:text-blue-100">FLIGHT DETAILS</p>
                     <p className="text-sm"><strong>Route:</strong> {leadData.departure_airport.match(/^([A-Z]{3,4})/)?.[1] || leadData.departure_airport} → {leadData.arrival_airport.match(/^([A-Z]{3,4})/)?.[1] || leadData.arrival_airport}</p>
-                    <p className="text-sm"><strong>Departure:</strong> {leadData.departure_date} at {leadData.departure_time || '12:00'}</p>
-                    {leadData.return_date && (
-                      <p className="text-sm"><strong>Return:</strong> {leadData.return_date} {leadData.return_time ? `at ${leadData.return_time}` : ''}</p>
+                    <p className="text-sm"><strong>Departure:</strong> {
+                      leadData.departure_datetime 
+                        ? new Date(leadData.departure_datetime).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+                        : `${leadData.departure_date} at ${leadData.departure_time || '12:00'}`
+                    }</p>
+                    {(leadData.return_datetime || leadData.return_date) && (
+                      <p className="text-sm"><strong>Return:</strong> {
+                        leadData.return_datetime
+                          ? new Date(leadData.return_datetime).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+                          : `${leadData.return_date} ${leadData.return_time ? `at ${leadData.return_time}` : ''}`
+                      }</p>
                     )}
                     <p className="text-sm"><strong>Passengers:</strong> {leadData.passengers}</p>
                     {selectedAircraftClasses.size > 0 && (

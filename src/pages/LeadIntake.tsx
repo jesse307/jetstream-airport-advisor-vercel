@@ -122,6 +122,15 @@ export default function LeadIntake() {
     
     try {
       // Prepare data for database
+      // Combine date and time into timezone-aware timestamps
+      const departureDateTime = new Date(
+        `${format(data.departureDate, "yyyy-MM-dd")}T${data.departureTime}`
+      );
+      
+      const returnDateTime = data.returnDate && data.returnTime
+        ? new Date(`${format(data.returnDate, "yyyy-MM-dd")}T${data.returnTime}`)
+        : null;
+      
       const leadData = {
         first_name: data.firstName,
         last_name: data.lastName,
@@ -130,6 +139,9 @@ export default function LeadIntake() {
         trip_type: data.tripType,
         departure_airport: data.departureAirport,
         arrival_airport: data.arrivalAirport,
+        departure_datetime: departureDateTime.toISOString(),
+        return_datetime: returnDateTime?.toISOString() || null,
+        // Keep old columns for backward compatibility during transition
         departure_date: format(data.departureDate, "yyyy-MM-dd"),
         departure_time: data.departureTime,
         return_date: data.returnDate ? format(data.returnDate, "yyyy-MM-dd") : null,
