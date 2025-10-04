@@ -472,33 +472,57 @@ export const CharterQuoteRequest = ({ leadData }: CharterQuoteRequestProps) => {
                             Available Aircraft ({matchingAircraft.length}):
                           </div>
                           <div className="space-y-2">
-                            {matchingAircraft.slice(0, 5).map((ac, idx) => {
-                              const acType = typeof ac.ac_type === 'string' 
-                                ? ac.ac_type 
-                                : ac.ac_type?.name || 'Unknown';
-                              const location = ac.location 
-                                ? (ac.location.iata || ac.location.icao || ac.location.name)
-                                : null;
-                              
-                              return (
+                            {(() => {
+                              // Group aircraft by type
+                              const groupedAircraft = matchingAircraft.reduce((acc, ac) => {
+                                const acType = typeof ac.ac_type === 'string' 
+                                  ? ac.ac_type 
+                                  : ac.ac_type?.name || 'Unknown';
+                                
+                                if (!acc[acType]) {
+                                  acc[acType] = {
+                                    count: 0,
+                                    locations: new Set<string>(),
+                                    tailNumbers: []
+                                  };
+                                }
+                                
+                                acc[acType].count++;
+                                acc[acType].tailNumbers.push(ac.tail_number);
+                                
+                                if (ac.location) {
+                                  const loc = ac.location.iata || ac.location.icao || ac.location.name;
+                                  if (loc) acc[acType].locations.add(loc);
+                                }
+                                
+                                return acc;
+                              }, {} as Record<string, { count: number; locations: Set<string>; tailNumbers: string[] }>);
+
+                              return Object.entries(groupedAircraft).slice(0, 5).map(([type, data], idx) => (
                                 <div key={idx} className="flex items-center gap-2 text-xs">
                                   <Badge variant="secondary">
-                                    {acType}
+                                    {type}
+                                    {data.count > 1 && ` (×${data.count})`}
                                   </Badge>
-                                  <span className="text-muted-foreground">
-                                    {ac.tail_number}
-                                  </span>
-                                  {location && (
+                                  {data.locations.size > 0 && (
                                     <Badge variant="outline" className="text-xs">
-                                      📍 {location}
+                                      📍 {Array.from(data.locations).join(', ')}
                                     </Badge>
                                   )}
                                 </div>
-                              );
-                            })}
-                            {matchingAircraft.length > 5 && (
+                              ));
+                            })()}
+                            {Object.keys(matchingAircraft.reduce((acc, ac) => {
+                              const acType = typeof ac.ac_type === 'string' ? ac.ac_type : ac.ac_type?.name || 'Unknown';
+                              acc[acType] = true;
+                              return acc;
+                            }, {} as Record<string, boolean>)).length > 5 && (
                               <div className="text-xs text-muted-foreground">
-                                +{matchingAircraft.length - 5} more aircraft
+                                +{Object.keys(matchingAircraft.reduce((acc, ac) => {
+                                  const acType = typeof ac.ac_type === 'string' ? ac.ac_type : ac.ac_type?.name || 'Unknown';
+                                  acc[acType] = true;
+                                  return acc;
+                                }, {} as Record<string, boolean>)).length - 5} more types
                               </div>
                             )}
                           </div>
