@@ -70,7 +70,9 @@ Once I have your details, I can provide some additional guidance around which pl
 
 --
 Best,
-Jesse`);
+Jesse
+
+<img src="https://300e3d3f-6393-4fa8-9ea2-e17c21482f24.lovableproject.com/images/stratos_logo.png" alt="Stratos Jet Charters" style="max-width: 300px; margin-top: 20px;" />`);
   const [makeWebhookUrl] = useState("https://hook.us2.make.com/ywmt9116r48viqppk2lqhhf9s7x57q4w");
 
   // Load template from database on mount
@@ -511,7 +513,9 @@ Once I have your details, I can provide some additional guidance around which pl
 
 --
 Best,
-Jesse`;
+Jesse
+
+<img src="https://300e3d3f-6393-4fa8-9ea2-e17c21482f24.lovableproject.com/images/stratos_logo.png" alt="Stratos Jet Charters" style="max-width: 300px; margin-top: 20px;" />`;
                   setEmailTemplate(originalTemplate);
                   const newContent = populateTemplate(originalTemplate, leadData);
                   setEmailContent(newContent);
