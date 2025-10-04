@@ -50,3 +50,6 @@ verify_jwt = false
 
 [functions.get-charter-quote-replies]
 verify_jwt = false
+
+[functions.search-charter-operators]
+verify_jwt = false
