@@ -309,6 +309,10 @@ export const CharterQuoteRequest = ({ leadData }: CharterQuoteRequestProps) => {
         ],
         aircraft,
         quote_messages,
+        account: {
+          given_name: 'Jesse',
+          family_name: 'Marsh'
+        },
         quote_extension: {
           client_given_name: 'Jesse',
           client_family_name: 'Marsh',
