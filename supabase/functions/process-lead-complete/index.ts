@@ -51,7 +51,7 @@ serve(async (req) => {
       throw new Error('Failed to parse lead data');
     }
 
-    const parsedData: LeadData = await parseResponse.json();
+    const { parsedData }: { parsedData: LeadData } = await parseResponse.json();
     console.log('Parsed lead data:', parsedData);
 
     // Step 2: Create lead in database with status "no_answer"
