@@ -25,7 +25,7 @@ interface Operator {
 interface QuoteReply {
   id: number;
   price: number;
-  currency: string;
+  currency: string | { id: number; name: string };
   state: string | { id: number; name: string };
   aircraft?: {
     tail_number: string;
@@ -263,6 +263,7 @@ export const CharterQuoteRequest = ({ leadData }: CharterQuoteRequestProps) => {
       }
 
       console.log('Quote replies:', data.data);
+      console.log('First reply structure:', JSON.stringify(data.data.results?.[0], null, 2));
       setQuoteReplies(data.data.results || []);
       
       if (data.data.results && data.data.results.length > 0) {
@@ -279,10 +280,11 @@ export const CharterQuoteRequest = ({ leadData }: CharterQuoteRequestProps) => {
     }
   };
 
-  const formatPrice = (price: number, currency: string) => {
+  const formatPrice = (price: number, currency: string | { id: number; name: string }) => {
+    const currencyCode = typeof currency === 'string' ? currency : currency.name;
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: currency || 'USD'
+      currency: currencyCode || 'USD'
     }).format(price);
   };
 
