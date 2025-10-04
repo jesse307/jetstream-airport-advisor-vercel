@@ -60,6 +60,7 @@ export default function LeadAnalysis() {
   const [loading, setLoading] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
   const [distance, setDistance] = useState<number>(0);
+  const [flightTimeMinutes, setFlightTimeMinutes] = useState<number | null>(null);
   const [emailValidation, setEmailValidation] = useState<{ isValid: boolean | null; loading: boolean }>({
     isValid: null,
     loading: false
@@ -494,6 +495,27 @@ export default function LeadAnalysis() {
           const calculatedDistance = Math.round(R * c);
           setDistance(calculatedDistance);
           console.log('Distance calculated:', calculatedDistance, 'NM');
+
+          // Fetch accurate flight time from AeroDataBox
+          try {
+            const { data: flightTimeData } = await supabase.functions.invoke('search-airports', {
+              body: {
+                calculateFlightTime: true,
+                departure: depAirport.code,
+                arrival: arrAirport.code,
+                aircraftType: 'Citation XLS+', // Use mid-size jet as default
+                passengers: data.passengers
+              }
+            });
+
+            if (flightTimeData?.success && flightTimeData?.flightTime?.time?.airway) {
+              setFlightTimeMinutes(flightTimeData.flightTime.time.airway);
+              console.log('Flight time from AeroDataBox:', flightTimeData.flightTime.time.airway, 'minutes');
+            }
+          } catch (flightTimeError) {
+            console.error('Error fetching flight time:', flightTimeError);
+            // Continue without flight time - will use estimation
+          }
         }
       } catch (airportError) {
         console.error("Error fetching airport data:", airportError);
@@ -535,6 +557,22 @@ export default function LeadAnalysis() {
       case "cancelled": return "bg-red-100 text-red-800";
       default: return "bg-gray-100 text-gray-800";
     }
+  };
+
+  const formatFlightTime = () => {
+    if (flightTimeMinutes) {
+      const hours = Math.floor(flightTimeMinutes / 60);
+      const minutes = flightTimeMinutes % 60;
+      return `${hours}h ${minutes}m`;
+    }
+    // Fallback to estimation
+    if (distance > 0) {
+      const flightTimeHours = distance / 450;
+      const hours = Math.floor(flightTimeHours);
+      const minutes = Math.round((flightTimeHours - hours) * 60);
+      return `~${hours}h ${minutes}m`;
+    }
+    return 'Calculating...';
   };
 
   if (loading) {
@@ -720,9 +758,14 @@ export default function LeadAnalysis() {
                       </div>
                       <div className="text-xs text-muted-foreground">nautical miles</div>
                       {distance > 0 && (
-                        <div className="text-xs text-muted-foreground mt-1">
-                          {Math.round(distance * 1.15).toLocaleString()} statute mi
-                        </div>
+                        <>
+                          <div className="text-xs text-muted-foreground mt-1">
+                            {Math.round(distance * 1.15).toLocaleString()} statute mi
+                          </div>
+                          <div className="text-sm font-semibold text-primary mt-2">
+                            {formatFlightTime()}
+                          </div>
+                        </>
                       )}
                     </div>
                   </div>
