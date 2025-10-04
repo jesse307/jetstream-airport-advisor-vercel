@@ -123,53 +123,11 @@ export const CharterQuoteRequest = ({ leadData }: CharterQuoteRequestProps) => {
       }
 
       console.log('Search results:', data.data);
-      console.log('First operator:', JSON.stringify(data.data.companies?.[0], null, 2));
+      console.log('First operator aircraft:', data.data.companies?.[0]?.aircraft?.slice(0, 2));
       
       // Extract operators from the response
       if (data.data.companies && Array.isArray(data.data.companies)) {
         const operators = data.data.companies;
-        
-        // Extract all tail numbers to fetch locations
-        const allTailNumbers = operators
-          .flatMap(op => op.aircraft || [])
-          .map(ac => ac.tail_number)
-          .filter(Boolean);
-
-        console.log(`Fetching locations for ${allTailNumbers.length} aircraft...`);
-        
-        // Fetch aircraft locations
-        try {
-          const locationResponse = await supabase.functions.invoke('get-aircraft-locations', {
-            body: { tailNumbers: allTailNumbers }
-          });
-
-          if (locationResponse.data?.success) {
-            console.log('Aircraft locations fetched:', locationResponse.data.stats);
-            
-            // Create a map of tail number to location
-            const locationMap = new Map(
-              locationResponse.data.data.map((item: any) => [
-                item.tailNumber,
-                item.location
-              ])
-            );
-
-            // Enrich operators with actual aircraft locations
-            operators.forEach(operator => {
-              if (operator.aircraft) {
-                operator.aircraft.forEach(aircraft => {
-                  const enhancedLocation = locationMap.get(aircraft.tail_number);
-                  if (enhancedLocation) {
-                    aircraft.location = enhancedLocation;
-                  }
-                });
-              }
-            });
-          }
-        } catch (error) {
-          console.error('Error fetching aircraft locations:', error);
-          // Continue without enhanced locations
-        }
 
         // Sort operators by location relevance
         const sortedOperators = [...operators].sort((a, b) => {
@@ -187,11 +145,11 @@ export const CharterQuoteRequest = ({ leadData }: CharterQuoteRequestProps) => {
             // Among US operators, prioritize those with aircraft near departure or arrival airports
             const aHasLocalAircraft = a.aircraft?.some(ac => {
               const loc = ac.location?.icao || ac.location?.iata || '';
-              return loc === depCode || loc === arrCode;
+              return loc && (loc === depCode || loc === arrCode);
             });
             const bHasLocalAircraft = b.aircraft?.some(ac => {
               const loc = ac.location?.icao || ac.location?.iata || '';
-              return loc === depCode || loc === arrCode;
+              return loc && (loc === depCode || loc === arrCode);
             });
             
             if (aHasLocalAircraft && !bHasLocalAircraft) return -1;
