@@ -915,15 +915,16 @@ export default function LeadAnalysis() {
                     onClick={handleStartProcess}
                     disabled={isExporting}
                   >
-                    {isExporting ? 'Starting...' : 'Start Process'}
+                    <Phone className="h-4 w-4 mr-2" />
+                    {isExporting ? 'Starting...' : 'Call + Email'}
                   </Button>
                   <Button 
                     className="w-full" 
-                    variant="outline"
+                    variant="default"
                     onClick={() => setShowEmailComposer(true)}
                   >
                     <Mail className="h-4 w-4 mr-2" />
-                    Compose Email
+                    Email
                   </Button>
                   <Button className="w-full" variant="outline">
                     Update Status
