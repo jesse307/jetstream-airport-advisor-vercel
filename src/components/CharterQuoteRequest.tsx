@@ -409,16 +409,8 @@ export const CharterQuoteRequest = ({ leadData }: CharterQuoteRequestProps) => {
           <CardContent>
             <div className="space-y-3 max-h-96 overflow-y-auto">
               {operators.map((operator) => {
-                // Filter aircraft that match selected classes
-                const matchingAircraft = operator.aircraft?.filter(ac => {
-                  const acType = typeof ac.aircraft_type === 'string' ? ac.aircraft_type : ac.aircraft_type?.name;
-                  const acClass = typeof ac.aircraft_class === 'string' ? ac.aircraft_class : ac.aircraft_class?.name;
-                  // Check if aircraft class matches any selected class
-                  return Array.from(selectedAircraftClasses).some(selectedClass => 
-                    acClass?.toLowerCase().includes(selectedClass.toLowerCase()) ||
-                    acType?.toLowerCase().includes(selectedClass.toLowerCase())
-                  );
-                }) || [];
+                // All aircraft returned from API are already filtered by selected classes
+                const matchingAircraft = operator.aircraft || [];
 
                 return (
                   <div
@@ -466,7 +458,7 @@ export const CharterQuoteRequest = ({ leadData }: CharterQuoteRequestProps) => {
                       {matchingAircraft.length > 0 && (
                         <div className="mt-2 pt-2 border-t">
                           <div className="text-xs font-medium mb-1">
-                            Matching Aircraft ({matchingAircraft.length}):
+                            Available Aircraft ({matchingAircraft.length}):
                           </div>
                           <div className="flex flex-wrap gap-1">
                             {matchingAircraft.slice(0, 5).map((ac, idx) => (
