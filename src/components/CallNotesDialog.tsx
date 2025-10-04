@@ -77,7 +77,12 @@ export function CallNotesDialog({
 
       if (data.changes) {
         setExtractedChanges(data.changes);
-        toast.success("Itinerary changes detected!");
+        if (onUpdateItinerary) {
+          onUpdateItinerary(data.changes);
+          toast.success("Itinerary changes detected and applied!");
+        } else {
+          toast.success("Itinerary changes detected!");
+        }
       }
     } catch (error) {
       console.error("Error sending message:", error);
