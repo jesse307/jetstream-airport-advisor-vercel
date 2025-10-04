@@ -72,7 +72,7 @@ Jesse
 
 <img src="https://300e3d3f-6393-4fa8-9ea2-e17c21482f24.lovableproject.com/images/stratos_logo.png" alt="Stratos Jet Charters" style="max-width: 300px; margin-top: 20px;" />`);
   const [makeWebhookUrl] = useState("https://hook.us2.make.com/ywmt9116r48viqppk2lqhhf9s7x57q4w");
-  const [exportWebhookUrl, setExportWebhookUrl] = useState("");
+  const [exportWebhookUrl, setExportWebhookUrl] = useState("https://hook.us2.make.com/kylqoo8ozkxhxaqi07n33998rmt2tzl4");
 
   // Load template from database on mount
   React.useEffect(() => {
