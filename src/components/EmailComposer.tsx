@@ -43,6 +43,7 @@ export function EmailComposer({ isOpen, onClose, leadData }: EmailComposerProps)
   const [isHtmlEditor, setIsHtmlEditor] = useState(false);
   const [isSavingTemplate, setIsSavingTemplate] = useState(false);
   const [templateId, setTemplateId] = useState<string | null>(null);
+  const [showPreview, setShowPreview] = useState(false);
   const [emailTemplate, setEmailTemplate] = useState(`Subject: Stratos Jets - Confirming Flight Details
 
 Hi {{first_name}},
@@ -633,16 +634,53 @@ Jesse`;
 
               {/* Email Content */}
               <div className="space-y-2">
-                <Label htmlFor="content">Email Content</Label>
-                <Textarea
-                  id="content"
-                  value={emailContent}
-                  onChange={(e) => setEmailContent(e.target.value)}
-                  className="min-h-[400px] font-mono text-lg"
-                  placeholder="Email content will appear here..."
-                />
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="content">Email Content</Label>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={!showPreview ? "default" : "outline"}
+                      onClick={() => setShowPreview(false)}
+                      className="h-7 text-xs"
+                    >
+                      Edit
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={showPreview ? "default" : "outline"}
+                      onClick={() => setShowPreview(true)}
+                      className="h-7 text-xs"
+                    >
+                      <Eye className="h-3 w-3 mr-1" />
+                      Preview
+                    </Button>
+                  </div>
+                </div>
+                
+                {showPreview ? (
+                  <div 
+                    className="min-h-[400px] p-4 border rounded-md bg-white text-foreground overflow-auto"
+                    style={{ fontSize: '16px', lineHeight: '1.5', fontFamily: 'Arial, sans-serif' }}
+                    dangerouslySetInnerHTML={{
+                      __html: emailContent
+                        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                        .replace(/\n/g, '<br>')
+                        .replace(/━{10,}/g, '<hr style="border: none; border-top: 1px solid #ccc; margin: 15px 0;">')
+                    }}
+                  />
+                ) : (
+                  <Textarea
+                    id="content"
+                    value={emailContent}
+                    onChange={(e) => setEmailContent(e.target.value)}
+                    className="min-h-[400px] font-mono text-lg"
+                    placeholder="Email content will appear here..."
+                  />
+                )}
                 <p className="text-xs text-muted-foreground">
-                  Plain text format - will be converted to HTML when sent to Gmail
+                  {showPreview ? "Preview of how the email will look in Gmail" : "Plain text format - will be converted to HTML when sent to Gmail"}
                 </p>
               </div>
 
