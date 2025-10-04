@@ -22,7 +22,7 @@ interface Operator {
   aviapages_validation?: boolean;
   aircraft?: Array<{
     id: number;
-    aircraft_type: string | { id: number; name: string };
+    ac_type: string | { id: number; name: string };
     aircraft_class?: string | { id: number; name: string };
     tail_number: string;
     max_passengers: number;
@@ -36,7 +36,7 @@ interface QuoteReply {
   state: string | { id: number; name: string };
   aircraft?: {
     tail_number: string;
-    aircraft_type: string | { id: number; name: string };
+    ac_type: string | { id: number; name: string };
     aircraft_class: string | { id: number; name: string };
     max_passengers: number;
   };
@@ -468,9 +468,9 @@ export const CharterQuoteRequest = ({ leadData }: CharterQuoteRequestProps) => {
                           </div>
                           <div className="flex flex-wrap gap-1">
                             {matchingAircraft.slice(0, 5).map((ac, idx) => {
-                              const acType = typeof ac.aircraft_type === 'string' 
-                                ? ac.aircraft_type 
-                                : ac.aircraft_type?.name || 'Unknown';
+                              const acType = typeof ac.ac_type === 'string' 
+                                ? ac.ac_type 
+                                : ac.ac_type?.name || 'Unknown';
                               return (
                                 <Badge key={idx} variant="secondary" className="text-xs">
                                   {acType}
@@ -581,9 +581,9 @@ export const CharterQuoteRequest = ({ leadData }: CharterQuoteRequestProps) => {
                         {reply.aircraft && (
                           <div className="space-y-1">
                             <h4 className="font-semibold text-lg">
-                              {typeof reply.aircraft.aircraft_type === 'string' 
-                                ? reply.aircraft.aircraft_type 
-                                : reply.aircraft.aircraft_type.name}
+                              {typeof reply.aircraft.ac_type === 'string' 
+                                ? reply.aircraft.ac_type 
+                                : reply.aircraft.ac_type.name}
                             </h4>
                             <div className="flex gap-2 text-sm text-muted-foreground">
                               <Badge variant="outline">
