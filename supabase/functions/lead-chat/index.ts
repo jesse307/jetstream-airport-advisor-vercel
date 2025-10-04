@@ -88,6 +88,23 @@ Keep responses concise, professional, and focused on helping the broker serve th
                 }
               }
             }
+          },
+          {
+            type: "function",
+            function: {
+              name: "search_airport_online",
+              description: "Search for airport information online when an airport is not found in the database. Use this to find details about airports including ICAO/IATA codes, runway lengths, location, etc.",
+              parameters: {
+                type: "object",
+                properties: {
+                  query: { 
+                    type: "string", 
+                    description: "The airport code or name to search for (e.g., 'KJFK', 'JFK', 'Kennedy Airport')" 
+                  }
+                },
+                required: ["query"]
+              }
+            }
           }
         ]
       }),
