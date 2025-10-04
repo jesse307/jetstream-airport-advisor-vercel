@@ -74,6 +74,7 @@ Jesse
 
 <img src="https://300e3d3f-6393-4fa8-9ea2-e17c21482f24.lovableproject.com/images/stratos_logo.png" alt="Stratos Jet Charters" style="max-width: 300px; margin-top: 20px;" />`);
   const [makeWebhookUrl] = useState("https://hook.us2.make.com/ywmt9116r48viqppk2lqhhf9s7x57q4w");
+  const [exportWebhookUrl, setExportWebhookUrl] = useState("");
 
   // Load template from database on mount
   React.useEffect(() => {
@@ -203,7 +204,7 @@ Jesse
     const webhookData = {
       to: leadData.email,
       subject: subject,
-      body: htmlContent,
+      html: htmlContent,
       leadData: leadData,
       action: "create_draft",
       timestamp: new Date().toISOString(),
@@ -444,6 +445,85 @@ Jesse
     }
   };
 
+  const handleExport = async () => {
+    if (!exportWebhookUrl.trim()) {
+      toast.error("Please enter an export webhook URL");
+      return;
+    }
+
+    if (!emailContent.trim()) {
+      toast.error("Please generate email content first");
+      return;
+    }
+
+    setIsSending(true);
+    
+    // Convert plain text to HTML
+    const htmlContent = `<div style="font-size: 16px; line-height: 1.5; font-family: Arial, sans-serif;">` + 
+      emailContent
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\n/g, '<br>')
+        .replace(/━{10,}/g, '<hr style="border: none; border-top: 1px solid #ccc; margin: 15px 0;">') +
+      `</div>`;
+    
+    const exportData = {
+      subject: subject,
+      html: htmlContent,
+      to: leadData.email,
+      leadData: leadData,
+      timestamp: new Date().toISOString(),
+    };
+
+    console.log("Exporting to webhook:", {
+      url: exportWebhookUrl,
+      dataSize: JSON.stringify(exportData).length
+    });
+
+    try {
+      const response = await fetch(exportWebhookUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(exportData),
+      });
+
+      console.log("Export response:", {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok
+      });
+
+      if (response.ok) {
+        toast.success("Email exported successfully!");
+      } else {
+        console.error("Webhook returned error status:", response.status);
+        toast.error(`Export failed with status ${response.status}`);
+      }
+    } catch (error) {
+      console.error('Error exporting:', error);
+      
+      // Try with no-cors as fallback
+      try {
+        console.log("Retrying with no-cors mode...");
+        await fetch(exportWebhookUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          mode: "no-cors",
+          body: JSON.stringify(exportData),
+        });
+        toast.success("Export request sent (no-cors mode). Check your webhook logs.");
+      } catch (fallbackError) {
+        console.error('Fallback request also failed:', fallbackError);
+        toast.error("Failed to export. Please check your webhook URL.");
+      }
+    } finally {
+      setIsSending(false);
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -625,6 +705,21 @@ Jesse
 
             {/* Email Compose Area */}
             <div className="space-y-4">
+              {/* Export Webhook URL */}
+              <div className="space-y-2">
+                <Label htmlFor="exportWebhook">Export Webhook URL (Optional)</Label>
+                <Input
+                  id="exportWebhook"
+                  value={exportWebhookUrl}
+                  onChange={(e) => setExportWebhookUrl(e.target.value)}
+                  placeholder="https://hook.example.com/your-webhook"
+                  className="font-mono text-sm"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Enter a webhook URL to export the email subject and HTML separately
+                </p>
+              </div>
+
               {/* Subject Line */}
               <div className="space-y-2">
                 <Label htmlFor="subject">Subject</Label>
@@ -708,6 +803,22 @@ Jesse
                     )}
                     {isGenerating ? "Using AI..." : "Use AI"}
                   </Button>
+                  
+                  {exportWebhookUrl && (
+                    <Button
+                      onClick={handleExport}
+                      disabled={isSending || !emailContent.trim()}
+                      variant="outline"
+                      className="flex items-center gap-2"
+                    >
+                      {isSending ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <FileText className="h-4 w-4" />
+                      )}
+                      Export
+                    </Button>
+                  )}
                   
                   <Button 
                     onClick={handleCreateDraft} 
