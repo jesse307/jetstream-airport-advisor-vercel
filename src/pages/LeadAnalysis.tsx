@@ -710,7 +710,7 @@ export default function LeadAnalysis() {
                 <div className="flex items-center gap-3">
                   <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20">
                     <Users className="h-4 w-4 text-primary" />
-                    <span className="font-semibold text-primary text-sm">{lead.passengers} pax</span>
+                    <span className="font-semibold text-primary text-sm">{lead.passengers} passenger{lead.passengers !== 1 ? 's' : ''}</span>
                   </div>
                   <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20">
                     <div className="flex gap-1">
