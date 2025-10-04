@@ -1,24 +1,15 @@
-// Push to Site button - sends data to pending imports for manual review
-document.getElementById('pushToSiteBtn').addEventListener('click', async () => {
-  await handleCapture('push-to-site');
+// Capture and process lead automatically
+document.getElementById('captureBtn').addEventListener('click', async () => {
+  await handleCapture();
 });
 
-// Complete Workflow button - automated processing all the way to Make.com
-document.getElementById('completeWorkflowBtn').addEventListener('click', async () => {
-  await handleCapture('complete-workflow');
-});
-
-async function handleCapture(mode) {
-  const pushBtn = document.getElementById('pushToSiteBtn');
-  const completeBtn = document.getElementById('completeWorkflowBtn');
+async function handleCapture() {
+  const captureBtn = document.getElementById('captureBtn');
   const status = document.getElementById('status');
   
-  pushBtn.disabled = true;
-  completeBtn.disabled = true;
-  
-  const activeBtn = mode === 'push-to-site' ? pushBtn : completeBtn;
-  const originalText = activeBtn.textContent;
-  activeBtn.innerHTML = '<span class="loader"></span>Processing...';
+  captureBtn.disabled = true;
+  const originalText = captureBtn.textContent;
+  captureBtn.innerHTML = '<span class="loader"></span>Processing...';
   status.className = 'status';
   status.style.display = 'none';
 
@@ -34,13 +25,8 @@ async function handleCapture(mode) {
 
     const pageData = results[0].result;
 
-    // Choose endpoint based on mode
-    const endpoint = mode === 'complete-workflow' 
-      ? 'process-lead-complete'
-      : 'receive-lead-webhook';
-
-    // Send to webhook
-    const response = await fetch(`https://hwemookrxvflpinfpkrj.supabase.co/functions/v1/${endpoint}`, {
+    // Send to process-lead-complete endpoint for automatic parsing and creation
+    const response = await fetch(`https://hwemookrxvflpinfpkrj.supabase.co/functions/v1/process-lead-complete`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -52,29 +38,27 @@ async function handleCapture(mode) {
 
     const result = await response.json();
 
-    if (response.ok) {
+    if (response.ok && result.leadId) {
       status.className = 'status success';
+      status.textContent = '✓ Lead created successfully!';
+      status.style.display = 'block';
       
-      if (mode === 'push-to-site') {
-        status.textContent = '✓ Data captured successfully!';
-        // Open the Lead Import page
+      // Open the Lead Analysis page for this specific lead
+      setTimeout(() => {
         chrome.tabs.create({
-          url: 'https://300e3d3f-6393-4fa8-9ea2-e17c21482f24.lovableproject.com/leads/import'
+          url: `https://300e3d3f-6393-4fa8-9ea2-e17c21482f24.lovableproject.com/leads/analysis/${result.leadId}`
         });
-      } else {
-        status.textContent = '✓ Lead processed and sent to Make.com!';
-      }
+      }, 500);
     } else {
-      throw new Error(result.error || 'Failed to process data');
+      throw new Error(result.error || 'Failed to create lead');
     }
   } catch (error) {
     status.className = 'status error';
     status.textContent = '✗ Error: ' + error.message;
-  } finally {
-    pushBtn.disabled = false;
-    completeBtn.disabled = false;
-    activeBtn.textContent = originalText;
     status.style.display = 'block';
+  } finally {
+    captureBtn.disabled = false;
+    captureBtn.textContent = originalText;
   }
 }
 
