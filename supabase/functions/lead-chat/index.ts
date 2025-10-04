@@ -51,6 +51,14 @@ Your role is to:
 4. Help the broker understand any operational considerations
 5. Detect when the user wants to make changes to the lead details (passengers, airports, dates, etc.)
 
+CRITICAL INSTRUCTIONS FOR DATE HANDLING:
+- When the user mentions a specific date (e.g., "the 14th", "January 14th", "1/14"), use EXACTLY that date
+- Always format dates as YYYY-MM-DD (e.g., 2025-01-14)
+- Pay close attention to the day number the user specifies
+- If the user says "coming back on the 14th", set returnDate to YYYY-MM-14 (not 13th or 15th)
+- When converting relative dates like "next Monday" or "3 days from now", calculate from the current departure date
+- Double-check your date calculations before calling the update tool
+
 When the user wants to update lead information, use the update_lead_details tool.
 
 Keep responses concise, professional, and focused on helping the broker serve this client better. Use aviation terminology appropriately.`;
@@ -73,18 +81,42 @@ Keep responses concise, professional, and focused on helping the broker serve th
             type: "function",
             function: {
               name: "update_lead_details",
-              description: "Update the lead's trip details when the user requests changes",
+              description: "Update the lead's trip details when the user requests changes. IMPORTANT: Pay very close attention to the exact dates the user specifies.",
               parameters: {
                 type: "object",
                 properties: {
-                  passengers: { type: "number", description: "New passenger count" },
-                  departureAirport: { type: "string", description: "New departure airport code" },
-                  arrivalAirport: { type: "string", description: "New arrival airport code" },
-                  departureDate: { type: "string", description: "New departure date (YYYY-MM-DD)" },
-                  departureTime: { type: "string", description: "New departure time (HH:MM:SS)" },
-                  returnDate: { type: "string", description: "New return date (YYYY-MM-DD)" },
-                  returnTime: { type: "string", description: "New return time (HH:MM:SS)" },
-                  tripType: { type: "string", description: "Trip type (One Way, Round Trip, Multi-Leg)" }
+                  passengers: { 
+                    type: "number", 
+                    description: "New passenger count" 
+                  },
+                  departureAirport: { 
+                    type: "string", 
+                    description: "New departure airport code (e.g., 'JFK', 'LAX')" 
+                  },
+                  arrivalAirport: { 
+                    type: "string", 
+                    description: "New arrival airport code (e.g., 'JFK', 'LAX')" 
+                  },
+                  departureDate: { 
+                    type: "string", 
+                    description: "New departure date in YYYY-MM-DD format. CRITICAL: Use the EXACT day number the user specifies. If they say 'the 14th', use day 14, not 13 or 15." 
+                  },
+                  departureTime: { 
+                    type: "string", 
+                    description: "New departure time in HH:MM:SS format (e.g., '14:30:00')" 
+                  },
+                  returnDate: { 
+                    type: "string", 
+                    description: "New return date in YYYY-MM-DD format. CRITICAL: Use the EXACT day number the user specifies. If they say 'coming back on the 14th', use day 14." 
+                  },
+                  returnTime: { 
+                    type: "string", 
+                    description: "New return time in HH:MM:SS format (e.g., '18:00:00')" 
+                  },
+                  tripType: { 
+                    type: "string", 
+                    description: "Trip type: 'One Way' or 'Round Trip' (exact case-sensitive strings)" 
+                  }
                 }
               }
             }
