@@ -311,7 +311,7 @@ export const CharterQuoteRequest = ({ leadData }: CharterQuoteRequestProps) => {
         quote_messages,
         given_name: 'Jesse',
         family_name: 'Marsh',
-        channels: ['Email'], // Specify how operators should receive the quote request (must be capitalized)
+        channels: ['Email', 'Leon', 'Fl3xx', 'Skylegs'], // Operators will receive via their preferred/integrated system
         quote_extension: {
           client_given_name: 'Jesse',
           client_family_name: 'Marsh',
