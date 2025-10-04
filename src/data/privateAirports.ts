@@ -128,6 +128,18 @@ export const PRIVATE_AIRPORTS: Airport[] = [
   // Hawaii Private Airports (sample) 
   { code: "HI02", name: "Dillingham Airfield", city: "Mokuleia, HI", state: "HI", runway: "9000 ft", fbo: "Dillingham Aviation", type: "Private", latitude: 21.5789, longitude: -158.1967, elevation: 14 },
   { code: "HI05", name: "Princeville Airport", city: "Princeville, HI", state: "HI", runway: "3000 ft", fbo: "Princeville Aviation", type: "Private", latitude: 22.2034, longitude: -159.4467, elevation: 422 },
+  
+  // Major International Airports - Mexico & Caribbean
+  { code: "CUN", name: "Cancun International Airport", city: "Cancun", state: "MX", runway: "11483 ft", fbo: "FBO Cancun", type: "Commercial", latitude: 21.0365, longitude: -86.8771, elevation: 22, icao: "MMUN" },
+  { code: "MMUN", name: "Cancun International Airport", city: "Cancun", state: "MX", runway: "11483 ft", fbo: "FBO Cancun", type: "Commercial", latitude: 21.0365, longitude: -86.8771, elevation: 22, icao: "MMUN" },
+  { code: "CZM", name: "Cozumel International Airport", city: "Cozumel", state: "MX", runway: "9843 ft", fbo: "Cozumel FBO", type: "Commercial", latitude: 20.5224, longitude: -86.9256, elevation: 15, icao: "MMCZ" },
+  { code: "MMCZ", name: "Cozumel International Airport", city: "Cozumel", state: "MX", runway: "9843 ft", fbo: "Cozumel FBO", type: "Commercial", latitude: 20.5224, longitude: -86.9256, elevation: 15, icao: "MMCZ" },
+  { code: "PVR", name: "Puerto Vallarta International Airport", city: "Puerto Vallarta", state: "MX", runway: "10171 ft", fbo: "PVR FBO", type: "Commercial", latitude: 20.6801, longitude: -105.2544, elevation: 23, icao: "MMPR" },
+  { code: "MMPR", name: "Puerto Vallarta International Airport", city: "Puerto Vallarta", state: "MX", runway: "10171 ft", fbo: "PVR FBO", type: "Commercial", latitude: 20.6801, longitude: -105.2544, elevation: 23, icao: "MMPR" },
+  { code: "SJD", name: "Los Cabos International Airport", city: "San Jose del Cabo", state: "MX", runway: "9843 ft", fbo: "Cabo FBO", type: "Commercial", latitude: 23.1518, longitude: -109.7211, elevation: 374, icao: "MMSD" },
+  { code: "MMSD", name: "Los Cabos International Airport", city: "San Jose del Cabo", state: "MX", runway: "9843 ft", fbo: "Cabo FBO", type: "Commercial", latitude: 23.1518, longitude: -109.7211, elevation: 374, icao: "MMSD" },
+  { code: "NAS", name: "Lynden Pindling International Airport", city: "Nassau", state: "BS", runway: "11000 ft", fbo: "Odyssey Aviation", type: "Commercial", latitude: 25.0389, longitude: -77.4662, elevation: 16, icao: "MYNN" },
+  { code: "MYNN", name: "Lynden Pindling International Airport", city: "Nassau", state: "BS", runway: "11000 ft", fbo: "Odyssey Aviation", type: "Commercial", latitude: 25.0389, longitude: -77.4662, elevation: 16, icao: "MYNN" },
 ];
 
 // Total airports in dataset: This is a curated subset of the major private airports
