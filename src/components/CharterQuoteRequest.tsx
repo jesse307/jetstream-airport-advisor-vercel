@@ -26,6 +26,11 @@ interface Operator {
     aircraft_class?: string | { id: number; name: string };
     tail_number: string;
     max_passengers: number;
+    location?: {
+      iata?: string;
+      icao?: string;
+      name?: string;
+    } | null;
   }>;
 }
 
@@ -466,21 +471,35 @@ export const CharterQuoteRequest = ({ leadData }: CharterQuoteRequestProps) => {
                           <div className="text-xs font-medium mb-1">
                             Available Aircraft ({matchingAircraft.length}):
                           </div>
-                          <div className="flex flex-wrap gap-1">
+                          <div className="space-y-2">
                             {matchingAircraft.slice(0, 5).map((ac, idx) => {
                               const acType = typeof ac.ac_type === 'string' 
                                 ? ac.ac_type 
                                 : ac.ac_type?.name || 'Unknown';
+                              const location = ac.location 
+                                ? (ac.location.iata || ac.location.icao || ac.location.name)
+                                : null;
+                              
                               return (
-                                <Badge key={idx} variant="secondary" className="text-xs">
-                                  {acType}
-                                </Badge>
+                                <div key={idx} className="flex items-center gap-2 text-xs">
+                                  <Badge variant="secondary">
+                                    {acType}
+                                  </Badge>
+                                  <span className="text-muted-foreground">
+                                    {ac.tail_number}
+                                  </span>
+                                  {location && (
+                                    <Badge variant="outline" className="text-xs">
+                                      📍 {location}
+                                    </Badge>
+                                  )}
+                                </div>
                               );
                             })}
                             {matchingAircraft.length > 5 && (
-                              <Badge variant="secondary" className="text-xs">
-                                +{matchingAircraft.length - 5} more
-                              </Badge>
+                              <div className="text-xs text-muted-foreground">
+                                +{matchingAircraft.length - 5} more aircraft
+                              </div>
                             )}
                           </div>
                         </div>
