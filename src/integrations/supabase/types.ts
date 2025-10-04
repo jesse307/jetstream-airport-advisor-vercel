@@ -161,6 +161,42 @@ export type Database = {
         }
         Relationships: []
       }
+      aircraft_locations: {
+        Row: {
+          country_code: string | null
+          created_at: string
+          home_airport_iata: string | null
+          home_airport_icao: string | null
+          home_airport_name: string | null
+          id: string
+          last_updated: string
+          operator_name: string | null
+          tail_number: string
+        }
+        Insert: {
+          country_code?: string | null
+          created_at?: string
+          home_airport_iata?: string | null
+          home_airport_icao?: string | null
+          home_airport_name?: string | null
+          id?: string
+          last_updated?: string
+          operator_name?: string | null
+          tail_number: string
+        }
+        Update: {
+          country_code?: string | null
+          created_at?: string
+          home_airport_iata?: string | null
+          home_airport_icao?: string | null
+          home_airport_name?: string | null
+          id?: string
+          last_updated?: string
+          operator_name?: string | null
+          tail_number?: string
+        }
+        Relationships: []
+      }
       email_templates: {
         Row: {
           created_at: string

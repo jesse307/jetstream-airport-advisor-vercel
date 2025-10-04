@@ -123,11 +123,59 @@ export const CharterQuoteRequest = ({ leadData }: CharterQuoteRequestProps) => {
       }
 
       console.log('Search results:', data.data);
-      console.log('First operator aircraft:', data.data.companies?.[0]?.aircraft?.slice(0, 2));
       
       // Extract operators from the response
       if (data.data.companies && Array.isArray(data.data.companies)) {
         const operators = data.data.companies;
+        
+        // Extract all tail numbers to look up locations
+        const allTailNumbers = operators
+          .flatMap(op => op.aircraft || [])
+          .map(ac => ac.tail_number)
+          .filter(Boolean);
+
+        console.log(`Looking up locations for ${allTailNumbers.length} aircraft...`);
+        
+        // Query local database for aircraft locations
+        try {
+          const { data: locationData, error: locationError } = await supabase
+            .from('aircraft_locations')
+            .select('tail_number, home_airport_icao, home_airport_iata, home_airport_name, country_code, operator_name')
+            .in('tail_number', allTailNumbers);
+
+          if (locationData && !locationError) {
+            console.log(`Found ${locationData.length} aircraft locations in database`);
+            
+            // Create a map of tail number to location
+            const locationMap = new Map(
+              locationData.map(item => [
+                item.tail_number,
+                {
+                  icao: item.home_airport_icao,
+                  iata: item.home_airport_iata,
+                  name: item.home_airport_name
+                }
+              ])
+            );
+
+            // Enrich operators with aircraft location data
+            operators.forEach(operator => {
+              if (operator.aircraft) {
+                operator.aircraft.forEach(aircraft => {
+                  const locationInfo = locationMap.get(aircraft.tail_number);
+                  if (locationInfo && locationInfo.icao) {
+                    aircraft.location = locationInfo;
+                  }
+                });
+              }
+            });
+          } else if (locationError) {
+            console.error('Error querying aircraft locations:', locationError);
+          }
+        } catch (error) {
+          console.error('Error looking up aircraft locations:', error);
+          // Continue without enhanced locations
+        }
 
         // Sort operators by location relevance
         const sortedOperators = [...operators].sort((a, b) => {
