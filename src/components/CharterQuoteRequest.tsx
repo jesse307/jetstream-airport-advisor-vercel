@@ -65,9 +65,19 @@ export const CharterQuoteRequest = ({ leadData }: CharterQuoteRequestProps) => {
   const [showOperators, setShowOperators] = useState(false);
   const [selectedAircraftClasses, setSelectedAircraftClasses] = useState<Set<string>>(new Set(['Midsize']));
   const [showPreview, setShowPreview] = useState(false);
+  const [priceEstimate, setPriceEstimate] = useState<{
+    price: number;
+    price_min: number | null;
+    price_max: number | null;
+    currency: string;
+  } | null>(null);
+  const [isFetchingPrice, setIsFetchingPrice] = useState(false);
 
   const handleSearchOperators = async () => {
     setIsSearching(true);
+    setPriceEstimate(null); // Reset price estimate
+    setIsFetchingPrice(true); // Start price fetch
+    
     try {
       // Extract airport codes
       const extractCode = (airportStr: string) => {
@@ -232,6 +242,9 @@ export const CharterQuoteRequest = ({ leadData }: CharterQuoteRequestProps) => {
         setOperators(sortedOperators);
         setShowOperators(true);
         toast.success(`Found ${sortedOperators.length} operators`);
+        
+        // Fetch price estimate in parallel
+        fetchPriceEstimate(departure_airport, arrival_airport, aircraft);
       } else {
         toast.info('No operators found for this route');
         setOperators([]);
@@ -242,6 +255,63 @@ export const CharterQuoteRequest = ({ leadData }: CharterQuoteRequestProps) => {
       toast.error('An error occurred while searching for operators');
     } finally {
       setIsSearching(false);
+    }
+  };
+
+  const fetchPriceEstimate = async (departure_airport: any, arrival_airport: any, aircraft: any) => {
+    try {
+      const getDepartureDateTime = () => {
+        if (leadData.departure_datetime) {
+          const dt = new Date(leadData.departure_datetime);
+          return {
+            date: dt.toISOString().split('T')[0],
+            time: dt.toTimeString().split(' ')[0]
+          };
+        }
+        return {
+          date: leadData.departure_date,
+          time: leadData.departure_time || '12:00:00'
+        };
+      };
+
+      const { date, time } = getDepartureDateTime();
+
+      const priceBody = {
+        legs: [
+          {
+            departure_airport,
+            arrival_airport,
+            pax: leadData.passengers,
+            departure_datetime: `${date}T${time}`.slice(0, 16)
+          }
+        ],
+        aircraft,
+        currency_code: 'USD',
+        range: true
+      };
+
+      const { data, error } = await supabase.functions.invoke('get-charter-price', {
+        body: priceBody
+      });
+
+      if (error) {
+        console.error('Error fetching price estimate:', error);
+        setIsFetchingPrice(false);
+        return;
+      }
+
+      if (data.success && data.data) {
+        setPriceEstimate({
+          price: data.data.price,
+          price_min: data.data.price_min,
+          price_max: data.data.price_max,
+          currency: data.data.currency_code
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching price estimate:', error);
+    } finally {
+      setIsFetchingPrice(false);
     }
   };
 
@@ -437,6 +507,45 @@ export const CharterQuoteRequest = ({ leadData }: CharterQuoteRequestProps) => {
 
   return (
     <div className="space-y-6">
+      {/* Flight Info Summary */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div>
+              <p className="text-xs text-muted-foreground mb-1">Route</p>
+              <p className="font-semibold">{leadData.departure_airport} → {leadData.arrival_airport}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground mb-1">Date</p>
+              <p className="font-semibold">{new Date(leadData.departure_date).toLocaleDateString()}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground mb-1">Passengers</p>
+              <p className="font-semibold">{leadData.passengers}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground mb-1">Est. Price (USD)</p>
+              {isFetchingPrice ? (
+                <div className="flex items-center gap-2">
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  <span className="text-sm text-muted-foreground">Calculating...</span>
+                </div>
+              ) : priceEstimate ? (
+                <p className="font-semibold text-primary">
+                  {priceEstimate.price_min && priceEstimate.price_max ? (
+                    `$${priceEstimate.price_min.toLocaleString()} - $${priceEstimate.price_max.toLocaleString()}`
+                  ) : (
+                    `$${priceEstimate.price.toLocaleString()}`
+                  )}
+                </p>
+              ) : (
+                <p className="text-sm text-muted-foreground">Search to see estimate</p>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Step 1: Search for Operators */}
       <Card>
         <CardHeader>
