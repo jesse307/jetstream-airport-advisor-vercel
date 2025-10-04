@@ -32,9 +32,10 @@ interface EmailComposerProps {
     notes?: string;
     analysis_data?: any;
   };
+  webhookUrl?: string; // Optional custom webhook URL
 }
 
-export function EmailComposer({ isOpen, onClose, leadData }: EmailComposerProps) {
+export function EmailComposer({ isOpen, onClose, leadData, webhookUrl }: EmailComposerProps) {
   const [subject, setSubject] = useState("Stratos Jets - Confirming Flight Details");
   const [emailContent, setEmailContent] = useState("");
   const [isShowingTemplate, setIsShowingTemplate] = useState(false);
@@ -144,7 +145,7 @@ Best,
 Jesse
 
 <img src="https://300e3d3f-6393-4fa8-9ea2-e17c21482f24.lovableproject.com/images/stratos_logo_email.png" alt="Stratos Jet Charters" style="max-width: 300px; margin-top: 20px;" />`);
-  const [makeWebhookUrl] = useState("https://hook.us2.make.com/ywmt9116r48viqppk2lqhhf9s7x57q4w");
+  const [makeWebhookUrl] = useState(webhookUrl || "https://hook.us2.make.com/ywmt9116r48viqppk2lqhhf9s7x57q4w");
   const [exportWebhookUrl, setExportWebhookUrl] = useState("https://hook.us2.make.com/kylqoo8ozkxhxaqi07n33998rmt2tzl4");
 
   // Load template from database on mount

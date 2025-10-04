@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { EmailComposer } from "./EmailComposer";
 
 interface CallNotesDialogProps {
   open: boolean;
@@ -35,6 +36,7 @@ export function CallNotesDialog({
   const [isLoading, setIsLoading] = useState(false);
   const [genericNotes, setGenericNotes] = useState("");
   const [extractedChanges, setExtractedChanges] = useState<any>(null);
+  const [showEmailComposer, setShowEmailComposer] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -114,7 +116,7 @@ export function CallNotesDialog({
   };
 
   const handleNoAnswer = () => {
-    onContinue("No answer - attempted call", null);
+    setShowEmailComposer(true);
   };
 
   const handleContinue = () => {
@@ -127,8 +129,18 @@ export function CallNotesDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl h-[80vh] flex flex-col">
+    <>
+      <EmailComposer
+        isOpen={showEmailComposer}
+        onClose={() => {
+          setShowEmailComposer(false);
+          onContinue("No answer - email sent via composer", null);
+        }}
+        leadData={leadData}
+        webhookUrl="https://hook.us2.make.com/YOUR_NO_ANSWER_WEBHOOK_URL"
+      />
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-4xl h-[80vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Phone className="h-5 w-5" />
@@ -245,7 +257,8 @@ export function CallNotesDialog({
             Continue
           </Button>
         </div>
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
