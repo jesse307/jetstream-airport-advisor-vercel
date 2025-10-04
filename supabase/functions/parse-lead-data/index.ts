@@ -117,8 +117,12 @@ serve(async (req) => {
                              parsedData.last_name.slice(1).toLowerCase();
     }
     
-    // Keep trip_type in database format (one-way or round-trip)
-    // The UI will handle display formatting
+    // Format trip type to match database constraint
+    if (parsedData.trip_type === 'one-way') {
+      parsedData.trip_type = 'One Way';
+    } else if (parsedData.trip_type === 'round-trip') {
+      parsedData.trip_type = 'Round Trip';
+    }
     
     console.log('Parsed lead data:', parsedData);
 

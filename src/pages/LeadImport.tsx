@@ -360,9 +360,7 @@ Notes: VIP client, prefers window seats"
                   </div>
                   <div>
                     <label className="text-xs font-medium text-muted-foreground">Trip Type</label>
-                    <p className="text-sm text-foreground mt-0.5">
-                      {parsedData.trip_type === "round-trip" ? "Round Trip" : "One Way"}
-                    </p>
+                    <p className="text-sm text-foreground mt-0.5">{parsedData.trip_type}</p>
                   </div>
                   <div>
                     <label className="text-xs font-medium text-muted-foreground">Passengers</label>

@@ -19,7 +19,7 @@ interface Lead {
   last_name: string;
   email: string;
   phone: string;
-  trip_type: "one-way" | "round-trip";
+  trip_type: "One Way" | "Round Trip";
   departure_airport: string;
   arrival_airport: string;
   departure_date: string;
@@ -644,7 +644,7 @@ export default function LeadAnalysis() {
               <CardContent className="space-y-4">
                 <div>
                   <Badge variant="outline" className="mb-2">
-                    {lead.trip_type === "round-trip" ? "Round Trip" : "One Way"}
+                    {lead.trip_type}
                   </Badge>
                 </div>
                 <div className="space-y-2">
@@ -672,7 +672,7 @@ export default function LeadAnalysis() {
                     <span>{formatTime(lead.departure_time)}</span>
                   </div>
                 </div>
-                {lead.trip_type === "round-trip" && lead.return_date && (
+                {lead.trip_type === "Round Trip" && lead.return_date && (
                   <>
                     <Separator />
                     <div className="space-y-2">
