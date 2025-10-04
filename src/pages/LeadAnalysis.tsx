@@ -702,11 +702,26 @@ export default function LeadAnalysis() {
 
             {/* Route Overview with Distance */}
             <Card className="bg-gradient-to-br from-primary/5 to-accent/5">
-              <CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="flex items-center gap-2">
                   <Plane className="h-5 w-5 text-primary" />
                   Route Overview
                 </CardTitle>
+                <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border-2 border-primary/20">
+                  <div className="flex gap-1">
+                    {lead.trip_type === "Round Trip" ? (
+                      <>
+                        <Plane className="h-5 w-5 text-primary rotate-90" />
+                        <Plane className="h-5 w-5 text-primary -rotate-90" />
+                      </>
+                    ) : (
+                      <Plane className="h-5 w-5 text-primary rotate-90" />
+                    )}
+                  </div>
+                  <span className="font-semibold text-primary text-sm">
+                    {lead.trip_type}
+                  </span>
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="flex items-center justify-between mb-6">
@@ -770,7 +785,7 @@ export default function LeadAnalysis() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-4 pt-4 border-t">
+                <div className="grid grid-cols-2 gap-4 pt-4 border-t">
                   <div className="space-y-1">
                     <div className="text-xs text-muted-foreground">Passengers</div>
                     <div className="text-lg font-semibold flex items-center gap-2">
@@ -779,21 +794,9 @@ export default function LeadAnalysis() {
                     </div>
                   </div>
                   <div className="space-y-1">
-                    <div className="text-xs text-muted-foreground">Trip Type</div>
+                    <div className="text-xs text-muted-foreground">Departure Date</div>
                     <div className="text-sm font-medium">
-                      {lead.trip_type}
-                    </div>
-                  </div>
-                  <div className="space-y-1">
-                    <div className="text-xs text-muted-foreground">Min Runway</div>
-                    <div className={`text-sm font-semibold ${
-                      Math.min(departureAirportData?.runwayLength || 0, arrivalAirportData?.runwayLength || 0) >= 6000 
-                        ? 'text-green-600' 
-                        : Math.min(departureAirportData?.runwayLength || 0, arrivalAirportData?.runwayLength || 0) >= 5000 
-                        ? 'text-yellow-600' 
-                        : 'text-red-600'
-                    }`}>
-                      {Math.min(departureAirportData?.runwayLength || 0, arrivalAirportData?.runwayLength || 0).toLocaleString()}ft
+                      {format(new Date(lead.departure_date), "MMM dd, yyyy")}
                     </div>
                   </div>
                 </div>
