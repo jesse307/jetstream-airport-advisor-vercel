@@ -61,18 +61,27 @@ export const CharterQuoteRequest = ({ leadData }: CharterQuoteRequestProps) => {
       const depCode = extractCode(leadData.departure_airport);
       const arrCode = extractCode(leadData.arrival_airport);
 
+      // Build airport objects with only the relevant property
+      const departure_airport: any = {};
+      if (depCode.length === 3) {
+        departure_airport.iata = depCode;
+      } else if (depCode.length === 4) {
+        departure_airport.icao = depCode;
+      }
+
+      const arrival_airport: any = {};
+      if (arrCode.length === 3) {
+        arrival_airport.iata = arrCode;
+      } else if (arrCode.length === 4) {
+        arrival_airport.icao = arrCode;
+      }
+
       // Build charter search request
       const searchBody = {
         legs: [
           {
-            departure_airport: {
-              iata: depCode.length === 3 ? depCode : undefined,
-              icao: depCode.length === 4 ? depCode : undefined,
-            },
-            arrival_airport: {
-              iata: arrCode.length === 3 ? arrCode : undefined,
-              icao: arrCode.length === 4 ? arrCode : undefined,
-            },
+            departure_airport,
+            arrival_airport,
             pax: leadData.passengers,
             departure_datetime: `${leadData.departure_date}T${leadData.departure_time || '12:00'}`
           }
@@ -149,6 +158,21 @@ export const CharterQuoteRequest = ({ leadData }: CharterQuoteRequestProps) => {
       const depCode = extractCode(leadData.departure_airport);
       const arrCode = extractCode(leadData.arrival_airport);
 
+      // Build airport objects with only the relevant property
+      const departure_airport: any = {};
+      if (depCode.length === 3) {
+        departure_airport.iata = depCode;
+      } else if (depCode.length === 4) {
+        departure_airport.icao = depCode;
+      }
+
+      const arrival_airport: any = {};
+      if (arrCode.length === 3) {
+        arrival_airport.iata = arrCode;
+      } else if (arrCode.length === 4) {
+        arrival_airport.icao = arrCode;
+      }
+
       // Build quote request with selected operators
       const quote_messages = Array.from(selectedOperators).map(id => ({
         company: { id }
@@ -157,14 +181,8 @@ export const CharterQuoteRequest = ({ leadData }: CharterQuoteRequestProps) => {
       const requestBody = {
         legs: [
           {
-            departure_airport: {
-              iata: depCode.length === 3 ? depCode : undefined,
-              icao: depCode.length === 4 ? depCode : undefined,
-            },
-            arrival_airport: {
-              iata: arrCode.length === 3 ? arrCode : undefined,
-              icao: arrCode.length === 4 ? arrCode : undefined,
-            },
+            departure_airport,
+            arrival_airport,
             pax: leadData.passengers,
             departure_datetime: `${leadData.departure_date}T${leadData.departure_time || '12:00'}`
           }
