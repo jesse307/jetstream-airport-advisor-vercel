@@ -746,13 +746,23 @@ export default function LeadAnalysis() {
                   </div>
                   
                   <div className="flex-1 flex flex-col items-center px-4">
+                    <div className="text-center mb-3">
+                      <div className="text-lg font-bold text-foreground mb-1">
+                        {format(new Date(lead.departure_date), "MMM dd, yyyy")}
+                      </div>
+                      {lead.departure_time && (
+                        <div className="text-base font-semibold text-primary">
+                          {formatTime(lead.departure_time)}
+                        </div>
+                      )}
+                    </div>
                     <div className="w-full h-px bg-border relative mb-2">
                       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
                         <Plane className="h-4 w-4 text-primary rotate-90" />
                       </div>
                     </div>
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-foreground">
+                    <div className="text-center mt-2">
+                      <div className="text-xl font-bold text-foreground">
                         {distance > 0 ? distance.toLocaleString() : '---'}
                       </div>
                       <div className="text-xs text-muted-foreground">nautical miles</div>
@@ -761,10 +771,6 @@ export default function LeadAnalysis() {
                           {Math.round(distance * 1.15).toLocaleString()} statute mi
                         </div>
                       )}
-                    </div>
-                    <div className="text-xs text-muted-foreground mt-2">
-                      {format(new Date(lead.departure_date), "MMM dd")}
-                      {lead.departure_time && ` • ${formatTime(lead.departure_time)}`}
                     </div>
                   </div>
                   
@@ -802,20 +808,26 @@ export default function LeadAnalysis() {
                     </div>
                     
                     <div className="flex-1 flex flex-col items-center px-4">
+                      <div className="text-center mb-3">
+                        <div className="text-lg font-bold text-foreground mb-1">
+                          {format(new Date(lead.return_date), "MMM dd, yyyy")}
+                        </div>
+                        {lead.return_time && (
+                          <div className="text-base font-semibold text-secondary">
+                            {formatTime(lead.return_time)}
+                          </div>
+                        )}
+                      </div>
                       <div className="w-full h-px bg-border relative mb-2">
                         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
                           <Plane className="h-4 w-4 text-secondary -rotate-90" />
                         </div>
                       </div>
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-foreground">
+                      <div className="text-center mt-2">
+                        <div className="text-xl font-bold text-foreground">
                           {distance > 0 ? distance.toLocaleString() : '---'}
                         </div>
                         <div className="text-xs text-muted-foreground">nautical miles</div>
-                      </div>
-                      <div className="text-xs text-muted-foreground mt-2">
-                        {format(new Date(lead.return_date), "MMM dd")}
-                        {lead.return_time && ` • ${formatTime(lead.return_time)}`}
                       </div>
                     </div>
                     
