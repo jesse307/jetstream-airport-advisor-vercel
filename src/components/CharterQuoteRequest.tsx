@@ -293,12 +293,12 @@ export const CharterQuoteRequest = ({ leadData }: CharterQuoteRequestProps) => {
         aircraft,
         quote_messages,
         quote_extension: {
-          client_given_name: leadData.first_name,
-          client_family_name: leadData.last_name,
-          client_email: leadData.email,
-          client_phone: leadData.phone
+          client_given_name: 'Jesse',
+          client_family_name: 'Marsh',
+          client_email: 'jesse.marsh@stratosjets.com',
+          client_phone: '973-756-6183'
         },
-        comment: comment || `Charter request for ${leadData.first_name} ${leadData.last_name}`,
+        comment: `Charter request for client: ${leadData.first_name} ${leadData.last_name} (${leadData.email}, ${leadData.phone})${comment ? `\n\nAdditional notes: ${comment}` : ''}`,
         post_to_trip_board: false,
         send_to_self: false
       };
@@ -832,9 +832,17 @@ export const CharterQuoteRequest = ({ leadData }: CharterQuoteRequestProps) => {
                 <h4 className="font-medium text-sm text-muted-foreground">📩 What Operators Will Receive</h4>
                 <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 space-y-3">
                   <div className="space-y-1">
-                    <p className="text-xs font-semibold text-blue-900 dark:text-blue-100">QUOTE REQUEST</p>
-                    <p className="text-sm"><strong>Client:</strong> {leadData.first_name} {leadData.last_name}</p>
-                    <p className="text-sm"><strong>Contact:</strong> {leadData.email} • {leadData.phone}</p>
+                    <p className="text-xs font-semibold text-blue-900 dark:text-blue-100">QUOTE REQUEST FROM</p>
+                    <p className="text-sm"><strong>Broker:</strong> Jesse Marsh</p>
+                    <p className="text-sm"><strong>Contact:</strong> jesse.marsh@stratosjets.com • 973-756-6183</p>
+                  </div>
+                  
+                  <Separator />
+                  
+                  <div className="space-y-1">
+                    <p className="text-xs font-semibold text-blue-900 dark:text-blue-100">END CLIENT</p>
+                    <p className="text-sm">{leadData.first_name} {leadData.last_name}</p>
+                    <p className="text-sm">{leadData.email} • {leadData.phone}</p>
                   </div>
                   
                   <Separator />
@@ -863,7 +871,7 @@ export const CharterQuoteRequest = ({ leadData }: CharterQuoteRequestProps) => {
                   )}
 
                   <div className="text-xs text-blue-700 dark:text-blue-300 mt-2 pt-2 border-t border-blue-200 dark:border-blue-800">
-                    💡 Operators will receive this via Aviapages and can respond with their availability and pricing
+                    💡 Operators will respond directly to you (Jesse Marsh) and can follow up for more details
                   </div>
                 </div>
               </div>
