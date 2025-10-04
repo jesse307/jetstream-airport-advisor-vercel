@@ -118,6 +118,7 @@ export const CharterQuoteRequest = ({ leadData }: CharterQuoteRequestProps) => {
       }
 
       console.log('Search results:', data.data);
+      console.log('First operator:', JSON.stringify(data.data.companies?.[0], null, 2));
       
       // Extract operators from the response and sort by country relevance
       if (data.data.companies && Array.isArray(data.data.companies)) {
@@ -138,6 +139,7 @@ export const CharterQuoteRequest = ({ leadData }: CharterQuoteRequestProps) => {
           return 0;
         });
         
+        console.log('Sorted operators count:', sortedOperators.length);
         setOperators(sortedOperators);
         setShowOperators(true);
         toast.success(`Found ${sortedOperators.length} operators`);
@@ -411,6 +413,12 @@ export const CharterQuoteRequest = ({ leadData }: CharterQuoteRequestProps) => {
               {operators.map((operator) => {
                 // All aircraft returned from API are already filtered by selected classes
                 const matchingAircraft = operator.aircraft || [];
+                const operatorName = operator.name || 'Unknown Operator';
+                const countryName = operator.country 
+                  ? (typeof operator.country === 'string' ? operator.country : operator.country?.name || 'Unknown')
+                  : 'Unknown';
+
+                console.log('Rendering operator:', operatorName, 'Aircraft count:', matchingAircraft.length);
 
                 return (
                   <div
@@ -424,18 +432,16 @@ export const CharterQuoteRequest = ({ leadData }: CharterQuoteRequestProps) => {
                     />
                     <div className="flex-1">
                       <div className="flex items-center justify-between">
-                        <h4 className="font-semibold">{operator.name}</h4>
+                        <h4 className="font-semibold">{operatorName}</h4>
                         <div className="flex gap-2">
                           {operator.aviapages_validation && (
                             <Badge variant="default" className="text-xs">
                               Verified
                             </Badge>
                           )}
-                          {operator.country && (
-                            <Badge variant="outline" className="text-xs">
-                              {typeof operator.country === 'string' ? operator.country : operator.country.name}
-                            </Badge>
-                          )}
+                          <Badge variant="outline" className="text-xs">
+                            {countryName}
+                          </Badge>
                         </div>
                       </div>
                       <div className="text-sm text-muted-foreground mt-1">
@@ -444,7 +450,7 @@ export const CharterQuoteRequest = ({ leadData }: CharterQuoteRequestProps) => {
                             Response rate: {Math.round(operator.avg_response_rate * 100)}%
                           </span>
                         )}
-                        {operator.avg_response_time !== undefined && (
+                        {operator.avg_response_time !== undefined && operator.avg_response_time !== null && (
                           <span>
                             Avg response: {Math.round(operator.avg_response_time / 60)}h
                           </span>
@@ -461,11 +467,16 @@ export const CharterQuoteRequest = ({ leadData }: CharterQuoteRequestProps) => {
                             Available Aircraft ({matchingAircraft.length}):
                           </div>
                           <div className="flex flex-wrap gap-1">
-                            {matchingAircraft.slice(0, 5).map((ac, idx) => (
-                              <Badge key={idx} variant="secondary" className="text-xs">
-                                {typeof ac.aircraft_type === 'string' ? ac.aircraft_type : ac.aircraft_type?.name}
-                              </Badge>
-                            ))}
+                            {matchingAircraft.slice(0, 5).map((ac, idx) => {
+                              const acType = typeof ac.aircraft_type === 'string' 
+                                ? ac.aircraft_type 
+                                : ac.aircraft_type?.name || 'Unknown';
+                              return (
+                                <Badge key={idx} variant="secondary" className="text-xs">
+                                  {acType}
+                                </Badge>
+                              );
+                            })}
                             {matchingAircraft.length > 5 && (
                               <Badge variant="secondary" className="text-xs">
                                 +{matchingAircraft.length - 5} more
