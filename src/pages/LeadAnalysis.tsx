@@ -264,9 +264,9 @@ export default function LeadAnalysis() {
         tripType: lead.trip_type,
         departureAirport: lead.departure_airport,
         arrivalAirport: lead.arrival_airport,
-        departureDate: format(new Date(lead.departure_date), "MM/dd/yyyy"),
+        departureDate: format(new Date(lead.departure_date + 'T00:00:00'), "MM/dd/yyyy"),
         departureTime: lead.departure_time,
-        returnDate: lead.return_date ? format(new Date(lead.return_date), "MM/dd/yyyy") : '',
+        returnDate: lead.return_date ? format(new Date(lead.return_date + 'T00:00:00'), "MM/dd/yyyy") : '',
         returnTime: lead.return_time || '',
         passengers: lead.passengers,
         notes: lead.notes || '',
@@ -730,12 +730,12 @@ export default function LeadAnalysis() {
                   </div>
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <Calendar className="h-3 w-3" />
-                    <span>{format(new Date(lead.departure_date), "MMM dd, yyyy")} @ {formatTime(lead.departure_time)}</span>
+                    <span>{format(new Date(lead.departure_date + 'T00:00:00'), "MMM dd, yyyy")} @ {formatTime(lead.departure_time)}</span>
                   </div>
                   {lead.trip_type === "Round Trip" && lead.return_date && (
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <Calendar className="h-3 w-3" />
-                      <span>{format(new Date(lead.return_date), "MMM dd, yyyy")} @ {formatTime(lead.return_time || '')}</span>
+                      <span>{format(new Date(lead.return_date + 'T00:00:00'), "MMM dd, yyyy")} @ {formatTime(lead.return_time || '')}</span>
                     </div>
                   )}
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -780,7 +780,7 @@ export default function LeadAnalysis() {
                   <div className="flex-1 flex flex-col items-center px-4">
                     <div className="text-center mb-3">
                       <div className="text-lg font-bold text-foreground mb-1">
-                        {format(new Date(lead.departure_date), "MMM dd, yyyy")}
+                        {format(new Date(lead.departure_date + 'T00:00:00'), "MMM dd, yyyy")}
                       </div>
                       <div className="text-base font-semibold text-primary">
                         {lead.departure_time ? formatTime(lead.departure_time) : 'TBD'}
@@ -840,7 +840,7 @@ export default function LeadAnalysis() {
                     <div className="flex-1 flex flex-col items-center px-4">
                       <div className="text-center mb-3">
                         <div className="text-lg font-bold text-foreground mb-1">
-                          {format(new Date(lead.return_date), "MMM dd, yyyy")}
+                          {format(new Date(lead.return_date + 'T00:00:00'), "MMM dd, yyyy")}
                         </div>
                         <div className="text-base font-semibold text-secondary">
                           {lead.return_time ? formatTime(lead.return_time) : 'TBD'}
