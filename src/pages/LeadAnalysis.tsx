@@ -718,7 +718,13 @@ export default function LeadAnalysis() {
                       {departureAirportData?.city || 'Departure'}
                     </div>
                     {departureAirportData?.runwayLength && (
-                      <div className="text-xs text-muted-foreground mt-1">
+                      <div className={`text-xs font-semibold mt-1 ${
+                        departureAirportData.runwayLength >= 6000 
+                          ? 'text-green-600' 
+                          : departureAirportData.runwayLength >= 5000 
+                          ? 'text-yellow-600' 
+                          : 'text-red-600'
+                      }`}>
                         RWY: {departureAirportData.runwayLength.toLocaleString()}ft
                       </div>
                     )}
@@ -751,7 +757,13 @@ export default function LeadAnalysis() {
                       {arrivalAirportData?.city || 'Arrival'}
                     </div>
                     {arrivalAirportData?.runwayLength && (
-                      <div className="text-xs text-muted-foreground mt-1">
+                      <div className={`text-xs font-semibold mt-1 ${
+                        arrivalAirportData.runwayLength >= 6000 
+                          ? 'text-green-600' 
+                          : arrivalAirportData.runwayLength >= 5000 
+                          ? 'text-yellow-600' 
+                          : 'text-red-600'
+                      }`}>
                         RWY: {arrivalAirportData.runwayLength.toLocaleString()}ft
                       </div>
                     )}
@@ -774,7 +786,13 @@ export default function LeadAnalysis() {
                   </div>
                   <div className="space-y-1">
                     <div className="text-xs text-muted-foreground">Min Runway</div>
-                    <div className="text-sm font-medium">
+                    <div className={`text-sm font-semibold ${
+                      Math.min(departureAirportData?.runwayLength || 0, arrivalAirportData?.runwayLength || 0) >= 6000 
+                        ? 'text-green-600' 
+                        : Math.min(departureAirportData?.runwayLength || 0, arrivalAirportData?.runwayLength || 0) >= 5000 
+                        ? 'text-yellow-600' 
+                        : 'text-red-600'
+                    }`}>
                       {Math.min(departureAirportData?.runwayLength || 0, arrivalAirportData?.runwayLength || 0).toLocaleString()}ft
                     </div>
                   </div>
