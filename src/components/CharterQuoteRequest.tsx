@@ -498,13 +498,19 @@ export const CharterQuoteRequest = ({ leadData }: CharterQuoteRequestProps) => {
 
       if (error) {
         console.error('Error fetching quote replies:', error);
-        toast.error('Failed to fetch quote replies');
+        toast.error('Quotes will be sent to your email (jesse.marsh@stratosjets.com) as operators respond');
         return;
       }
 
       if (!data.success) {
-        console.error('Failed to fetch replies:', data.error);
-        toast.error(data.error || 'Failed to fetch quote replies');
+        console.error('Failed to fetch replies:', data.error, data.details);
+        
+        // Check if it's a permissions issue
+        if (data.details?.includes('permission')) {
+          toast.info('Quote request sent! Operators will reply to your email (jesse.marsh@stratosjets.com)');
+        } else {
+          toast.error(data.error || 'Failed to fetch quote replies');
+        }
         return;
       }
 
@@ -515,7 +521,7 @@ export const CharterQuoteRequest = ({ leadData }: CharterQuoteRequestProps) => {
       if (data.data.results && data.data.results.length > 0) {
         toast.success(`Received ${data.data.results.length} quote(s)`);
       } else {
-        toast.info('No quotes received yet. Operators typically respond within a few hours.');
+        toast.info('No quotes received yet. Operators typically respond within a few hours to your email.');
       }
 
     } catch (error) {
