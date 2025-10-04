@@ -46,7 +46,7 @@ async function handleCapture() {
       // Open the Lead Analysis page for this specific lead
       setTimeout(() => {
         chrome.tabs.create({
-          url: `https://300e3d3f-6393-4fa8-9ea2-e17c21482f24.lovableproject.com/leads/analysis/${result.leadId}`
+          url: `https://300e3d3f-6393-4fa8-9ea2-e17c21482f24.lovableproject.com/leads/${result.leadId}`
         });
       }, 500);
     } else {
