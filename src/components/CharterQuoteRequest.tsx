@@ -48,6 +48,7 @@ export const CharterQuoteRequest = ({ leadData }: CharterQuoteRequestProps) => {
   const [quoteRequestId, setQuoteRequestId] = useState<number | null>(null);
   const [quoteReplies, setQuoteReplies] = useState<QuoteReply[]>([]);
   const [showOperators, setShowOperators] = useState(false);
+  const [selectedAircraftClasses, setSelectedAircraftClasses] = useState<Set<string>>(new Set(['Midsize']));
 
   const handleSearchOperators = async () => {
     setIsSearching(true);
@@ -76,7 +77,9 @@ export const CharterQuoteRequest = ({ leadData }: CharterQuoteRequestProps) => {
         arrival_airport.icao = arrCode;
       }
 
-      // Build charter search request
+      // Build charter search request with selected aircraft classes
+      const aircraft = Array.from(selectedAircraftClasses).map(ac_class => ({ ac_class }));
+      
       const searchBody = {
         legs: [
           {
@@ -86,11 +89,7 @@ export const CharterQuoteRequest = ({ leadData }: CharterQuoteRequestProps) => {
             departure_datetime: `${leadData.departure_date}T${leadData.departure_time || '12:00'}`.slice(0, 16) // Remove seconds
           }
         ],
-        aircraft: [
-          {
-            ac_class: "Midsize" // Can be made dynamic
-          }
-        ]
+        aircraft
       };
 
       console.log('Searching for charter operators:', searchBody);
@@ -173,10 +172,12 @@ export const CharterQuoteRequest = ({ leadData }: CharterQuoteRequestProps) => {
         arrival_airport.icao = arrCode;
       }
 
-      // Build quote request with selected operators
+      // Build quote request with selected operators and aircraft classes
       const quote_messages = Array.from(selectedOperators).map(id => ({
         company: { id }
       }));
+
+      const aircraft = Array.from(selectedAircraftClasses).map(ac_class => ({ ac_class }));
 
       const requestBody = {
         legs: [
@@ -187,11 +188,7 @@ export const CharterQuoteRequest = ({ leadData }: CharterQuoteRequestProps) => {
             departure_datetime: `${leadData.departure_date}T${leadData.departure_time || '12:00'}`.slice(0, 16) // Remove seconds
           }
         ],
-        aircraft: [
-          {
-            ac_class: "Midsize"
-          }
-        ],
+        aircraft,
         quote_messages,
         quote_extension: {
           client_given_name: leadData.first_name,
@@ -297,6 +294,25 @@ export const CharterQuoteRequest = ({ leadData }: CharterQuoteRequestProps) => {
     }
   };
 
+  const aircraftClasses = [
+    'Light',
+    'Midsize',
+    'Super Midsize',
+    'Heavy',
+    'Ultra Long Range',
+    'VIP Airliner'
+  ];
+
+  const toggleAircraftClass = (className: string) => {
+    const newSelected = new Set(selectedAircraftClasses);
+    if (newSelected.has(className)) {
+      newSelected.delete(className);
+    } else {
+      newSelected.add(className);
+    }
+    setSelectedAircraftClasses(newSelected);
+  };
+
   return (
     <div className="space-y-6">
       {/* Step 1: Search for Operators */}
@@ -307,13 +323,36 @@ export const CharterQuoteRequest = ({ leadData }: CharterQuoteRequestProps) => {
             Step 1: Find Charter Operators
           </CardTitle>
           <CardDescription>
-            Search for available operators for this route
+            Search for available operators for this route and selected aircraft types
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
+          <div>
+            <label className="text-sm font-medium mb-3 block">
+              Aircraft Classes ({selectedAircraftClasses.size} selected)
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              {aircraftClasses.map((className) => (
+                <div
+                  key={className}
+                  className="flex items-center space-x-2 p-2 border rounded-lg hover:bg-muted/50 cursor-pointer"
+                  onClick={() => toggleAircraftClass(className)}
+                >
+                  <Checkbox
+                    checked={selectedAircraftClasses.has(className)}
+                    onCheckedChange={() => toggleAircraftClass(className)}
+                  />
+                  <label className="text-sm cursor-pointer flex-1">
+                    {className}
+                  </label>
+                </div>
+              ))}
+            </div>
+          </div>
+
           <Button
             onClick={handleSearchOperators}
-            disabled={isSearching}
+            disabled={isSearching || selectedAircraftClasses.size === 0}
             className="w-full"
           >
             {isSearching ? (
