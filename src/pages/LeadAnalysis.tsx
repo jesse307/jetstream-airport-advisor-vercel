@@ -750,11 +750,9 @@ export default function LeadAnalysis() {
                       <div className="text-lg font-bold text-foreground mb-1">
                         {format(new Date(lead.departure_date), "MMM dd, yyyy")}
                       </div>
-                      {lead.departure_time && (
-                        <div className="text-base font-semibold text-primary">
-                          {formatTime(lead.departure_time)}
-                        </div>
-                      )}
+                      <div className="text-base font-semibold text-primary">
+                        {lead.departure_time ? formatTime(lead.departure_time) : 'TBD'}
+                      </div>
                       <div className="flex items-center justify-center gap-2 mt-2 text-sm font-medium text-muted-foreground">
                         <Users className="h-4 w-4" />
                         <span>{lead.passengers} passenger{lead.passengers !== 1 ? 's' : ''}</span>
@@ -816,11 +814,9 @@ export default function LeadAnalysis() {
                         <div className="text-lg font-bold text-foreground mb-1">
                           {format(new Date(lead.return_date), "MMM dd, yyyy")}
                         </div>
-                        {lead.return_time && (
-                          <div className="text-base font-semibold text-secondary">
-                            {formatTime(lead.return_time)}
-                          </div>
-                        )}
+                        <div className="text-base font-semibold text-secondary">
+                          {lead.return_time ? formatTime(lead.return_time) : 'TBD'}
+                        </div>
                       </div>
                       <div className="w-full h-px bg-border relative mb-2">
                         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
