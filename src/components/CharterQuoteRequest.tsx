@@ -20,6 +20,13 @@ interface Operator {
   avg_response_rate?: number;
   avg_response_time?: number;
   aviapages_validation?: boolean;
+  aircraft?: Array<{
+    id: number;
+    aircraft_type: string | { id: number; name: string };
+    aircraft_class?: string | { id: number; name: string };
+    tail_number: string;
+    max_passengers: number;
+  }>;
 }
 
 interface QuoteReply {
@@ -112,11 +119,28 @@ export const CharterQuoteRequest = ({ leadData }: CharterQuoteRequestProps) => {
 
       console.log('Search results:', data.data);
       
-      // Extract operators from the response
+      // Extract operators from the response and sort by country relevance
       if (data.data.companies && Array.isArray(data.data.companies)) {
-        setOperators(data.data.companies);
+        // Sort operators: prioritize US operators for US domestic routes
+        const sortedOperators = [...data.data.companies].sort((a, b) => {
+          const aCountry = typeof a.country === 'string' ? a.country : a.country?.name || '';
+          const bCountry = typeof b.country === 'string' ? b.country : b.country?.name || '';
+          
+          // For US domestic flights, prioritize US operators
+          const isUSDomestic = depCode.startsWith('K') || depCode.startsWith('T') || 
+                               arrCode.startsWith('K') || arrCode.startsWith('T');
+          
+          if (isUSDomestic) {
+            if (aCountry.includes('United States') && !bCountry.includes('United States')) return -1;
+            if (!aCountry.includes('United States') && bCountry.includes('United States')) return 1;
+          }
+          
+          return 0;
+        });
+        
+        setOperators(sortedOperators);
         setShowOperators(true);
-        toast.success(`Found ${data.data.companies.length} operators`);
+        toast.success(`Found ${sortedOperators.length} operators`);
       } else {
         toast.info('No operators found for this route');
         setOperators([]);
@@ -384,52 +408,84 @@ export const CharterQuoteRequest = ({ leadData }: CharterQuoteRequestProps) => {
           </CardHeader>
           <CardContent>
             <div className="space-y-3 max-h-96 overflow-y-auto">
-              {operators.map((operator) => (
-                <div
-                  key={operator.id}
-                  className="flex items-start space-x-3 p-3 border rounded-lg hover:bg-muted/50 cursor-pointer"
-                  onClick={() => toggleOperator(operator.id)}
-                >
-                  <Checkbox
-                    checked={selectedOperators.has(operator.id)}
-                    onCheckedChange={() => toggleOperator(operator.id)}
-                  />
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between">
-                      <h4 className="font-semibold">{operator.name}</h4>
-                      <div className="flex gap-2">
-                        {operator.aviapages_validation && (
-                          <Badge variant="default" className="text-xs">
-                            Verified
-                          </Badge>
+              {operators.map((operator) => {
+                // Filter aircraft that match selected classes
+                const matchingAircraft = operator.aircraft?.filter(ac => {
+                  const acType = typeof ac.aircraft_type === 'string' ? ac.aircraft_type : ac.aircraft_type?.name;
+                  const acClass = typeof ac.aircraft_class === 'string' ? ac.aircraft_class : ac.aircraft_class?.name;
+                  // Check if aircraft class matches any selected class
+                  return Array.from(selectedAircraftClasses).some(selectedClass => 
+                    acClass?.toLowerCase().includes(selectedClass.toLowerCase()) ||
+                    acType?.toLowerCase().includes(selectedClass.toLowerCase())
+                  );
+                }) || [];
+
+                return (
+                  <div
+                    key={operator.id}
+                    className="flex items-start space-x-3 p-3 border rounded-lg hover:bg-muted/50 cursor-pointer"
+                    onClick={() => toggleOperator(operator.id)}
+                  >
+                    <Checkbox
+                      checked={selectedOperators.has(operator.id)}
+                      onCheckedChange={() => toggleOperator(operator.id)}
+                    />
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-semibold">{operator.name}</h4>
+                        <div className="flex gap-2">
+                          {operator.aviapages_validation && (
+                            <Badge variant="default" className="text-xs">
+                              Verified
+                            </Badge>
+                          )}
+                          {operator.country && (
+                            <Badge variant="outline" className="text-xs">
+                              {typeof operator.country === 'string' ? operator.country : operator.country.name}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                      <div className="text-sm text-muted-foreground mt-1">
+                        {operator.avg_response_rate !== undefined && (
+                          <span className="mr-3">
+                            Response rate: {Math.round(operator.avg_response_rate * 100)}%
+                          </span>
                         )}
-                        {operator.country && (
-                          <Badge variant="outline" className="text-xs">
-                            {typeof operator.country === 'string' ? operator.country : operator.country.name}
-                          </Badge>
+                        {operator.avg_response_time !== undefined && (
+                          <span>
+                            Avg response: {Math.round(operator.avg_response_time / 60)}h
+                          </span>
                         )}
                       </div>
-                    </div>
-                    <div className="text-sm text-muted-foreground mt-1">
-                      {operator.avg_response_rate !== undefined && (
-                        <span className="mr-3">
-                          Response rate: {Math.round(operator.avg_response_rate * 100)}%
-                        </span>
+                      {operator.base_airports && operator.base_airports.length > 0 && (
+                        <div className="text-xs text-muted-foreground mt-1">
+                          Bases: {operator.base_airports.join(', ')}
+                        </div>
                       )}
-                      {operator.avg_response_time !== undefined && (
-                        <span>
-                          Avg response: {Math.round(operator.avg_response_time / 60)}h
-                        </span>
+                      {matchingAircraft.length > 0 && (
+                        <div className="mt-2 pt-2 border-t">
+                          <div className="text-xs font-medium mb-1">
+                            Matching Aircraft ({matchingAircraft.length}):
+                          </div>
+                          <div className="flex flex-wrap gap-1">
+                            {matchingAircraft.slice(0, 5).map((ac, idx) => (
+                              <Badge key={idx} variant="secondary" className="text-xs">
+                                {typeof ac.aircraft_type === 'string' ? ac.aircraft_type : ac.aircraft_type?.name}
+                              </Badge>
+                            ))}
+                            {matchingAircraft.length > 5 && (
+                              <Badge variant="secondary" className="text-xs">
+                                +{matchingAircraft.length - 5} more
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
                       )}
                     </div>
-                    {operator.base_airports && operator.base_airports.length > 0 && (
-                      <div className="text-xs text-muted-foreground mt-1">
-                        Bases: {operator.base_airports.join(', ')}
-                      </div>
-                    )}
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </CardContent>
         </Card>
