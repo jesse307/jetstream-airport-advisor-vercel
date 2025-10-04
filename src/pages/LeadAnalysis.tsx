@@ -755,6 +755,10 @@ export default function LeadAnalysis() {
                           {formatTime(lead.departure_time)}
                         </div>
                       )}
+                      <div className="flex items-center justify-center gap-2 mt-2 text-sm font-medium text-muted-foreground">
+                        <Users className="h-4 w-4" />
+                        <span>{lead.passengers} passenger{lead.passengers !== 1 ? 's' : ''}</span>
+                      </div>
                     </div>
                     <div className="w-full h-px bg-border relative mb-2">
                       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
@@ -842,21 +846,6 @@ export default function LeadAnalysis() {
                   </div>
                 )}
 
-                <div className="grid grid-cols-2 gap-4 pt-4 border-t">
-                  <div className="space-y-1">
-                    <div className="text-xs text-muted-foreground">Passengers</div>
-                    <div className="text-lg font-semibold flex items-center gap-2">
-                      <Users className="h-4 w-4 text-primary" />
-                      {lead.passengers}
-                    </div>
-                  </div>
-                  <div className="space-y-1">
-                    <div className="text-xs text-muted-foreground">Departure Date</div>
-                    <div className="text-sm font-medium">
-                      {format(new Date(lead.departure_date), "MMM dd, yyyy")}
-                    </div>
-                  </div>
-                </div>
               </CardContent>
             </Card>
 
