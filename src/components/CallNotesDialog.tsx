@@ -131,6 +131,38 @@ export function CallNotesDialog({
           </DialogTitle>
         </DialogHeader>
 
+        {/* Lead Information Reference */}
+        <div className="bg-muted/50 rounded-lg p-4 mb-4">
+          <h3 className="text-sm font-semibold mb-3">Lead Information to Confirm</h3>
+          <div className="grid grid-cols-3 gap-4 text-sm">
+            <div>
+              <p className="text-muted-foreground mb-1">Contact</p>
+              <p className="font-medium">{leadData.first_name} {leadData.last_name}</p>
+              <p className="text-xs">{leadData.email}</p>
+              <p className="text-xs">{leadData.phone}</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground mb-1">Trip Details</p>
+              <p className="font-medium">{leadData.trip_type}</p>
+              <p className="text-xs">{leadData.passengers} passenger{leadData.passengers !== 1 ? 's' : ''}</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground mb-1">Route</p>
+              <p className="font-medium">{leadData.departure_airport} → {leadData.arrival_airport}</p>
+              <p className="text-xs">Depart: {leadData.departure_date} {leadData.departure_time || ''}</p>
+              {leadData.return_date && (
+                <p className="text-xs">Return: {leadData.return_date} {leadData.return_time || ''}</p>
+              )}
+            </div>
+          </div>
+          {leadData.notes && (
+            <div className="mt-3 pt-3 border-t">
+              <p className="text-muted-foreground text-xs mb-1">Form Notes:</p>
+              <p className="text-xs">{leadData.notes}</p>
+            </div>
+          )}
+        </div>
+
         <div className="flex-1 grid grid-cols-2 gap-4 min-h-0">
           {/* AI Chat Section */}
           <div className="flex flex-col gap-2">
