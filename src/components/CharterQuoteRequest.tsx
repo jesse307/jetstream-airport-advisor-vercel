@@ -16,6 +16,8 @@ interface Operator {
   id: number;
   name: string;
   country?: string | { id: number; name: string };
+  city?: { id: number; name: string };
+  logo_url?: string;
   base_airports?: string[];
   avg_response_rate?: number;
   avg_response_time?: number;
@@ -61,6 +63,7 @@ export const CharterQuoteRequest = ({ leadData }: CharterQuoteRequestProps) => {
   const [quoteReplies, setQuoteReplies] = useState<QuoteReply[]>([]);
   const [showOperators, setShowOperators] = useState(false);
   const [selectedAircraftClasses, setSelectedAircraftClasses] = useState<Set<string>>(new Set(['Midsize']));
+  const [showPreview, setShowPreview] = useState(false);
 
   const handleSearchOperators = async () => {
     setIsSearching(true);
@@ -234,12 +237,16 @@ export const CharterQuoteRequest = ({ leadData }: CharterQuoteRequestProps) => {
     setSelectedOperators(newSelected);
   };
 
-  const handleRequestQuotes = async () => {
+  const handleShowPreview = () => {
     if (selectedOperators.size === 0) {
       toast.error('Please select at least one operator');
       return;
     }
+    setShowPreview(true);
+  };
 
+  const handleSendQuotes = async () => {
+    setShowPreview(false);
     setIsRequesting(true);
     try {
       // Extract airport codes
@@ -629,7 +636,7 @@ export const CharterQuoteRequest = ({ leadData }: CharterQuoteRequestProps) => {
 
           <div className="flex gap-2">
             <Button
-              onClick={handleRequestQuotes}
+              onClick={handleShowPreview}
               disabled={isRequesting || selectedOperators.size === 0}
               className="flex-1"
             >
@@ -641,7 +648,7 @@ export const CharterQuoteRequest = ({ leadData }: CharterQuoteRequestProps) => {
               ) : (
                 <>
                   <Send className="mr-2 h-4 w-4" />
-                  Request Quotes from {selectedOperators.size} Operator(s)
+                  Preview & Send to {selectedOperators.size} Operator(s)
                 </>
               )}
             </Button>
@@ -730,6 +737,115 @@ export const CharterQuoteRequest = ({ leadData }: CharterQuoteRequestProps) => {
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {/* Preview Modal */}
+      {showPreview && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-background rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 space-y-6">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-semibold">Review Quote Request</h3>
+                <Button variant="ghost" size="sm" onClick={() => setShowPreview(false)}>
+                  ✕
+                </Button>
+              </div>
+
+              {/* Flight Details */}
+              <div className="space-y-2">
+                <h4 className="font-medium text-sm text-muted-foreground">Flight Details</h4>
+                <div className="bg-muted/50 rounded-lg p-4 space-y-2">
+                  <p><strong>Route:</strong> {leadData.departure_airport} → {leadData.arrival_airport}</p>
+                  <p><strong>Departure:</strong> {leadData.departure_date} at {leadData.departure_time || '12:00'}</p>
+                  {leadData.return_date && (
+                    <p><strong>Return:</strong> {leadData.return_date} {leadData.return_time ? `at ${leadData.return_time}` : ''}</p>
+                  )}
+                  <p><strong>Passengers:</strong> {leadData.passengers}</p>
+                </div>
+              </div>
+
+              {/* Client Information */}
+              <div className="space-y-2">
+                <h4 className="font-medium text-sm text-muted-foreground">Client Information</h4>
+                <div className="bg-muted/50 rounded-lg p-4 space-y-2">
+                  <p><strong>Name:</strong> {leadData.first_name} {leadData.last_name}</p>
+                  <p><strong>Email:</strong> {leadData.email}</p>
+                  <p><strong>Phone:</strong> {leadData.phone}</p>
+                </div>
+              </div>
+
+              {/* Aircraft Classes */}
+              {selectedAircraftClasses.size > 0 && (
+                <div className="space-y-2">
+                  <h4 className="font-medium text-sm text-muted-foreground">Aircraft Classes</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {Array.from(selectedAircraftClasses).map(className => (
+                      <span key={className} className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm">
+                        {className}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Selected Operators */}
+              <div className="space-y-2">
+                <h4 className="font-medium text-sm text-muted-foreground">
+                  Selected Operators ({selectedOperators.size})
+                </h4>
+                <div className="space-y-2 max-h-60 overflow-y-auto">
+                  {operators
+                    .filter(op => selectedOperators.has(op.id))
+                    .map(operator => (
+                      <div key={operator.id} className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                        {operator.logo_url && (
+                          <img 
+                            src={operator.logo_url} 
+                            alt={operator.name}
+                            className="w-12 h-12 object-contain"
+                          />
+                        )}
+                        <div className="flex-1">
+                          <p className="font-medium">{operator.name}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {operator.city?.name}, {typeof operator.country === 'string' ? operator.country : operator.country?.name}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              </div>
+
+              {/* Comment */}
+              {comment && (
+                <div className="space-y-2">
+                  <h4 className="font-medium text-sm text-muted-foreground">Additional Comments</h4>
+                  <div className="bg-muted/50 rounded-lg p-4">
+                    <p className="text-sm">{comment}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="flex gap-3 pt-4 border-t">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowPreview(false)}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={handleSendQuotes}
+                  disabled={isRequesting}
+                  className="flex-1"
+                >
+                  {isRequesting ? 'Sending...' : 'Send Quote Requests'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
