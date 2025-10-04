@@ -109,6 +109,10 @@ export default function LeadAnalysis() {
     if (!lead) return;
     
     const leadUpdates: any = {};
+    const airportsChanged = 
+      (updatedData.departureAirport && updatedData.departureAirport !== lead.departure_airport) ||
+      (updatedData.arrivalAirport && updatedData.arrivalAirport !== lead.arrival_airport);
+    
     if (updatedData.departureAirport) leadUpdates.departure_airport = updatedData.departureAirport;
     if (updatedData.arrivalAirport) leadUpdates.arrival_airport = updatedData.arrivalAirport;
     if (updatedData.departureDate) leadUpdates.departure_date = updatedData.departureDate;
@@ -116,6 +120,7 @@ export default function LeadAnalysis() {
     if (updatedData.returnDate) leadUpdates.return_date = updatedData.returnDate;
     if (updatedData.returnTime) leadUpdates.return_time = updatedData.returnTime;
     if (updatedData.passengers) leadUpdates.passengers = updatedData.passengers;
+    if (updatedData.tripType) leadUpdates.trip_type = updatedData.tripType;
 
     const { error: updateError } = await supabase
       .from('leads')
@@ -135,6 +140,34 @@ export default function LeadAnalysis() {
       
       if (updatedLead) {
         setLead(updatedLead as Lead);
+        
+        // If airports changed, refetch airport data
+        if (airportsChanged) {
+          const [depAirport, arrAirport] = await Promise.all([
+            updatedLead.departure_airport ? fetchAirportData(updatedLead.departure_airport) : Promise.resolve(null),
+            updatedLead.arrival_airport ? fetchAirportData(updatedLead.arrival_airport) : Promise.resolve(null)
+          ]);
+
+          if (depAirport) setDepartureAirportData(depAirport);
+          if (arrAirport) setArrivalAirportData(arrAirport);
+
+          // Recalculate distance if we have both airports with coordinates
+          if (depAirport && arrAirport && 
+              depAirport.latitude && depAirport.longitude &&
+              arrAirport.latitude && arrAirport.longitude) {
+            const R = 3440.065; // Earth's radius in nautical miles
+            const dLat = (arrAirport.latitude - depAirport.latitude) * Math.PI / 180;
+            const dLon = (arrAirport.longitude - depAirport.longitude) * Math.PI / 180;
+            
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                      Math.cos(depAirport.latitude * Math.PI / 180) * Math.cos(arrAirport.latitude * Math.PI / 180) *
+                      Math.sin(dLon/2) * Math.sin(dLon/2);
+            
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            const calculatedDistance = Math.round(R * c);
+            setDistance(calculatedDistance);
+          }
+        }
       }
     }
   };
