@@ -11,6 +11,7 @@ import { CallNotesDialog } from "@/components/CallNotesDialog";
 import { AircraftSuggestions } from "@/components/AircraftSuggestions";
 import { EmailComposer } from "@/components/EmailComposer";
 import { LeadChatbot } from "@/components/LeadChatbot";
+import { AircraftClassRecommendations } from "@/components/AircraftClassRecommendations";
 
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -716,6 +717,11 @@ export default function LeadAnalysis() {
                     <div className="text-sm text-muted-foreground">
                       {departureAirportData?.city || 'Departure'}
                     </div>
+                    {departureAirportData?.runwayLength && (
+                      <div className="text-xs text-muted-foreground mt-1">
+                        RWY: {departureAirportData.runwayLength.toLocaleString()}ft
+                      </div>
+                    )}
                   </div>
                   
                   <div className="flex-1 flex flex-col items-center px-4">
@@ -731,7 +737,7 @@ export default function LeadAnalysis() {
                       <div className="text-xs text-muted-foreground">nautical miles</div>
                       {distance > 0 && (
                         <div className="text-xs text-muted-foreground mt-1">
-                          ~{Math.round(distance * 1.15)} statute miles
+                          {Math.round(distance * 1.15).toLocaleString()} statute mi
                         </div>
                       )}
                     </div>
@@ -744,17 +750,15 @@ export default function LeadAnalysis() {
                     <div className="text-sm text-muted-foreground">
                       {arrivalAirportData?.city || 'Arrival'}
                     </div>
+                    {arrivalAirportData?.runwayLength && (
+                      <div className="text-xs text-muted-foreground mt-1">
+                        RWY: {arrivalAirportData.runwayLength.toLocaleString()}ft
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 pt-4 border-t">
-                  <div className="space-y-1">
-                    <div className="text-xs text-muted-foreground">Est. Flight Time</div>
-                    <div className="text-lg font-semibold">
-                      {distance > 0 ? `${Math.floor(distance / 450)}h ${Math.round(((distance / 450) % 1) * 60)}m` : '---'}
-                    </div>
-                    <div className="text-xs text-muted-foreground">@ 450 knots avg</div>
-                  </div>
+                <div className="grid grid-cols-3 gap-4 pt-4 border-t">
                   <div className="space-y-1">
                     <div className="text-xs text-muted-foreground">Passengers</div>
                     <div className="text-lg font-semibold flex items-center gap-2">
@@ -762,16 +766,28 @@ export default function LeadAnalysis() {
                       {lead.passengers}
                     </div>
                   </div>
+                  <div className="space-y-1">
+                    <div className="text-xs text-muted-foreground">Trip Type</div>
+                    <div className="text-sm font-medium">
+                      {lead.trip_type}
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="text-xs text-muted-foreground">Min Runway</div>
+                    <div className="text-sm font-medium">
+                      {Math.min(departureAirportData?.runwayLength || 0, arrivalAirportData?.runwayLength || 0).toLocaleString()}ft
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Flight Analysis */}
+            {/* Aircraft Class Recommendations */}
             <Card>
             <CardHeader>
-              <CardTitle>Flight Analysis & Aircraft Recommendations</CardTitle>
+              <CardTitle>Aircraft Class Recommendations</CardTitle>
               <p className="text-sm text-muted-foreground">
-                Based on the route and passenger requirements
+                Minimum and optimal aircraft classes for this route
               </p>
             </CardHeader>
             <CardContent>
@@ -784,13 +800,13 @@ export default function LeadAnalysis() {
                   </p>
                 </div>
               ) : departureAirportData && arrivalAirportData && distance > 0 ? (
-                <AircraftSuggestions
+                <AircraftClassRecommendations
                   distance={distance}
                   passengers={lead.passengers}
-                  departure={lead.departure_airport}
-                  arrival={lead.arrival_airport}
-                  departureDate={lead.departure_date}
-                  returnDate={lead.return_date}
+                  minRunway={Math.min(
+                    departureAirportData?.runwayLength || 10000,
+                    arrivalAirportData?.runwayLength || 10000
+                  )}
                 />
               ) : (
                 <div className="text-center py-8">
