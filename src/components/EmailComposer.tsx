@@ -44,9 +44,7 @@ export function EmailComposer({ isOpen, onClose, leadData }: EmailComposerProps)
   const [isSavingTemplate, setIsSavingTemplate] = useState(false);
   const [templateId, setTemplateId] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
-  const [emailTemplate, setEmailTemplate] = useState(`Subject: Stratos Jets - Confirming Flight Details
-
-Hi {{first_name}},
+  const [emailTemplate, setEmailTemplate] = useState(`Hi {{first_name}},
 
 Thank you for your interest in Stratos Jets. In order for me to be the most efficient in providing guidance, please confirm the details below and answer any additional questions.
 
@@ -567,9 +565,7 @@ Jesse
                 size="sm"
                 onClick={() => {
                   // Reset template to original formatting
-                  const originalTemplate = `Subject: Stratos Jets - Confirming Flight Details
-
-Hi {{first_name}},
+                  const originalTemplate = `Hi {{first_name}},
 
 Thank you for your interest in Stratos Jets. In order for me to be the most efficient in providing guidance, please confirm the details below and answer any additional questions.
 
