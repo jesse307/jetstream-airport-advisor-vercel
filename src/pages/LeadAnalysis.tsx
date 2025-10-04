@@ -762,6 +762,10 @@ export default function LeadAnalysis() {
                         </div>
                       )}
                     </div>
+                    <div className="text-xs text-muted-foreground mt-2">
+                      {format(new Date(lead.departure_date), "MMM dd")}
+                      {lead.departure_time && ` • ${formatTime(lead.departure_time)}`}
+                    </div>
                   </div>
                   
                   <div className="text-center flex-1">
@@ -784,6 +788,47 @@ export default function LeadAnalysis() {
                     )}
                   </div>
                 </div>
+
+                {/* Return Route for Round Trips */}
+                {lead.trip_type === "Round Trip" && lead.return_date && (
+                  <div className="flex items-center justify-between mb-6 pt-4 border-t">
+                    <div className="text-center flex-1">
+                      <div className="text-3xl font-bold text-secondary mb-1">
+                        {arrivalAirportData?.code || lead.arrival_airport.split(' ')[0]}
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        Return From
+                      </div>
+                    </div>
+                    
+                    <div className="flex-1 flex flex-col items-center px-4">
+                      <div className="w-full h-px bg-border relative mb-2">
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+                          <Plane className="h-4 w-4 text-secondary -rotate-90" />
+                        </div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-foreground">
+                          {distance > 0 ? distance.toLocaleString() : '---'}
+                        </div>
+                        <div className="text-xs text-muted-foreground">nautical miles</div>
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-2">
+                        {format(new Date(lead.return_date), "MMM dd")}
+                        {lead.return_time && ` • ${formatTime(lead.return_time)}`}
+                      </div>
+                    </div>
+                    
+                    <div className="text-center flex-1">
+                      <div className="text-3xl font-bold text-secondary mb-1">
+                        {departureAirportData?.code || lead.departure_airport.split(' ')[0]}
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        Return To
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 <div className="grid grid-cols-2 gap-4 pt-4 border-t">
                   <div className="space-y-1">
