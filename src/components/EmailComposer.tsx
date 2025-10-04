@@ -238,11 +238,11 @@ Jesse
     populated = populated.replace(/\{\{passengers\}\}/g, data.passengers.toString());
     
     // Handle conditional logic for round-trip
-    if (data.trip_type === 'round-trip' && data.return_date && data.return_time) {
+    if (data.trip_type === 'round-trip' && data.return_date) {
       populated = populated.replace(/\{\{IF is_roundtrip\}\}/g, '');
       populated = populated.replace(/\{\{ENDIF\}\}/g, '');
       populated = populated.replace(/\{\{return_date\}\}/g, formatToUSDate(data.return_date));
-      populated = populated.replace(/\{\{return_time\}\}/g, formatToAMPM(data.return_time));
+      populated = populated.replace(/\{\{return_time\}\}/g, data.return_time ? formatToAMPM(data.return_time) : 'TBD');
     } else {
       // Remove return line for one-way trips
       populated = populated.replace(/\{\{IF is_roundtrip\}\}[\s\S]*?\{\{ENDIF\}\}/g, '');
