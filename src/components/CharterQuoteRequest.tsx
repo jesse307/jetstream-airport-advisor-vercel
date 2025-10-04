@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { CHARTER_AIRCRAFT } from "@/data/aircraftDatabase";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -72,6 +73,274 @@ export const CharterQuoteRequest = ({ leadData }: CharterQuoteRequestProps) => {
     currency: string;
   } | null>(null);
   const [isFetchingPrice, setIsFetchingPrice] = useState(false);
+  const [classPriceEstimates, setClassPriceEstimates] = useState<Array<{
+    className: string;
+    price: number;
+    price_min: number | null;
+    price_max: number | null;
+    isEstimating: boolean;
+  }>>([]);
+
+  // Category order for aircraft classes
+  const CATEGORY_ORDER = [
+    'Light Jet',
+    'Super Light Jet',
+    'Mid Jet',
+    'Super Mid Jet',
+    'Heavy Jet',
+    'Ultra Long Range'
+  ];
+
+  // Calculate distance between airports using great circle formula
+  const calculateDistance = (dep: string, arr: string): number => {
+    // Extract ICAO/IATA codes
+    const extractCode = (airportStr: string) => {
+      const match = airportStr.match(/^([A-Z]{3,4})/);
+      return match ? match[1] : airportStr;
+    };
+
+    const depCode = extractCode(dep);
+    const arrCode = extractCode(arr);
+
+    // Simple coordinate lookup (you may want to enhance this with actual airport data)
+    const coords: { [key: string]: [number, number] } = {
+      'KJFK': [40.6413, -73.7781], 'JFK': [40.6413, -73.7781],
+      'KLAX': [33.9425, -118.4081], 'LAX': [33.9425, -118.4081],
+      'KLAS': [36.0840, -115.1537], 'LAS': [36.0840, -115.1537],
+      'KORD': [41.9742, -87.9073], 'ORD': [41.9742, -87.9073],
+      'KDFW': [32.8998, -97.0403], 'DFW': [32.8998, -97.0403],
+    };
+
+    const depCoords = coords[depCode] || [40.6413, -73.7781];
+    const arrCoords = coords[arrCode] || [33.9425, -118.4081];
+
+    const [lat1, lon1] = depCoords;
+    const [lat2, lon2] = arrCoords;
+
+    const R = 3440.065; // Earth's radius in nautical miles
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(dLon/2) * Math.sin(dLon/2);
+    
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    const distance = R * c;
+    
+    return Math.round(distance);
+  };
+
+  // Get capable aircraft classes for this route
+  const getCapableClasses = () => {
+    const distance = calculateDistance(leadData.departure_airport, leadData.arrival_airport);
+    const passengers = leadData.passengers || 1;
+    const minRunway = 5000; // Default assumption
+
+    const capableClasses: string[] = [];
+
+    for (const category of CATEGORY_ORDER) {
+      if (category === 'Ultra Long Range') continue; // Exclude ULR as requested
+
+      const aircraftInCategory = CHARTER_AIRCRAFT.filter(a => a.category === category);
+      const canComplete = aircraftInCategory.some(a => 
+        a.range >= distance * 1.1 && // 10% reserve
+        a.passengers >= passengers &&
+        a.minRunway <= minRunway
+      );
+
+      if (canComplete) {
+        capableClasses.push(category);
+      }
+    }
+
+    // Find minimum capable class and return all from that point onwards (excluding ULR)
+    if (capableClasses.length === 0) return [];
+    
+    const minClassIndex = CATEGORY_ORDER.indexOf(capableClasses[0]);
+    return CATEGORY_ORDER.slice(minClassIndex).filter(c => c !== 'Ultra Long Range');
+  };
+
+  // Auto-fetch price estimates for all capable classes on mount
+  useEffect(() => {
+    const fetchAllClassPrices = async () => {
+      const capableClasses = getCapableClasses();
+      if (capableClasses.length === 0) return;
+
+      // Initialize all classes as estimating
+      const initialEstimates = capableClasses.map(className => ({
+        className,
+        price: 0,
+        price_min: null,
+        price_max: null,
+        isEstimating: true
+      }));
+      setClassPriceEstimates(initialEstimates);
+
+      // Extract airport codes
+      const extractCode = (airportStr: string) => {
+        const match = airportStr.match(/^([A-Z]{3,4})/);
+        return match ? match[1] : airportStr;
+      };
+
+      const depCode = extractCode(leadData.departure_airport);
+      const arrCode = extractCode(leadData.arrival_airport);
+
+      const departure_airport: any = {};
+      if (depCode.length === 3) {
+        departure_airport.iata = depCode;
+      } else if (depCode.length === 4) {
+        departure_airport.icao = depCode;
+      }
+
+      const arrival_airport: any = {};
+      if (arrCode.length === 3) {
+        arrival_airport.iata = arrCode;
+      } else if (arrCode.length === 4) {
+        arrival_airport.icao = arrCode;
+      }
+
+      // Fetch price for each class
+      for (const className of capableClasses) {
+        try {
+          const getDepartureDateTime = () => {
+            if (leadData.departure_datetime) {
+              const dt = new Date(leadData.departure_datetime);
+              return {
+                date: dt.toISOString().split('T')[0],
+                time: dt.toTimeString().split(' ')[0]
+              };
+            }
+            return {
+              date: leadData.departure_date,
+              time: leadData.departure_time || '12:00:00'
+            };
+          };
+
+          const getReturnDateTime = () => {
+            if (leadData.return_datetime) {
+              const dt = new Date(leadData.return_datetime);
+              return {
+                date: dt.toISOString().split('T')[0],
+                time: dt.toTimeString().split(' ')[0]
+              };
+            }
+            if (leadData.return_date) {
+              return {
+                date: leadData.return_date,
+                time: leadData.return_time || '12:00:00'
+              };
+            }
+            return null;
+          };
+
+          const { date, time } = getDepartureDateTime();
+          const isRoundTrip = leadData.trip_type === 'round-trip' || !!leadData.return_date;
+
+          // Map our class names to Aviapages class names
+          const classNameMap: { [key: string]: string } = {
+            'Light Jet': 'Light',
+            'Super Light Jet': 'Midsize',
+            'Mid Jet': 'Midsize',
+            'Super Mid Jet': 'Super Midsize',
+            'Heavy Jet': 'Heavy'
+          };
+
+          const aircraft = { aircraft_class: classNameMap[className] || className };
+
+          // Outbound leg
+          const outboundBody = {
+            legs: [
+              {
+                departure_airport,
+                arrival_airport,
+                pax: leadData.passengers,
+                departure_datetime: `${date}T${time}`.slice(0, 16)
+              }
+            ],
+            aircraft,
+            currency_code: 'USD',
+            range: true
+          };
+
+          const { data: outboundData, error: outboundError } = await supabase.functions.invoke('get-charter-price', {
+            body: outboundBody
+          });
+
+          if (outboundError || !outboundData?.success) {
+            console.error(`Error fetching price for ${className}:`, outboundError);
+            setClassPriceEstimates(prev => 
+              prev.map(est => est.className === className 
+                ? { ...est, isEstimating: false }
+                : est
+              )
+            );
+            continue;
+          }
+
+          let totalPrice = outboundData.data.price;
+          let totalPriceMin = outboundData.data.price_min || outboundData.data.price;
+          let totalPriceMax = outboundData.data.price_max || outboundData.data.price;
+
+          // If round trip, fetch return leg
+          if (isRoundTrip) {
+            const returnDateTime = getReturnDateTime();
+            if (returnDateTime) {
+              const returnBody = {
+                legs: [
+                  {
+                    departure_airport: arrival_airport,
+                    arrival_airport: departure_airport,
+                    pax: leadData.passengers,
+                    departure_datetime: `${returnDateTime.date}T${returnDateTime.time}`.slice(0, 16)
+                  }
+                ],
+                aircraft,
+                currency_code: 'USD',
+                range: true
+              };
+
+              const { data: returnData, error: returnError } = await supabase.functions.invoke('get-charter-price', {
+                body: returnBody
+              });
+
+              if (!returnError && returnData?.success && returnData.data) {
+                totalPrice += returnData.data.price;
+                totalPriceMin += returnData.data.price_min || returnData.data.price;
+                totalPriceMax += returnData.data.price_max || returnData.data.price;
+              }
+            }
+          }
+
+          // Update this specific class estimate
+          setClassPriceEstimates(prev => 
+            prev.map(est => est.className === className 
+              ? {
+                  className,
+                  price: totalPrice,
+                  price_min: totalPriceMin > 0 ? totalPriceMin : null,
+                  price_max: totalPriceMax > 0 ? totalPriceMax : null,
+                  isEstimating: false
+                }
+              : est
+            )
+          );
+
+        } catch (error) {
+          console.error(`Error fetching price for ${className}:`, error);
+          setClassPriceEstimates(prev => 
+            prev.map(est => est.className === className 
+              ? { ...est, isEstimating: false }
+              : est
+            )
+          );
+        }
+      }
+    };
+
+    fetchAllClassPrices();
+  }, []); // Run once on mount
+
 
   const handleSearchOperators = async () => {
     setIsSearching(true);
@@ -570,6 +839,64 @@ export const CharterQuoteRequest = ({ leadData }: CharterQuoteRequestProps) => {
 
   return (
     <div className="space-y-6">
+      {/* Price Estimates by Aircraft Class - Prominent Top Section */}
+      {classPriceEstimates.length > 0 && (
+        <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10">
+          <CardHeader>
+            <CardTitle className="text-xl flex items-center gap-2">
+              💰 Price Estimates by Aircraft Class
+            </CardTitle>
+            <CardDescription>
+              Estimated prices for {leadData.departure_airport.match(/^([A-Z]{3,4})/)?.[1]} → {leadData.arrival_airport.match(/^([A-Z]{3,4})/)?.[1]} 
+              {leadData.trip_type === 'round-trip' || leadData.return_date ? ' (Round Trip)' : ' (One Way)'}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {classPriceEstimates.map((estimate, index) => (
+                <Card key={estimate.className} className={`${index === 0 ? 'border-2 border-primary' : 'border'}`}>
+                  <CardContent className="pt-4">
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-semibold text-sm">{estimate.className}</h4>
+                        {index === 0 && (
+                          <Badge variant="default" className="text-xs">Minimum</Badge>
+                        )}
+                      </div>
+                      {estimate.isEstimating ? (
+                        <div className="flex items-center gap-2 py-2">
+                          <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                          <span className="text-sm text-muted-foreground">Calculating...</span>
+                        </div>
+                      ) : estimate.price > 0 ? (
+                        <div>
+                          <p className="text-2xl font-bold text-primary">
+                            {estimate.price_min && estimate.price_max ? (
+                              <>
+                                ${Math.round(estimate.price_min / 1000)}k - ${Math.round(estimate.price_max / 1000)}k
+                              </>
+                            ) : (
+                              `$${Math.round(estimate.price / 1000)}k`
+                            )}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-1">Total Trip Cost</p>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-muted-foreground py-2">Price unavailable</p>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+            <div className="mt-4 pt-4 border-t text-sm text-muted-foreground">
+              <p>✈️ Showing estimates for capable aircraft classes (excluding Ultra Long Range)</p>
+              <p className="mt-1">📊 {leadData.passengers} passenger{leadData.passengers > 1 ? 's' : ''} • {new Date(leadData.departure_date).toLocaleDateString()}</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Flight Info Summary */}
       <Card>
         <CardContent className="pt-6">
