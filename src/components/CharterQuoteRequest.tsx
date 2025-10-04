@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Separator } from "@/components/ui/separator";
 import { Loader2, Send, RefreshCw, Search, Building2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -825,6 +826,47 @@ export const CharterQuoteRequest = ({ leadData }: CharterQuoteRequestProps) => {
                   </div>
                 </div>
               )}
+
+              {/* What Operators Will See */}
+              <div className="space-y-2 border-t pt-4">
+                <h4 className="font-medium text-sm text-muted-foreground">📩 What Operators Will Receive</h4>
+                <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 space-y-3">
+                  <div className="space-y-1">
+                    <p className="text-xs font-semibold text-blue-900 dark:text-blue-100">QUOTE REQUEST</p>
+                    <p className="text-sm"><strong>Client:</strong> {leadData.first_name} {leadData.last_name}</p>
+                    <p className="text-sm"><strong>Contact:</strong> {leadData.email} • {leadData.phone}</p>
+                  </div>
+                  
+                  <Separator />
+                  
+                  <div className="space-y-1">
+                    <p className="text-xs font-semibold text-blue-900 dark:text-blue-100">FLIGHT DETAILS</p>
+                    <p className="text-sm"><strong>Route:</strong> {leadData.departure_airport.match(/^([A-Z]{3,4})/)?.[1] || leadData.departure_airport} → {leadData.arrival_airport.match(/^([A-Z]{3,4})/)?.[1] || leadData.arrival_airport}</p>
+                    <p className="text-sm"><strong>Departure:</strong> {leadData.departure_date} at {leadData.departure_time || '12:00'}</p>
+                    {leadData.return_date && (
+                      <p className="text-sm"><strong>Return:</strong> {leadData.return_date} {leadData.return_time ? `at ${leadData.return_time}` : ''}</p>
+                    )}
+                    <p className="text-sm"><strong>Passengers:</strong> {leadData.passengers}</p>
+                    {selectedAircraftClasses.size > 0 && (
+                      <p className="text-sm"><strong>Aircraft Classes:</strong> {Array.from(selectedAircraftClasses).join(', ')}</p>
+                    )}
+                  </div>
+
+                  {comment && (
+                    <>
+                      <Separator />
+                      <div className="space-y-1">
+                        <p className="text-xs font-semibold text-blue-900 dark:text-blue-100">SPECIAL REQUESTS</p>
+                        <p className="text-sm italic">{comment}</p>
+                      </div>
+                    </>
+                  )}
+
+                  <div className="text-xs text-blue-700 dark:text-blue-300 mt-2 pt-2 border-t border-blue-200 dark:border-blue-800">
+                    💡 Operators will receive this via Aviapages and can respond with their availability and pricing
+                  </div>
+                </div>
+              </div>
 
               {/* Actions */}
               <div className="flex gap-3 pt-4 border-t">
