@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, ArrowRight, User, Phone, Mail, Calendar, Clock, Plane, Users, MapPin, CheckCircle2, XCircle, Settings, ClipboardList } from "lucide-react";
+import { ArrowLeft, ArrowRight, User, Phone, Mail, Calendar, Clock, Plane, Users, MapPin, CheckCircle2, XCircle, Settings, ClipboardList, Send } from "lucide-react";
 import { format } from "date-fns";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -111,6 +111,74 @@ export default function LeadAnalysis() {
     
     setLead({ ...lead, status: 'qualified' });
     toast.success('Added to trip board');
+  };
+
+  const handlePostToAviapages = async () => {
+    if (!lead || !departureAirportData || !arrivalAirportData) {
+      toast.error('Missing airport data');
+      return;
+    }
+
+    try {
+      const legs = [];
+      
+      // Departure leg
+      legs.push({
+        departure_airport: { iata: departureAirportData.code },
+        arrival_airport: { iata: arrivalAirportData.code },
+        pax: lead.passengers,
+        departure_datetime: lead.departure_datetime || `${lead.departure_date}T${lead.departure_time || '12:00:00'}`
+      });
+
+      // Return leg if round trip
+      if (lead.trip_type === 'Round Trip' && lead.return_datetime) {
+        legs.push({
+          departure_airport: { iata: arrivalAirportData.code },
+          arrival_airport: { iata: departureAirportData.code },
+          pax: lead.passengers,
+          departure_datetime: lead.return_datetime || `${lead.return_date}T${lead.return_time || '12:00:00'}`
+        });
+      }
+
+      const requestBody = {
+        legs,
+        contact_name: `${lead.first_name} ${lead.last_name}`,
+        contact_email: lead.email,
+        contact_phone: lead.phone || '',
+        notes: lead.notes || '',
+        currency_code: 'USD'
+      };
+
+      toast.loading('Posting to Aviapages...');
+
+      const { data, error } = await supabase.functions.invoke('request-charter-quotes', {
+        body: requestBody
+      });
+
+      if (error) {
+        console.error('Aviapages error:', error);
+        toast.error('Failed to post to Aviapages');
+        return;
+      }
+
+      if (!data.success) {
+        console.error('Aviapages API error:', data);
+        toast.error(`Failed to post: ${data.error || 'Unknown error'}`);
+        return;
+      }
+
+      // Update lead status
+      await supabase
+        .from('leads')
+        .update({ status: 'qualified' })
+        .eq('id', lead.id);
+
+      setLead({ ...lead, status: 'qualified' });
+      toast.success('Successfully posted to Aviapages trip board!');
+    } catch (error) {
+      console.error('Error posting to Aviapages:', error);
+      toast.error('Failed to post to Aviapages');
+    }
   };
 
   const handleStartProcess = async () => {
@@ -1029,6 +1097,14 @@ export default function LeadAnalysis() {
                   >
                     <Mail className="h-4 w-4 mr-2" />
                     Email
+                  </Button>
+                  <Button 
+                    className="w-full" 
+                    variant="default"
+                    onClick={handlePostToAviapages}
+                  >
+                    <Send className="h-4 w-4 mr-2" />
+                    Post to Aviapages
                   </Button>
                   <Button 
                     className="w-full" 
