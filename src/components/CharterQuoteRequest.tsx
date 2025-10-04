@@ -26,7 +26,7 @@ interface QuoteReply {
   id: number;
   price: number;
   currency: string;
-  state: string;
+  state: string | { id: number; name: string };
   aircraft?: {
     tail_number: string;
     aircraft_type: string;
@@ -497,8 +497,8 @@ export const CharterQuoteRequest = ({ leadData }: CharterQuoteRequestProps) => {
                         <div className="text-2xl font-bold">
                           {formatPrice(reply.price, reply.currency)}
                         </div>
-                        <Badge className={getStateColor(reply.state)}>
-                          {reply.state}
+                        <Badge className={getStateColor(typeof reply.state === 'string' ? reply.state : reply.state.name)}>
+                          {typeof reply.state === 'string' ? reply.state : reply.state.name}
                         </Badge>
                       </div>
                     </div>
