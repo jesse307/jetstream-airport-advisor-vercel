@@ -50,8 +50,10 @@ const Index = () => {
                   Import
                 </Link>
               </Button>
-              <Button variant="ghost" size="sm">
-                <Settings className="h-4 w-4" />
+              <Button asChild variant="ghost" size="sm">
+                <Link to="/settings">
+                  <Settings className="h-4 w-4" />
+                </Link>
               </Button>
               <Button 
                 variant="ghost" 

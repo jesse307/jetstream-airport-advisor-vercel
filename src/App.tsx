@@ -8,6 +8,7 @@ import LeadIntake from "./pages/LeadIntake";
 import LeadImport from "./pages/LeadImport";
 import LeadAnalysis from "./pages/LeadAnalysis";
 import MobileCapture from "./pages/MobileCapture";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -24,6 +25,7 @@ const App = () => (
           <Route path="/leads/import" element={<LeadImport />} />
           <Route path="/leads/:id" element={<LeadAnalysis />} />
           <Route path="/mobile-capture" element={<MobileCapture />} />
+          <Route path="/settings" element={<Settings />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
