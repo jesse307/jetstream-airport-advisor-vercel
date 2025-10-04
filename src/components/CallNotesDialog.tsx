@@ -149,35 +149,73 @@ export function CallNotesDialog({
         </DialogHeader>
 
         {/* Lead Information Reference */}
-        <div className="bg-muted/50 rounded-lg p-4 mb-4">
-          <h3 className="text-sm font-semibold mb-3">Lead Information to Confirm</h3>
-          <div className="grid grid-cols-3 gap-4 text-sm">
-            <div>
-              <p className="text-muted-foreground mb-1">Contact</p>
-              <p className="font-medium">{leadData.first_name} {leadData.last_name}</p>
-              <p className="text-xs">{leadData.email}</p>
-              <p className="text-xs">{leadData.phone}</p>
+        <div className="relative overflow-hidden rounded-xl mb-4 bg-gradient-to-br from-[#1a3a4a] via-[#2d5165] to-[#1a3a4a] p-6 shadow-xl">
+          {/* Subtle animated background pattern */}
+          <div className="absolute inset-0 opacity-5">
+            <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '40px 40px' }}></div>
+          </div>
+          
+          <div className="relative">
+            <h3 className="text-white/90 text-sm font-semibold mb-4 tracking-wide">LEAD INFORMATION TO CONFIRM</h3>
+            
+            {/* Route Graphic */}
+            <div className="flex items-center justify-center gap-6 mb-6 p-6 bg-white/10 rounded-lg backdrop-blur-sm">
+              {/* Departure */}
+              <div className="text-center">
+                <div className="bg-[#ff6b35] text-white text-2xl font-bold px-5 py-3 rounded-lg min-w-[100px] shadow-lg">
+                  {leadData.departure_airport.split(' - ')[0] || leadData.departure_airport}
+                </div>
+                <div className="text-white/80 text-xs mt-2 font-medium">
+                  {new Date(leadData.departure_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  {leadData.departure_time && <><br />{leadData.departure_time}</>}
+                </div>
+              </div>
+              
+              {/* Arrow & Info */}
+              <div className="text-center min-w-[120px]">
+                <div className="text-3xl mb-2">✈️</div>
+                <div className="h-0.5 bg-gradient-to-r from-[#ff6b35] via-white/40 to-[#ff6b35] w-20 mx-auto"></div>
+                <div className="bg-white/95 text-[#2d5165] text-sm font-bold px-4 py-2 rounded-full mt-3 inline-block shadow-md">
+                  👥 {leadData.passengers} PAX
+                </div>
+              </div>
+              
+              {/* Arrival */}
+              <div className="text-center">
+                <div className="bg-[#ff6b35] text-white text-2xl font-bold px-5 py-3 rounded-lg min-w-[100px] shadow-lg">
+                  {leadData.arrival_airport.split(' - ')[0] || leadData.arrival_airport}
+                </div>
+                {leadData.return_date && (
+                  <div className="text-white/80 text-xs mt-2 font-medium">
+                    {new Date(leadData.return_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    {leadData.return_time && <><br />{leadData.return_time}</>}
+                  </div>
+                )}
+              </div>
             </div>
-            <div>
-              <p className="text-muted-foreground mb-1">Trip Details</p>
-              <p className="font-medium">{leadData.trip_type}</p>
-              <p className="text-xs">{leadData.passengers} passenger{leadData.passengers !== 1 ? 's' : ''}</p>
-            </div>
-            <div>
-              <p className="text-muted-foreground mb-1">Route</p>
-              <p className="font-medium">{leadData.departure_airport} → {leadData.arrival_airport}</p>
-              <p className="text-xs">Depart: {leadData.departure_date} {leadData.departure_time || ''}</p>
-              {leadData.return_date && (
-                <p className="text-xs">Return: {leadData.return_date} {leadData.return_time || ''}</p>
+
+            {/* Contact & Trip Details Grid */}
+            <div className="grid grid-cols-3 gap-4">
+              <div className="bg-white/8 rounded-lg p-3 backdrop-blur-sm">
+                <p className="text-white/60 text-xs mb-2 uppercase tracking-wide">Contact</p>
+                <p className="text-white font-semibold">{leadData.first_name} {leadData.last_name}</p>
+                <p className="text-white/80 text-xs mt-1">{leadData.email}</p>
+                <p className="text-white/80 text-xs">{leadData.phone}</p>
+              </div>
+              
+              <div className="bg-white/8 rounded-lg p-3 backdrop-blur-sm">
+                <p className="text-white/60 text-xs mb-2 uppercase tracking-wide">Trip Type</p>
+                <p className="text-white font-semibold capitalize">{leadData.trip_type}</p>
+              </div>
+              
+              {leadData.notes && (
+                <div className="bg-white/8 rounded-lg p-3 backdrop-blur-sm">
+                  <p className="text-white/60 text-xs mb-2 uppercase tracking-wide">Form Notes</p>
+                  <p className="text-white/90 text-xs line-clamp-3">{leadData.notes}</p>
+                </div>
               )}
             </div>
           </div>
-          {leadData.notes && (
-            <div className="mt-3 pt-3 border-t">
-              <p className="text-muted-foreground text-xs mb-1">Form Notes:</p>
-              <p className="text-xs">{leadData.notes}</p>
-            </div>
-          )}
         </div>
 
         <div className="flex-1 grid grid-cols-2 gap-4 min-h-0">
