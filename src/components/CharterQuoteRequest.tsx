@@ -131,40 +131,53 @@ export const CharterQuoteRequest = ({ leadData }: CharterQuoteRequestProps) => {
     return Math.round(distance);
   };
 
-  // Get capable aircraft classes for this route
-  const getCapableClasses = () => {
+  // Get capable aircraft for this route - returns specific aircraft models, not just classes
+  const getCapableAircraftByClass = () => {
     const distance = calculateDistance(leadData.departure_airport, leadData.arrival_airport);
     const passengers = leadData.passengers || 1;
     const minRunway = 5000; // Default assumption
 
-    const capableClasses: string[] = [];
+    const capableByClass: { [key: string]: any } = {};
 
     for (const category of CATEGORY_ORDER) {
       if (category === 'Ultra Long Range') continue; // Exclude ULR as requested
 
       const aircraftInCategory = CHARTER_AIRCRAFT.filter(a => a.category === category);
-      const canComplete = aircraftInCategory.some(a => 
+      
+      // Find a capable aircraft in this category
+      const capableAircraft = aircraftInCategory.find(a => 
         a.range >= distance * 1.1 && // 10% reserve
         a.passengers >= passengers &&
         a.minRunway <= minRunway
       );
 
-      if (canComplete) {
-        capableClasses.push(category);
+      if (capableAircraft) {
+        capableByClass[category] = capableAircraft;
       }
     }
 
     // Find minimum capable class and return all from that point onwards (excluding ULR)
-    if (capableClasses.length === 0) return [];
+    const capableClasses = Object.keys(capableByClass);
+    if (capableClasses.length === 0) return {};
     
     const minClassIndex = CATEGORY_ORDER.indexOf(capableClasses[0]);
-    return CATEGORY_ORDER.slice(minClassIndex).filter(c => c !== 'Ultra Long Range');
+    const relevantClasses = CATEGORY_ORDER.slice(minClassIndex).filter(c => c !== 'Ultra Long Range');
+    
+    // Return only the aircraft for relevant classes
+    const result: { [key: string]: any } = {};
+    for (const cls of relevantClasses) {
+      if (capableByClass[cls]) {
+        result[cls] = capableByClass[cls];
+      }
+    }
+    return result;
   };
 
   // Auto-fetch price estimates for all capable classes on mount
   useEffect(() => {
     const fetchAllClassPrices = async () => {
-      const capableClasses = getCapableClasses();
+      const capableAircraftByClass = getCapableAircraftByClass();
+      const capableClasses = Object.keys(capableAircraftByClass);
       if (capableClasses.length === 0) return;
 
       // Initialize all classes as estimating
@@ -200,9 +213,12 @@ export const CharterQuoteRequest = ({ leadData }: CharterQuoteRequestProps) => {
         arrival_airport.icao = arrCode;
       }
 
-      // Fetch price for each class
+      // Fetch price for each class using specific aircraft
       for (const className of capableClasses) {
         try {
+          const specificAircraft = capableAircraftByClass[className];
+          if (!specificAircraft) continue;
+
           const getDepartureDateTime = () => {
             if (leadData.departure_datetime) {
               const dt = new Date(leadData.departure_datetime);
@@ -237,16 +253,10 @@ export const CharterQuoteRequest = ({ leadData }: CharterQuoteRequestProps) => {
           const { date, time } = getDepartureDateTime();
           const isRoundTrip = leadData.trip_type === 'round-trip' || !!leadData.return_date;
 
-          // Map our class names to Aviapages class names
-          const classNameMap: { [key: string]: string } = {
-            'Light Jet': 'Light',
-            'Super Light Jet': 'Midsize',
-            'Mid Jet': 'Midsize',
-            'Super Mid Jet': 'Super Midsize',
-            'Heavy Jet': 'Heavy'
+          // Use the specific aircraft model name for accurate pricing
+          const aircraft = { 
+            ac_type: specificAircraft.name // Use actual aircraft name like "Citation CJ3+" 
           };
-
-          const aircraft = { aircraft_class: classNameMap[className] || className };
 
           // Outbound leg
           const outboundBody = {
