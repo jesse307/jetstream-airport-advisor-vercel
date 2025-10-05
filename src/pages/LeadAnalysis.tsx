@@ -157,7 +157,7 @@ export default function LeadAnalysis() {
         contact_name: 'Jesse Marsh - Stratos Jets',
         contact_email: 'jesse@stratosjets.com',
         contact_phone: '973-784-8000',
-        notes: `Client: ${lead.first_name} ${lead.last_name} (${lead.email}${lead.phone ? ', ' + lead.phone : ''})${lead.notes ? '\n\nNotes: ' + lead.notes : ''}`,
+        notes: lead.notes || '',
         currency_code: 'USD'
       };
 
@@ -1186,23 +1186,11 @@ export default function LeadAnalysis() {
           <div className="space-y-4 py-4">
             {/* Contact Information (Your Business) */}
             <div>
-              <h3 className="font-semibold mb-2 text-sm text-muted-foreground">Posted By (Your Contact Info)</h3>
+              <h3 className="font-semibold mb-2 text-sm text-muted-foreground">Contact Information (Visible to Operators)</h3>
               <div className="space-y-1 text-sm">
                 <p><strong>Name:</strong> Jesse Marsh - Stratos Jets</p>
                 <p><strong>Email:</strong> jesse@stratosjets.com</p>
                 <p><strong>Phone:</strong> 973-784-8000</p>
-              </div>
-            </div>
-
-            <Separator />
-
-            {/* Client Information */}
-            <div>
-              <h3 className="font-semibold mb-2 text-sm text-muted-foreground">Client Information</h3>
-              <div className="space-y-1 text-sm">
-                <p><strong>Name:</strong> {lead.first_name} {lead.last_name}</p>
-                <p><strong>Email:</strong> {lead.email}</p>
-                {lead.phone && <p><strong>Phone:</strong> {lead.phone}</p>}
               </div>
             </div>
 
