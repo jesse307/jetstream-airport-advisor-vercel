@@ -134,21 +134,29 @@ export default function LeadAnalysis() {
     try {
       const legs = [];
       
+      // Format datetime for Aviapages (local time without timezone)
+      const formatDateTimeForAviapages = (date: string, time?: string | null) => {
+        const timeStr = time || '12:00:00';
+        // Remove seconds if present and format as HH:MM
+        const formattedTime = timeStr.substring(0, 5);
+        return `${date}T${formattedTime}`;
+      };
+      
       // Departure leg
       legs.push({
         departure_airport: { iata: departureAirportData.code },
         arrival_airport: { iata: arrivalAirportData.code },
         pax: lead.passengers,
-        departure_datetime: lead.departure_datetime || `${lead.departure_date}T${lead.departure_time || '12:00:00'}`
+        departure_datetime: formatDateTimeForAviapages(lead.departure_date, lead.departure_time)
       });
 
       // Return leg if round trip
-      if (lead.trip_type === 'Round Trip' && lead.return_datetime) {
+      if (lead.trip_type === 'Round Trip' && lead.return_date) {
         legs.push({
           departure_airport: { iata: arrivalAirportData.code },
           arrival_airport: { iata: departureAirportData.code },
           pax: lead.passengers,
-          departure_datetime: lead.return_datetime || `${lead.return_date}T${lead.return_time || '12:00:00'}`
+          departure_datetime: formatDateTimeForAviapages(lead.return_date, lead.return_time)
         });
       }
 
