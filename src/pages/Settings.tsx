@@ -148,7 +148,7 @@ Once I have your details, I can provide some additional guidance around which pl
 Best,
 Jesse
 
-<img src="https://300e3d3f-6393-4fa8-9ea2-e17c21482f24.lovableproject.com/images/stratos_logo_email.png" alt="Stratos Jet Charters" style="max-width: 300px; margin-top: 20px;" />`;
+<img src="https://id-preview--300e3d3f-6393-4fa8-9ea2-e17c21482f24.lovable.app/images/stratos_logo_email.png" alt="Stratos Jet Charters" style="max-width: 300px; margin-top: 20px;" />`;
   };
 
   const handleSaveTemplate = async () => {
