@@ -152,6 +152,39 @@ serve(async (req) => {
           console.log(`Identified operator from callsign ${callsign}: ${operatorName}`);
         }
       }
+
+      // If still no operator and we have a tail number, try Aviapages
+      if (!operatorName && registration && registration !== 'Unknown' && registration.startsWith('N')) {
+        try {
+          const aviapagesToken = Deno.env.get('AVIAPAGES_API_TOKEN');
+          if (aviapagesToken) {
+            console.log(`Looking up ${registration} in Aviapages...`);
+            
+            const aviapagesUrl = `https://dir.aviapages.com/api/aircraft/${registration}/`;
+            const aviapagesResponse = await fetch(aviapagesUrl, {
+              headers: {
+                'Authorization': `Token ${aviapagesToken}`,
+                'Content-Type': 'application/json'
+              }
+            });
+
+            if (aviapagesResponse.ok) {
+              const aviapagesData = await aviapagesResponse.json();
+              console.log(`Aviapages data for ${registration}:`, JSON.stringify(aviapagesData, null, 2));
+              
+              // Extract operator from Aviapages response
+              if (aviapagesData.operator || aviapagesData.owner) {
+                operatorName = aviapagesData.operator || aviapagesData.owner;
+                console.log(`Found operator from Aviapages for ${registration}: ${operatorName}`);
+              }
+            } else {
+              console.log(`Aviapages lookup failed for ${registration}: ${aviapagesResponse.status}`);
+            }
+          }
+        } catch (error) {
+          console.error(`Error looking up ${registration} in Aviapages:`, error);
+        }
+      }
       
       const baseData = {
         registration: registration || callsign || 'Unknown',
