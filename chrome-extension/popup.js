@@ -64,40 +64,54 @@ async function handleCapture() {
       const authResults = await chrome.scripting.executeScript({
         target: { tabId: appTabs[0].id },
         func: () => {
-          // Try multiple possible Supabase session key formats
-          const possibleKeys = [
-            'sb-hwemookrxvflpinfpkrj-auth-token',
-            'supabase.auth.token'
-          ];
-          
-          // Also check all localStorage keys that start with 'sb-'
+          // Get all localStorage items to find the correct session key
+          const allKeys = [];
           for (let i = 0; i < localStorage.length; i++) {
             const key = localStorage.key(i);
-            if (key && key.startsWith('sb-') && key.includes('auth')) {
-              possibleKeys.push(key);
+            if (key && key.includes('supabase') || key.includes('sb-')) {
+              allKeys.push(key);
+              console.log('Found storage key:', key);
             }
           }
           
-          for (const key of possibleKeys) {
-            const session = localStorage.getItem(key);
-            if (session) {
-              try {
-                const parsed = JSON.parse(session);
-                // Handle both old and new Supabase session formats
-                if (parsed.access_token) {
-                  return parsed.access_token;
-                } else if (parsed.currentSession?.access_token) {
-                  return parsed.currentSession.access_token;
+          // Try to find the session in the correct format
+          for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && key.startsWith('sb-') && key.includes('auth-token')) {
+              const session = localStorage.getItem(key);
+              console.log('Checking key:', key, 'Value length:', session?.length);
+              if (session) {
+                try {
+                  const parsed = JSON.parse(session);
+                  console.log('Parsed session structure:', Object.keys(parsed));
+                  
+                  // Handle different possible session formats
+                  if (parsed.access_token) {
+                    console.log('Found access_token directly');
+                    return { token: parsed.access_token, key: key };
+                  } else if (parsed.currentSession?.access_token) {
+                    console.log('Found access_token in currentSession');
+                    return { token: parsed.currentSession.access_token, key: key };
+                  } else {
+                    console.log('Session structure:', JSON.stringify(parsed, null, 2).substring(0, 200));
+                  }
+                } catch (e) {
+                  console.error('Parse error for key:', key, e);
                 }
-              } catch (e) {
-                continue;
               }
             }
           }
+          console.error('No valid session found. Keys checked:', allKeys);
           return null;
         }
       });
-      authToken = authResults[0]?.result;
+      
+      const authData = authResults[0]?.result;
+      authToken = authData?.token;
+      
+      if (authData) {
+        console.log('Retrieved token from key:', authData.key, 'Token length:', authToken?.length);
+      }
     }
 
     if (!authToken) {
