@@ -65,19 +65,45 @@ async function handleCapture() {
         const userResults = await chrome.scripting.executeScript({
           target: { tabId: appTabs[0].id },
           func: () => {
+            const result = {
+              userId: null,
+              keys: [],
+              sessionData: null
+            };
+            
+            // Log all localStorage keys
+            for (let i = 0; i < localStorage.length; i++) {
+              const key = localStorage.key(i);
+              result.keys.push(key);
+            }
+            
+            console.log('All localStorage keys:', result.keys);
+            
             // Search for Supabase session in localStorage
             for (let i = 0; i < localStorage.length; i++) {
               const key = localStorage.key(i);
               if (key && key.startsWith('sb-') && key.includes('auth-token')) {
                 const session = localStorage.getItem(key);
+                console.log('Found session key:', key, 'Length:', session?.length);
                 if (session) {
                   try {
                     const parsed = JSON.parse(session);
+                    result.sessionData = {
+                      hasUser: !!parsed.user,
+                      hasCurrentSession: !!parsed.currentSession,
+                      topLevelKeys: Object.keys(parsed)
+                    };
+                    console.log('Session structure:', result.sessionData);
+                    
                     // Try different session formats
                     if (parsed.user?.id) {
-                      return parsed.user.id;
+                      result.userId = parsed.user.id;
+                      console.log('Found user ID in parsed.user.id');
                     } else if (parsed.currentSession?.user?.id) {
-                      return parsed.currentSession.user.id;
+                      result.userId = parsed.currentSession.user.id;
+                      console.log('Found user ID in parsed.currentSession.user.id');
+                    } else {
+                      console.log('No user.id found in session');
                     }
                   } catch (e) {
                     console.error('Parse error:', e);
@@ -85,12 +111,20 @@ async function handleCapture() {
                 }
               }
             }
-            return null;
+            return result;
           }
         });
         
-        userId = userResults[0]?.result;
-        console.log('Got user ID:', userId);
+        const result = userResults[0]?.result;
+        console.log('LocalStorage inspection:', result);
+        userId = result?.userId;
+        
+        if (!userId) {
+          console.error('No user ID found. Keys checked:', result?.keys);
+          console.error('Session data:', result?.sessionData);
+        } else {
+          console.log('Successfully got user ID:', userId);
+        }
       } catch (error) {
         console.error('Error getting user ID:', error);
       }
