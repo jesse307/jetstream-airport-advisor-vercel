@@ -500,8 +500,8 @@ export default function LeadAnalysis() {
         ]);
 
         setFootballEvents({
-          departure: depEvents.data?.events || [],
-          arrival: arrEvents.data?.events || []
+          departure: depEvents.data?.games || [],
+          arrival: arrEvents.data?.games || []
         });
       } catch (error) {
         console.error('Error fetching football events:', error);
@@ -1125,12 +1125,14 @@ export default function LeadAnalysis() {
                             {departureAirportData?.city || 'Departure'}
                           </h4>
                           <div className="space-y-2">
-                            {footballEvents.departure.slice(0, 3).map((event: any, idx: number) => (
+                            {footballEvents.departure.slice(0, 3).map((game: any, idx: number) => (
                               <div key={idx} className="bg-background p-3 rounded-lg border border-border/50">
-                                <div className="font-semibold text-sm">{event.title}</div>
+                                <div className="font-semibold text-sm">
+                                  {game.teams?.away?.name} @ {game.teams?.home?.name}
+                                </div>
                                 <div className="text-xs text-muted-foreground mt-1">
-                                  {event.venue_name && <div>{event.venue_name}</div>}
-                                  {event.start_time && <div>{new Date(event.start_time).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</div>}
+                                  {game.game?.stadium && <div>{game.game.stadium}</div>}
+                                  {game.game?.date?.date && <div>{new Date(game.game.date.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</div>}
                                 </div>
                               </div>
                             ))}
@@ -1145,12 +1147,14 @@ export default function LeadAnalysis() {
                             {arrivalAirportData?.city || 'Arrival'}
                           </h4>
                           <div className="space-y-2">
-                            {footballEvents.arrival.slice(0, 3).map((event: any, idx: number) => (
+                            {footballEvents.arrival.slice(0, 3).map((game: any, idx: number) => (
                               <div key={idx} className="bg-background p-3 rounded-lg border border-border/50">
-                                <div className="font-semibold text-sm">{event.title}</div>
+                                <div className="font-semibold text-sm">
+                                  {game.teams?.away?.name} @ {game.teams?.home?.name}
+                                </div>
                                 <div className="text-xs text-muted-foreground mt-1">
-                                  {event.venue_name && <div>{event.venue_name}</div>}
-                                  {event.start_time && <div>{new Date(event.start_time).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</div>}
+                                  {game.game?.stadium && <div>{game.game.stadium}</div>}
+                                  {game.game?.date?.date && <div>{new Date(game.game.date.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</div>}
                                 </div>
                               </div>
                             ))}

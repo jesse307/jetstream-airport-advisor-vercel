@@ -20,45 +20,75 @@ serve(async (req) => {
       throw new Error("RAPIDAPI_KEY is not configured");
     }
 
-    const APP_ID = "default-application_11070511";
-    
     // Format dates for API (YYYY-MM-DD)
     const formattedStartDate = startDate ? new Date(startDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
-    const formattedEndDate = endDate ? new Date(endDate).toISOString().split('T')[0] : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const formattedEndDate = endDate ? new Date(endDate).toISOString().split('T')[0] : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
-    console.log("Calling RapidAPI with dates:", formattedStartDate, "to", formattedEndDate);
+    console.log("Searching for teams in:", city);
 
-    // Call RapidAPI sports events endpoint
-    const url = `https://eventful-sports-data.p.rapidapi.com/v1/events?app_id=${APP_ID}&location=${encodeURIComponent(city)}&start_date=${formattedStartDate}&end_date=${formattedEndDate}&sport=football`;
+    // Step 1: Search for teams in the city (NFL league ID is 1, season 2025)
+    const teamsUrl = `https://v1.american-football.api-sports.io/teams?league=1&season=2025&search=${encodeURIComponent(city)}`;
     
-    console.log("API URL:", url);
-
-    const response = await fetch(url, {
+    const teamsResponse = await fetch(teamsUrl, {
       method: "GET",
       headers: {
         "X-RapidAPI-Key": RAPIDAPI_KEY,
-        "X-RapidAPI-Host": "eventful-sports-data.p.rapidapi.com",
+        "X-RapidAPI-Host": "v1.american-football.api-sports.io",
       },
     });
 
-    console.log("RapidAPI response status:", response.status);
+    console.log("Teams API response status:", teamsResponse.status);
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("RapidAPI error:", errorText);
-      throw new Error(`RapidAPI request failed: ${response.status} - ${errorText}`);
+    if (!teamsResponse.ok) {
+      const errorText = await teamsResponse.text();
+      console.error("Teams API error:", errorText);
+      throw new Error(`Teams API failed: ${teamsResponse.status} - ${errorText}`);
     }
 
-    const data = await response.json();
-    console.log("Events found:", data?.events?.length || 0);
+    const teamsData = await teamsResponse.json();
+    console.log("Teams found:", teamsData?.response?.length || 0);
 
-    return new Response(JSON.stringify(data), {
+    if (!teamsData.response || teamsData.response.length === 0) {
+      return new Response(JSON.stringify({ games: [] }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Step 2: For each team, get games in the date range
+    const allGames = [];
+    
+    for (const teamInfo of teamsData.response) {
+      const teamId = teamInfo.id;
+      console.log(`Fetching games for team ${teamInfo.name} (ID: ${teamId})`);
+
+      // Get games for the start date first
+      const gamesUrl = `https://v1.american-football.api-sports.io/games?team=${teamId}&season=2025&date=${formattedStartDate}`;
+      
+      const gamesResponse = await fetch(gamesUrl, {
+        method: "GET",
+        headers: {
+          "X-RapidAPI-Key": RAPIDAPI_KEY,
+          "X-RapidAPI-Host": "v1.american-football.api-sports.io",
+        },
+      });
+
+      if (gamesResponse.ok) {
+        const gamesData = await gamesResponse.json();
+        if (gamesData.response && gamesData.response.length > 0) {
+          allGames.push(...gamesData.response);
+        }
+      }
+    }
+
+    console.log("Total games found:", allGames.length);
+
+    return new Response(JSON.stringify({ games: allGames }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
     console.error("Error fetching football events:", error);
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
+      JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error", games: [] }),
       {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
