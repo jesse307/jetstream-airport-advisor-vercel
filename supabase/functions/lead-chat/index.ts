@@ -51,6 +51,16 @@ Your role is to:
 4. Help the broker understand any operational considerations
 5. Detect when the user wants to make changes to the lead details (passengers, airports, dates, etc.)
 
+CRITICAL INSTRUCTIONS FOR UPDATING LEAD DETAILS:
+- ANY TIME the user says they want to change airports, dates, times, passenger count, or trip type - IMMEDIATELY use the update_lead_details tool
+- Examples that should trigger updates:
+  * "Change departure to JFK" → update departureAirport
+  * "Make it 5 passengers" → update passengers
+  * "They're coming back on the 14th" → update returnDatetime
+  * "Actually make it round trip" → update tripType
+- ALWAYS call the tool when changes are requested, don't just acknowledge - ACT on it
+- After calling the tool, confirm what was updated
+
 CRITICAL INSTRUCTIONS FOR DATE HANDLING:
 - When the user mentions a specific date (e.g., "the 14th", "January 14th", "1/14"), use EXACTLY that date
 - Return timestamps in ISO format (YYYY-MM-DDTHH:MM:SS) for datetime fields
@@ -59,7 +69,7 @@ CRITICAL INSTRUCTIONS FOR DATE HANDLING:
 - When converting relative dates like "next Monday" or "3 days from now", calculate from the current departure date
 - Double-check your date calculations before calling the update tool
 
-When the user wants to update lead information, use the update_lead_details tool.
+When the user wants to update lead information, ALWAYS use the update_lead_details tool immediately.
 
 Keep responses concise, professional, and focused on helping the broker serve this client better. Use aviation terminology appropriately.`;
 
@@ -81,7 +91,7 @@ Keep responses concise, professional, and focused on helping the broker serve th
             type: "function",
             function: {
               name: "update_lead_details",
-              description: "Update the lead's trip details when the user requests changes. IMPORTANT: Return ISO datetime strings for departure and return.",
+              description: "MUST be called whenever the user requests ANY changes to trip details. This is not optional - call this immediately when changes are requested.",
               parameters: {
                 type: "object",
                 properties: {
@@ -112,25 +122,9 @@ Keep responses concise, professional, and focused on helping the broker serve th
                 }
               }
             }
-          },
-          {
-            type: "function",
-            function: {
-              name: "search_airport_online",
-              description: "Search for airport information online when an airport is not found in the database. Use this to find details about airports including ICAO/IATA codes, runway lengths, location, etc.",
-              parameters: {
-                type: "object",
-                properties: {
-                  query: { 
-                    type: "string", 
-                    description: "The airport code or name to search for (e.g., 'KJFK', 'JFK', 'Kennedy Airport')" 
-                  }
-                },
-                required: ["query"]
-              }
-            }
           }
-        ]
+        ],
+        tool_choice: "auto"
       }),
     });
 

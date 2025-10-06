@@ -147,10 +147,10 @@ export function LeadChatbot({ lead, departureAirport, arrivalAirport, distance, 
               const toolCall = toolCalls[0];
               if (toolCall.function?.name === "update_lead_details") {
                 console.log("Tool call detected: update_lead_details");
-              }
-              // Accumulate function arguments as they stream in
-              if (toolCall.function?.arguments) {
-                toolCallArgs += toolCall.function.arguments;
+                // Accumulate function arguments as they stream in
+                if (toolCall.function?.arguments) {
+                  toolCallArgs += toolCall.function.arguments;
+                }
               }
             }
             
@@ -161,8 +161,11 @@ export function LeadChatbot({ lead, departureAirport, arrivalAirport, distance, 
                 const updates = JSON.parse(toolCallArgs);
                 detectedUpdates = updates;
                 console.log("Parsed tool call arguments:", updates);
+                // Show immediate feedback
+                upsertAssistant("\n\n✓ Updating lead details...");
               } catch (e) {
                 console.error("Failed to parse complete tool arguments:", e);
+                upsertAssistant("\n\n✗ Failed to parse update request");
               }
             }
           } catch {
