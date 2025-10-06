@@ -338,6 +338,39 @@ export type Database = {
         }
         Relationships: []
       }
+      nfl_teams: {
+        Row: {
+          created_at: string | null
+          id: string
+          stadium_latitude: number
+          stadium_longitude: number
+          stadium_name: string
+          team_api_id: number | null
+          team_city: string
+          team_name: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          stadium_latitude: number
+          stadium_longitude: number
+          stadium_name: string
+          team_api_id?: number | null
+          team_city: string
+          team_name: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          stadium_latitude?: number
+          stadium_longitude?: number
+          stadium_name?: string
+          team_api_id?: number | null
+          team_city?: string
+          team_name?: string
+        }
+        Relationships: []
+      }
       pending_lead_imports: {
         Row: {
           created_at: string

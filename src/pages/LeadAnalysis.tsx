@@ -475,7 +475,7 @@ export default function LeadAnalysis() {
 
   useEffect(() => {
     const fetchFootballEvents = async () => {
-      if (!departureAirportData?.city || !arrivalAirportData?.city || !lead) return;
+      if (!departureAirportData?.latitude || !arrivalAirportData?.latitude || !lead) return;
       
       setLoadingEvents(true);
       try {
@@ -485,23 +485,26 @@ export default function LeadAnalysis() {
         const [depEvents, arrEvents] = await Promise.all([
           supabase.functions.invoke('get-football-events', {
             body: { 
-              city: departureAirportData.city, 
+              departureAirport: {
+                latitude: departureAirportData.latitude,
+                longitude: departureAirportData.longitude
+              },
+              arrivalAirport: {
+                latitude: arrivalAirportData.latitude,
+                longitude: arrivalAirportData.longitude
+              },
               startDate,
               endDate 
             }
           }),
-          supabase.functions.invoke('get-football-events', {
-            body: { 
-              city: arrivalAirportData.city, 
-              startDate,
-              endDate 
-            }
-          })
+          Promise.resolve({ data: { games: [] } }) // Single call now handles both airports
         ]);
 
+        // Combine and deduplicate games
+        const allGames = depEvents.data?.games || [];
         setFootballEvents({
-          departure: depEvents.data?.games || [],
-          arrival: arrEvents.data?.games || []
+          departure: allGames,
+          arrival: []
         });
       } catch (error) {
         console.error('Error fetching football events:', error);
@@ -1099,15 +1102,15 @@ export default function LeadAnalysis() {
             </div>
 
             {/* Football Events */}
-            {(footballEvents.departure.length > 0 || footballEvents.arrival.length > 0) && (
+            {footballEvents.departure.length > 0 && (
               <Card className="bg-gradient-to-br from-green-500/5 to-blue-500/5">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Trophy className="h-5 w-5 text-green-600" />
-                    Football Games During Trip
+                    NFL Games Near Your Route
                   </CardTitle>
                   <p className="text-sm text-muted-foreground">
-                    Games happening in departure and arrival cities
+                    Games within 50 miles of departure or arrival airports
                   </p>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -1117,51 +1120,19 @@ export default function LeadAnalysis() {
                       <p className="text-muted-foreground">Loading football events...</p>
                     </div>
                   ) : (
-                    <>
-                      {footballEvents.departure.length > 0 && (
-                        <div>
-                          <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
-                            <MapPin className="h-4 w-4 text-primary" />
-                            {departureAirportData?.city || 'Departure'}
-                          </h4>
-                          <div className="space-y-2">
-                            {footballEvents.departure.slice(0, 3).map((game: any, idx: number) => (
-                              <div key={idx} className="bg-background p-3 rounded-lg border border-border/50">
-                                <div className="font-semibold text-sm">
-                                  {game.teams?.away?.name} @ {game.teams?.home?.name}
-                                </div>
-                                <div className="text-xs text-muted-foreground mt-1">
-                                  {game.game?.stadium && <div>{game.game.stadium}</div>}
-                                  {game.game?.date?.date && <div>{new Date(game.game.date.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</div>}
-                                </div>
-                              </div>
-                            ))}
+                    <div className="space-y-2">
+                      {footballEvents.departure.slice(0, 5).map((game: any, idx: number) => (
+                        <div key={idx} className="bg-background p-3 rounded-lg border border-border/50">
+                          <div className="font-semibold text-sm">
+                            {game.teams?.away?.name} @ {game.teams?.home?.name}
+                          </div>
+                          <div className="text-xs text-muted-foreground mt-1">
+                            {game.stadium_info && <div>📍 {game.stadium_info.name}, {game.stadium_info.city}</div>}
+                            {game.game?.date?.date && <div>🗓️ {new Date(game.game.date.date).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</div>}
                           </div>
                         </div>
-                      )}
-                      
-                      {footballEvents.arrival.length > 0 && (
-                        <div>
-                          <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
-                            <MapPin className="h-4 w-4 text-primary" />
-                            {arrivalAirportData?.city || 'Arrival'}
-                          </h4>
-                          <div className="space-y-2">
-                            {footballEvents.arrival.slice(0, 3).map((game: any, idx: number) => (
-                              <div key={idx} className="bg-background p-3 rounded-lg border border-border/50">
-                                <div className="font-semibold text-sm">
-                                  {game.teams?.away?.name} @ {game.teams?.home?.name}
-                                </div>
-                                <div className="text-xs text-muted-foreground mt-1">
-                                  {game.game?.stadium && <div>{game.game.stadium}</div>}
-                                  {game.game?.date?.date && <div>{new Date(game.game.date.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</div>}
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </>
+                      ))}
+                    </div>
                   )}
                 </CardContent>
               </Card>
