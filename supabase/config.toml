@@ -1,5 +1,8 @@
 project_id = "hwemookrxvflpinfpkrj"
 
+[functions.get-football-events]
+verify_jwt = false
+
 [functions.search-airports]
 verify_jwt = false
 

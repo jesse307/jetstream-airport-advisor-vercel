@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, ArrowRight, User, Phone, Mail, Calendar, Clock, Plane, Users, MapPin, CheckCircle2, XCircle, Settings, ClipboardList, Send } from "lucide-react";
+import { ArrowLeft, ArrowRight, User, Phone, Mail, Calendar, Clock, Plane, Users, MapPin, CheckCircle2, XCircle, Settings, ClipboardList, Send, Trophy } from "lucide-react";
 import { format } from "date-fns";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -79,6 +79,8 @@ export default function LeadAnalysis() {
   const [showEmailComposer, setShowEmailComposer] = useState(false);
   const [showAviapagesPreview, setShowAviapagesPreview] = useState(false);
   const [isPostingToAviapages, setIsPostingToAviapages] = useState(false);
+  const [footballEvents, setFootballEvents] = useState<{ departure: any[], arrival: any[] }>({ departure: [], arrival: [] });
+  const [loadingEvents, setLoadingEvents] = useState(false);
 
   // Helper function to format date from timestamp
   const formatDate = (datetime: string | undefined, fallbackDate?: string) => {
@@ -470,6 +472,46 @@ export default function LeadAnalysis() {
       fetchLead(id);
     }
   }, [id]);
+
+  useEffect(() => {
+    const fetchFootballEvents = async () => {
+      if (!departureAirportData?.city || !arrivalAirportData?.city || !lead) return;
+      
+      setLoadingEvents(true);
+      try {
+        const startDate = lead.departure_datetime || lead.departure_date;
+        const endDate = lead.return_datetime || lead.return_date || startDate;
+
+        const [depEvents, arrEvents] = await Promise.all([
+          supabase.functions.invoke('get-football-events', {
+            body: { 
+              city: departureAirportData.city, 
+              startDate,
+              endDate 
+            }
+          }),
+          supabase.functions.invoke('get-football-events', {
+            body: { 
+              city: arrivalAirportData.city, 
+              startDate,
+              endDate 
+            }
+          })
+        ]);
+
+        setFootballEvents({
+          departure: depEvents.data?.events || [],
+          arrival: arrEvents.data?.events || []
+        });
+      } catch (error) {
+        console.error('Error fetching football events:', error);
+      } finally {
+        setLoadingEvents(false);
+      }
+    };
+
+    fetchFootballEvents();
+  }, [departureAirportData, arrivalAirportData, lead]);
 
   useEffect(() => {
     const validateEmail = async () => {
@@ -1055,6 +1097,71 @@ export default function LeadAnalysis() {
             </Card>
 
             </div>
+
+            {/* Football Events */}
+            {(footballEvents.departure.length > 0 || footballEvents.arrival.length > 0) && (
+              <Card className="bg-gradient-to-br from-green-500/5 to-blue-500/5">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Trophy className="h-5 w-5 text-green-600" />
+                    Football Games During Trip
+                  </CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    Games happening in departure and arrival cities
+                  </p>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {loadingEvents ? (
+                    <div className="text-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                      <p className="text-muted-foreground">Loading football events...</p>
+                    </div>
+                  ) : (
+                    <>
+                      {footballEvents.departure.length > 0 && (
+                        <div>
+                          <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
+                            <MapPin className="h-4 w-4 text-primary" />
+                            {departureAirportData?.city || 'Departure'}
+                          </h4>
+                          <div className="space-y-2">
+                            {footballEvents.departure.slice(0, 3).map((event: any, idx: number) => (
+                              <div key={idx} className="bg-background p-3 rounded-lg border border-border/50">
+                                <div className="font-semibold text-sm">{event.title}</div>
+                                <div className="text-xs text-muted-foreground mt-1">
+                                  {event.venue_name && <div>{event.venue_name}</div>}
+                                  {event.start_time && <div>{new Date(event.start_time).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</div>}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {footballEvents.arrival.length > 0 && (
+                        <div>
+                          <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
+                            <MapPin className="h-4 w-4 text-primary" />
+                            {arrivalAirportData?.city || 'Arrival'}
+                          </h4>
+                          <div className="space-y-2">
+                            {footballEvents.arrival.slice(0, 3).map((event: any, idx: number) => (
+                              <div key={idx} className="bg-background p-3 rounded-lg border border-border/50">
+                                <div className="font-semibold text-sm">{event.title}</div>
+                                <div className="text-xs text-muted-foreground mt-1">
+                                  {event.venue_name && <div>{event.venue_name}</div>}
+                                  {event.start_time && <div>{new Date(event.start_time).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</div>}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+            )}
 
             {/* Aircraft Class Recommendations */}
             <Card>
