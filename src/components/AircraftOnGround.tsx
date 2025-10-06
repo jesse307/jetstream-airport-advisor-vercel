@@ -22,6 +22,20 @@ interface Aircraft {
   lastSeen?: string;
   origin?: string;
   destination?: string;
+  lastFlight?: {
+    from: string;
+    to: string;
+    departureTime: string;
+    arrivalTime: string;
+    callsign?: string;
+  } | null;
+  nextFlight?: {
+    from: string;
+    to: string;
+    departureTime: string;
+    arrivalTime: string;
+    callsign?: string;
+  } | null;
 }
 
 interface AircraftOnGroundProps {
@@ -90,6 +104,17 @@ export const AircraftOnGround = ({ defaultAirport }: AircraftOnGroundProps) => {
     if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
     const diffDays = Math.floor(diffHours / 24);
     return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+  };
+
+  const formatFlightTime = (timestamp?: string) => {
+    if (!timestamp) return "Unknown";
+    const date = new Date(timestamp);
+    return date.toLocaleString('en-US', { 
+      month: 'short', 
+      day: 'numeric', 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    });
   };
 
   return (
@@ -201,22 +226,62 @@ export const AircraftOnGround = ({ defaultAirport }: AircraftOnGroundProps) => {
                       </div>
                     </div>
 
-                    {(ac.origin || ac.destination) && (
-                      <div className="mt-3 pt-3 border-t">
-                        <div className="flex gap-4 text-sm">
-                          {ac.origin && (
-                            <div>
-                              <span className="text-muted-foreground">From: </span>
-                              <Badge variant="outline">{ac.origin}</Badge>
+                    {(ac.origin || ac.destination || ac.lastFlight || ac.nextFlight) && (
+                      <div className="mt-3 pt-3 border-t space-y-2">
+                        {ac.lastFlight && (
+                          <div className="text-sm">
+                            <div className="text-muted-foreground font-medium mb-1">Previous Flight:</div>
+                            <div className="flex items-center gap-2 pl-2">
+                              <Badge variant="outline">{ac.lastFlight.from}</Badge>
+                              <span className="text-muted-foreground">→</span>
+                              <Badge variant="outline">{ac.lastFlight.to}</Badge>
+                              <span className="text-xs text-muted-foreground">
+                                Arrived {formatFlightTime(ac.lastFlight.arrivalTime)}
+                              </span>
                             </div>
-                          )}
-                          {ac.destination && (
-                            <div>
-                              <span className="text-muted-foreground">To: </span>
-                              <Badge variant="outline">{ac.destination}</Badge>
+                            {ac.lastFlight.callsign && (
+                              <div className="text-xs text-muted-foreground pl-2 mt-1">
+                                Flight: {ac.lastFlight.callsign}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        
+                        {ac.nextFlight && (
+                          <div className="text-sm">
+                            <div className="text-muted-foreground font-medium mb-1">Next Scheduled:</div>
+                            <div className="flex items-center gap-2 pl-2">
+                              <Badge variant="outline">{ac.nextFlight.from}</Badge>
+                              <span className="text-muted-foreground">→</span>
+                              <Badge variant="outline">{ac.nextFlight.to}</Badge>
+                              <span className="text-xs text-muted-foreground">
+                                Departs {formatFlightTime(ac.nextFlight.departureTime)}
+                              </span>
                             </div>
-                          )}
-                        </div>
+                            {ac.nextFlight.callsign && (
+                              <div className="text-xs text-muted-foreground pl-2 mt-1">
+                                Flight: {ac.nextFlight.callsign}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        
+                        {(ac.origin || ac.destination) && !ac.lastFlight && !ac.nextFlight && (
+                          <div className="flex gap-4 text-sm">
+                            {ac.origin && (
+                              <div>
+                                <span className="text-muted-foreground">From: </span>
+                                <Badge variant="outline">{ac.origin}</Badge>
+                              </div>
+                            )}
+                            {ac.destination && (
+                              <div>
+                                <span className="text-muted-foreground">To: </span>
+                                <Badge variant="outline">{ac.destination}</Badge>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>

@@ -89,14 +89,14 @@ serve(async (req) => {
 
     console.log(`Found ${onGroundAircraft.length} aircraft on ground`);
 
-    // Transform the data to a cleaner format
-    const aircraftList = onGroundAircraft.map((flight: any) => {
+    // Transform the data to a cleaner format and fetch flight history
+    const aircraftList = await Promise.all(onGroundAircraft.map(async (flight: any) => {
       const registration = flight.registration || flight.reg || flight.tail || flight.modeSCode;
       const callsign = flight.callsign || flight.flight || flight.flightNumber;
       
       console.log(`Mapping aircraft - reg: ${registration}, callsign: ${callsign}, type: ${flight.aircraftType}`);
       
-      return {
+      const baseData = {
         registration: registration || callsign || 'Unknown',
         callsign: callsign !== registration ? callsign : undefined,
         aircraftType: flight.aircraftType || flight.aircraftModel || flight.type || 'Unknown',
@@ -110,9 +110,84 @@ serve(async (req) => {
         heading: flight.heading || flight.track || 0,
         lastSeen: flight.timestamp || flight.lastUpdate || flight.time,
         origin: flight.departure?.airport || flight.origin || flight.from,
-        destination: flight.arrival?.airport || flight.destination || flight.to
+        destination: flight.arrival?.airport || flight.destination || flight.to,
+        lastFlight: null,
+        nextFlight: null
       };
-    });
+
+      // Fetch flight history for this aircraft if we have a registration
+      if (registration && registration !== 'Unknown') {
+        try {
+          // Get flights from last 48 hours
+          const now = new Date();
+          const twoDaysAgo = new Date(now.getTime() - (48 * 60 * 60 * 1000));
+          const tomorrow = new Date(now.getTime() + (24 * 60 * 60 * 1000));
+          
+          // Search for recent flights by this registration
+          const historyUrl = `https://api.airnavradar.com/v2/flights/search?registration=${encodeURIComponent(registration)}&fromDate=${twoDaysAgo.toISOString()}&toDate=${now.toISOString()}&page=1&pageSize=5`;
+          
+          const historyResponse = await fetch(historyUrl, {
+            headers: {
+              'Authorization': `Bearer ${apiKey}`,
+              'Content-Type': 'application/json'
+            }
+          });
+
+          if (historyResponse.ok) {
+            const historyData = await historyResponse.json();
+            if (historyData.flights && historyData.flights.length > 0) {
+              // Find the most recent completed flight
+              const recentFlights = historyData.flights
+                .filter((f: any) => f.arrival?.actualTime || f.arrival?.estimatedTime)
+                .sort((a: any, b: any) => {
+                  const aTime = new Date(a.arrival?.actualTime || a.arrival?.estimatedTime).getTime();
+                  const bTime = new Date(b.arrival?.actualTime || b.arrival?.estimatedTime).getTime();
+                  return bTime - aTime;
+                });
+              
+              if (recentFlights.length > 0) {
+                const lastFlight = recentFlights[0];
+                baseData.lastFlight = {
+                  from: lastFlight.departure?.airport,
+                  to: lastFlight.arrival?.airport,
+                  departureTime: lastFlight.departure?.actualTime || lastFlight.departure?.estimatedTime,
+                  arrivalTime: lastFlight.arrival?.actualTime || lastFlight.arrival?.estimatedTime,
+                  callsign: lastFlight.callsign
+                };
+              }
+            }
+          }
+
+          // Search for scheduled future flights
+          const scheduleUrl = `https://api.airnavradar.com/v2/flights/schedules?registration=${encodeURIComponent(registration)}&departureFromDate=${now.toISOString()}&departureToDate=${tomorrow.toISOString()}`;
+          
+          const scheduleResponse = await fetch(scheduleUrl, {
+            headers: {
+              'Authorization': `Bearer ${apiKey}`,
+              'Content-Type': 'application/json'
+            }
+          });
+
+          if (scheduleResponse.ok) {
+            const scheduleData = await scheduleResponse.json();
+            if (scheduleData.flights && scheduleData.flights.length > 0) {
+              const nextFlight = scheduleData.flights[0];
+              baseData.nextFlight = {
+                from: nextFlight.departure?.airport,
+                to: nextFlight.arrival?.airport,
+                departureTime: nextFlight.departure?.scheduledTime || nextFlight.departure?.estimatedTime,
+                arrivalTime: nextFlight.arrival?.scheduledTime || nextFlight.arrival?.estimatedTime,
+                callsign: nextFlight.callsign
+              };
+            }
+          }
+        } catch (error) {
+          console.error(`Error fetching flight history for ${registration}:`, error);
+        }
+      }
+      
+      return baseData;
+    }));
 
     return new Response(
       JSON.stringify({ 
