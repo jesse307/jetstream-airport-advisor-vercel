@@ -1,0 +1,38 @@
+-- Insert test lead for football game demo (LA to Miami during NFL season)
+INSERT INTO leads (
+  first_name, 
+  last_name, 
+  email, 
+  phone, 
+  trip_type, 
+  departure_airport, 
+  arrival_airport, 
+  departure_date, 
+  departure_time,
+  departure_datetime,
+  return_date,
+  return_time,
+  return_datetime,
+  passengers,
+  status,
+  notes,
+  source
+) VALUES (
+  'John',
+  'Smith',
+  'john.smith@example.com',
+  '+1-555-0123',
+  'Round Trip',
+  'LAX',
+  'MIA',
+  '2025-11-15',
+  '10:00:00',
+  '2025-11-15T10:00:00-08:00',
+  '2025-11-17',
+  '14:00:00',
+  '2025-11-17T14:00:00-05:00',
+  6,
+  'new',
+  'Test lead for football game demo - LA to Miami during NFL season (Rams, Chargers, Dolphins)',
+  'manual'
+);
