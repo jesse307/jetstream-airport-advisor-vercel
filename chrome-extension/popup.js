@@ -113,6 +113,8 @@ async function handleCapture() {
       return;
     }
 
+    console.log('Sending request with auth token');
+
     // Send to process-lead-complete endpoint for automatic parsing and creation
     const response = await fetch(`https://hwemookrxvflpinfpkrj.supabase.co/functions/v1/process-lead-complete`, {
       method: 'POST',
@@ -125,7 +127,9 @@ async function handleCapture() {
       })
     });
 
+    console.log('Response status:', response.status);
     const result = await response.json();
+    console.log('Response data:', result);
 
     if (response.ok && result.leadId) {
       status.className = 'status success';
@@ -139,7 +143,8 @@ async function handleCapture() {
         });
       }, 500);
     } else {
-      throw new Error(result.error || 'Failed to create lead');
+      console.error('Error response:', result);
+      throw new Error(result.error || `Failed to create lead (Status: ${response.status})`);
     }
   } catch (error) {
     status.className = 'status error';
