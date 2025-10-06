@@ -116,8 +116,9 @@ async function handleCapture() {
 
     if (!authToken) {
       status.className = 'status error';
-      status.textContent = '⚠ Please log in to Charter Pro first. Opening app...';
+      status.textContent = '⚠ No auth token found. Please log in to Charter Pro first.';
       status.style.display = 'block';
+      console.error('No auth token retrieved from app tab');
       
       setTimeout(() => {
         chrome.tabs.create({
@@ -126,6 +127,9 @@ async function handleCapture() {
       }, 1500);
       return;
     }
+    
+    console.log('Auth token retrieved, length:', authToken.length);
+    console.log('First 50 chars of token:', authToken.substring(0, 50));
 
     console.log('Sending request with auth token');
 
