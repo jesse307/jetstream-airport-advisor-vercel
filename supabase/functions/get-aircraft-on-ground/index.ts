@@ -31,14 +31,17 @@ serve(async (req) => {
     }
 
     console.log(`Fetching aircraft on ground at ${airportIcao}`);
+    console.log('API Key configured:', !!apiKey);
 
     // Call AirNav RadarBox API to get live flights at this airport
     const url = 'https://api.airnavradar.com/v2/flights/live';
     
     const requestBody = {
-      toOrFromAirports: [airportIcao.toUpperCase()]
+      toOrFromAirports: [airportIcao.toUpperCase()],
+      incLastKnownPos: false
     };
 
+    console.log('Request URL:', url);
     console.log('Request body:', JSON.stringify(requestBody));
 
     const response = await fetch(url, {
