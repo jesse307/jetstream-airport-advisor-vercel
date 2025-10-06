@@ -56,3 +56,9 @@ verify_jwt = false
 
 [functions.get-aircraft-locations]
 verify_jwt = false
+
+[functions.get-aircraft-on-ground]
+verify_jwt = false
+
+[functions.get-charter-price]
+verify_jwt = false

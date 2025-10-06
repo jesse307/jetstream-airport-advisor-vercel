@@ -11,6 +11,7 @@ import CRM from "./pages/CRM";
 import LeadAnalysis from "./pages/LeadAnalysis";
 import MobileCapture from "./pages/MobileCapture";
 import Settings from "./pages/Settings";
+import AircraftTracking from "./pages/AircraftTracking";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -29,6 +30,7 @@ const App = () => (
           <Route path="/leads/import-history" element={<ImportHistory />} />
           <Route path="/leads/:id" element={<LeadAnalysis />} />
           <Route path="/mobile-capture" element={<MobileCapture />} />
+          <Route path="/aircraft-tracking" element={<AircraftTracking />} />
           <Route path="/settings" element={<Settings />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
