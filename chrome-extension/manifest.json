@@ -10,7 +10,9 @@
   "host_permissions": [
     "https://*.salesforce.com/*",
     "https://*.force.com/*",
-    "https://hwemookrxvflpinfpkrj.supabase.co/*"
+    "https://hwemookrxvflpinfpkrj.supabase.co/*",
+    "https://id-preview--300e3d3f-6393-4fa8-9ea2-e17c21482f24.lovable.app/*",
+    "https://*.lovableproject.com/*"
   ],
   "action": {
     "default_popup": "popup.html",
@@ -29,7 +31,9 @@
     {
       "matches": [
         "https://*.salesforce.com/*",
-        "https://*.force.com/*"
+        "https://*.force.com/*",
+        "https://id-preview--300e3d3f-6393-4fa8-9ea2-e17c21482f24.lovable.app/*",
+        "https://*.lovableproject.com/*"
       ],
       "js": ["content.js"]
     }
