@@ -1,10 +1,38 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.58.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+// Callsign prefix to operator mapping
+const CALLSIGN_OPERATORS: Record<string, string> = {
+  'EJA': 'NetJets',
+  'VJA': 'VistaJet',
+  'LXJ': 'Flexjet',
+  'FLX': 'Flexjet',
+  'JRE': 'JetReady',
+  'XOJ': 'XOJET',
+  'TMC': 'Jet Aviation',
+  'GAJ': 'GrandView Aviation',
+  'SOF': 'Solairus Aviation',
+  'MMD': 'Magellan Jets',
+  'TWY': 'Jet Linx Aviation',
+  'VXJ': 'VistaJet',
+  'WUP': 'Wheels Up',
+  'KOW': 'JetSuite',
+  'JRE': 'JetReady',
+};
+
+function getOperatorFromCallsign(callsign?: string): string | null {
+  if (!callsign) return null;
+  
+  // Extract prefix (usually first 3 letters)
+  const prefix = callsign.substring(0, 3).toUpperCase();
+  return CALLSIGN_OPERATORS[prefix] || null;
+}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -29,6 +57,11 @@ serve(async (req) => {
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    // Initialize Supabase client for caching
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
 
     console.log(`Fetching aircraft on ground at ${airportIcao}`);
     console.log('API Key configured:', !!apiKey);
@@ -93,14 +126,38 @@ serve(async (req) => {
     const aircraftList = await Promise.all(onGroundAircraft.map(async (flight: any) => {
       const registration = flight.registration || flight.reg || flight.tail || flight.modeSCode;
       const callsign = flight.callsign || flight.flight || flight.flightNumber;
+      let operatorName = flight.operator || flight.airline || flight.operatorName;
       
       console.log(`Mapping aircraft - reg: ${registration}, callsign: ${callsign}, type: ${flight.aircraftType}`);
+      
+      // Try to get operator from cache first
+      if (registration && registration !== 'Unknown') {
+        const { data: cachedOperator } = await supabase
+          .from('aircraft_operators')
+          .select('operator_name, callsign_prefix')
+          .eq('tail_number', registration)
+          .single();
+        
+        if (cachedOperator?.operator_name) {
+          operatorName = cachedOperator.operator_name;
+          console.log(`Found cached operator for ${registration}: ${operatorName}`);
+        }
+      }
+      
+      // If no operator yet, try callsign prefix lookup
+      if (!operatorName && callsign) {
+        const callsignOperator = getOperatorFromCallsign(callsign);
+        if (callsignOperator) {
+          operatorName = callsignOperator;
+          console.log(`Identified operator from callsign ${callsign}: ${operatorName}`);
+        }
+      }
       
       const baseData = {
         registration: registration || callsign || 'Unknown',
         callsign: callsign !== registration ? callsign : undefined,
         aircraftType: flight.aircraftType || flight.aircraftModel || flight.type || 'Unknown',
-        operator: flight.operator || flight.airline || flight.operatorName,
+        operator: operatorName,
         position: {
           lat: flight.latitude || flight.lat,
           lon: flight.longitude || flight.lon
@@ -114,6 +171,25 @@ serve(async (req) => {
         lastFlight: null,
         nextFlight: null
       };
+
+      // Cache the operator info if we have it
+      if (registration && registration !== 'Unknown' && operatorName) {
+        const callsignPrefix = callsign ? callsign.substring(0, 3) : null;
+        
+        await supabase
+          .from('aircraft_operators')
+          .upsert({
+            tail_number: registration,
+            operator_name: operatorName,
+            callsign_prefix: callsignPrefix,
+            aircraft_type: baseData.aircraftType,
+            last_seen_airport: airportIcao.toUpperCase()
+          }, {
+            onConflict: 'tail_number'
+          });
+        
+        console.log(`Cached operator info for ${registration}`);
+      }
 
       // Fetch flight history for this aircraft if we have a registration
       if (registration && registration !== 'Unknown') {
