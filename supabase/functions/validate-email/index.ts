@@ -24,16 +24,20 @@ serve(async (req) => {
 
     console.log('Validating email:', email);
 
-    const response = await fetch(`https://email-checker.p.rapidapi.com/verify/v1?email=${encodeURIComponent(email)}`, {
-      method: 'GET',
+    const response = await fetch(`https://email-validator-api.p.rapidapi.com/verify?email=${encodeURIComponent(email)}`, {
+      method: 'POST',
       headers: {
         'X-RapidAPI-Key': rapidApiKey,
-        'X-RapidAPI-Host': 'email-checker.p.rapidapi.com'
-      }
+        'X-RapidAPI-Host': 'email-validator-api.p.rapidapi.com',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ email })
     });
 
     if (!response.ok) {
-      throw new Error(`RapidAPI request failed: ${response.status}`);
+      const errorText = await response.text();
+      console.error('Email validation API error:', response.status, errorText);
+      throw new Error(`Email validation API request failed: ${response.status}`);
     }
 
     const data = await response.json();
@@ -43,9 +47,9 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        isValid: data.status === 'valid',
-        status: data.status,
-        reason: data.reason || null
+        isValid: data.is_valid === true || data.valid === true,
+        status: data.status || null,
+        reason: data.reason || data.message || null
       }),
       { 
         headers: { 
