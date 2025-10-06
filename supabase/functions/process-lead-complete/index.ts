@@ -30,8 +30,13 @@ serve(async (req) => {
   }
 
   try {
-    const { rawData, userId } = await req.json();
+    const requestBody = await req.json();
+    console.log('Raw request body:', JSON.stringify(requestBody));
+    
+    const { rawData, userId } = requestBody;
     console.log('Processing complete workflow for raw data');
+    console.log('Received userId:', userId);
+    console.log('Received rawData length:', rawData?.length);
     
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -41,6 +46,8 @@ serve(async (req) => {
     
     // Try to get user from JWT token first (for web app calls)
     const authHeader = req.headers.get('Authorization');
+    console.log('Auth header present:', !!authHeader);
+    
     if (authHeader && authHeader !== 'Bearer null' && authHeader !== 'Bearer undefined') {
       const token = authHeader.replace('Bearer ', '');
       const { data: { user }, error: userError } = await supabase.auth.getUser(token);
@@ -60,6 +67,7 @@ serve(async (req) => {
     
     // If still no user, error
     if (!user_id) {
+      console.error('No user identification - Auth header:', authHeader, 'Body userId:', userId);
       throw new Error('No user identification provided');
     }
 
