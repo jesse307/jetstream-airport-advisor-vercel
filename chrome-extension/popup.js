@@ -53,72 +53,32 @@ async function handleCapture() {
 
     const pageData = results[0].result;
     
-    // Get auth token from the Charter Pro app tab
+    // Get Charter Pro app tabs
     const appTabs = await chrome.tabs.query({ 
       url: "https://id-preview--300e3d3f-6393-4fa8-9ea2-e17c21482f24.lovable.app/*" 
     });
     
-    let authToken = null;
+    // Get user ID from Charter Pro app
+    let userId = null;
     if (appTabs.length > 0) {
-      // Execute script to get the Supabase session from localStorage
-      const authResults = await chrome.scripting.executeScript({
-        target: { tabId: appTabs[0].id },
-        func: () => {
-          // Get all localStorage items to find the correct session key
-          const allKeys = [];
-          for (let i = 0; i < localStorage.length; i++) {
-            const key = localStorage.key(i);
-            if (key && key.includes('supabase') || key.includes('sb-')) {
-              allKeys.push(key);
-              console.log('Found storage key:', key);
-            }
-          }
-          
-          // Try to find the session in the correct format
-          for (let i = 0; i < localStorage.length; i++) {
-            const key = localStorage.key(i);
-            if (key && key.startsWith('sb-') && key.includes('auth-token')) {
-              const session = localStorage.getItem(key);
-              console.log('Checking key:', key, 'Value length:', session?.length);
-              if (session) {
-                try {
-                  const parsed = JSON.parse(session);
-                  console.log('Parsed session structure:', Object.keys(parsed));
-                  
-                  // Handle different possible session formats
-                  if (parsed.access_token) {
-                    console.log('Found access_token directly');
-                    return { token: parsed.access_token, key: key };
-                  } else if (parsed.currentSession?.access_token) {
-                    console.log('Found access_token in currentSession');
-                    return { token: parsed.currentSession.access_token, key: key };
-                  } else {
-                    console.log('Session structure:', JSON.stringify(parsed, null, 2).substring(0, 200));
-                  }
-                } catch (e) {
-                  console.error('Parse error for key:', key, e);
-                }
-              }
-            }
-          }
-          console.error('No valid session found. Keys checked:', allKeys);
-          return null;
+      try {
+        const userResponse = await chrome.tabs.sendMessage(appTabs[0].id, { action: 'getUserId' });
+        if (userResponse?.success && userResponse.userId) {
+          userId = userResponse.userId;
+          console.log('Got user ID:', userId);
+        } else {
+          console.error('Failed to get user ID:', userResponse?.error);
         }
-      });
-      
-      const authData = authResults[0]?.result;
-      authToken = authData?.token;
-      
-      if (authData) {
-        console.log('Retrieved token from key:', authData.key, 'Token length:', authToken?.length);
+      } catch (error) {
+        console.error('Error getting user ID:', error);
       }
     }
 
-    if (!authToken) {
+    if (!userId) {
       status.className = 'status error';
-      status.textContent = '⚠ No auth token found. Please log in to Charter Pro first.';
+      status.textContent = '⚠ Please log in to Charter Pro first.';
       status.style.display = 'block';
-      console.error('No auth token retrieved from app tab');
+      console.error('No user ID retrieved from app tab');
       
       setTimeout(() => {
         chrome.tabs.create({
@@ -128,21 +88,18 @@ async function handleCapture() {
       return;
     }
     
-    console.log('Auth token retrieved, length:', authToken.length);
-    console.log('First 50 chars of token:', authToken.substring(0, 50));
-
-    console.log('Sending request with auth token');
+    console.log('Sending request with user ID');
 
     // Send to process-lead-complete endpoint for automatic parsing and creation
     const response = await fetch(`https://hwemookrxvflpinfpkrj.supabase.co/functions/v1/process-lead-complete`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${authToken}`,
         'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3ZW1vb2tyeHZmbHBpbmZwa3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg5MTQ5MTksImV4cCI6MjA3NDQ5MDkxOX0.TTCRQZbm_cIGAusk8C3AhTbH6BPWmbsFr02mxLQ0-iY',
       },
       body: JSON.stringify({
-        rawData: pageData
+        rawData: pageData,
+        userId: userId
       })
     });
 

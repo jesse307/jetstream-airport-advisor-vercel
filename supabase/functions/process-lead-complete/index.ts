@@ -30,30 +30,38 @@ serve(async (req) => {
   }
 
   try {
-    const { rawData } = await req.json();
+    const { rawData, userId } = await req.json();
     console.log('Processing complete workflow for raw data');
     
-    // Extract user from JWT token
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      throw new Error('No authorization header');
-    }
-    
-    const token = authHeader.replace('Bearer ', '');
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey, {
-      global: { headers: { Authorization: authHeader } }
-    });
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
     
-    // Get the user from the token
-    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
-    if (userError || !user) {
-      console.error('Auth error:', userError);
-      throw new Error('Unauthorized');
+    let user_id: string;
+    
+    // Try to get user from JWT token first (for web app calls)
+    const authHeader = req.headers.get('Authorization');
+    if (authHeader && authHeader !== 'Bearer null' && authHeader !== 'Bearer undefined') {
+      const token = authHeader.replace('Bearer ', '');
+      const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+      if (user) {
+        user_id = user.id;
+        console.log('Authenticated via JWT:', user_id);
+      } else {
+        console.log('JWT validation failed:', userError);
+      }
     }
     
-    console.log('Authenticated user:', user.id);
+    // Fallback to userId from request body (for Chrome extension)
+    if (!user_id && userId) {
+      user_id = userId;
+      console.log('Using userId from request:', user_id);
+    }
+    
+    // If still no user, error
+    if (!user_id) {
+      throw new Error('No user identification provided');
+    }
 
     // Step 1: Parse the raw data using AI
     console.log('Step 1: Parsing lead data with AI');
@@ -88,7 +96,7 @@ serve(async (req) => {
       .from('leads')
       .insert({
         ...cleanedData,
-        user_id: user.id,
+        user_id: user_id,
         status: 'new',
         source: 'chrome_extension_auto',
       })
