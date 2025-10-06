@@ -64,6 +64,11 @@ serve(async (req) => {
 
     const data = await response.json();
     console.log(`Received ${data.flights?.length || 0} flights from API`);
+    
+    // Log sample flight data to see structure
+    if (data.flights && data.flights.length > 0) {
+      console.log('Sample flight data:', JSON.stringify(data.flights[0], null, 2));
+    }
 
     // Filter for aircraft on the ground
     // Aircraft are considered on ground if:
@@ -85,22 +90,29 @@ serve(async (req) => {
     console.log(`Found ${onGroundAircraft.length} aircraft on ground`);
 
     // Transform the data to a cleaner format
-    const aircraftList = onGroundAircraft.map((flight: any) => ({
-      registration: flight.registration || flight.modeSCode || 'Unknown',
-      callsign: flight.callsign,
-      aircraftType: flight.aircraftType || flight.aircraftModel || 'Unknown',
-      operator: flight.operator || flight.airline,
-      position: {
-        lat: flight.latitude,
-        lon: flight.longitude
-      },
-      altitude: flight.altitude,
-      speed: flight.speed,
-      heading: flight.heading,
-      lastSeen: flight.timestamp || flight.lastUpdate,
-      origin: flight.departure?.airport,
-      destination: flight.arrival?.airport
-    }));
+    const aircraftList = onGroundAircraft.map((flight: any) => {
+      const registration = flight.registration || flight.reg || flight.tail || flight.modeSCode;
+      const callsign = flight.callsign || flight.flight || flight.flightNumber;
+      
+      console.log(`Mapping aircraft - reg: ${registration}, callsign: ${callsign}, type: ${flight.aircraftType}`);
+      
+      return {
+        registration: registration || callsign || 'Unknown',
+        callsign: callsign !== registration ? callsign : undefined,
+        aircraftType: flight.aircraftType || flight.aircraftModel || flight.type || 'Unknown',
+        operator: flight.operator || flight.airline || flight.operatorName,
+        position: {
+          lat: flight.latitude || flight.lat,
+          lon: flight.longitude || flight.lon
+        },
+        altitude: flight.altitude || flight.alt || 0,
+        speed: flight.speed || flight.groundSpeed || 0,
+        heading: flight.heading || flight.track || 0,
+        lastSeen: flight.timestamp || flight.lastUpdate || flight.time,
+        origin: flight.departure?.airport || flight.origin || flight.from,
+        destination: flight.arrival?.airport || flight.destination || flight.to
+      };
+    });
 
     return new Response(
       JSON.stringify({ 
