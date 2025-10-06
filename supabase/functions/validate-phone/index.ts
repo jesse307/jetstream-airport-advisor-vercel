@@ -24,16 +24,18 @@ serve(async (req) => {
 
     console.log('Validating phone:', phone);
 
-    const response = await fetch(`https://phone-and-email-validator.p.rapidapi.com/phone_validator?number=${encodeURIComponent(phone)}`, {
+    const response = await fetch(`https://veriphone.p.rapidapi.com/verify?phone=${encodeURIComponent(phone)}`, {
       method: 'GET',
       headers: {
         'X-RapidAPI-Key': rapidApiKey,
-        'X-RapidAPI-Host': 'phone-and-email-validator.p.rapidapi.com'
+        'X-RapidAPI-Host': 'veriphone.p.rapidapi.com'
       }
     });
 
     if (!response.ok) {
-      throw new Error(`RapidAPI request failed: ${response.status}`);
+      const errorText = await response.text();
+      console.error('Veriphone API error:', response.status, errorText);
+      throw new Error(`Veriphone API request failed: ${response.status}`);
     }
 
     const data = await response.json();
@@ -43,10 +45,11 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        isValid: data.is_valid === true || data.valid === true,
+        isValid: data.phone_valid === true,
         country: data.country || null,
         carrier: data.carrier || null,
-        lineType: data.line_type || null
+        lineType: data.phone_type || null,
+        international: data.international_number || null
       }),
       { 
         headers: { 
