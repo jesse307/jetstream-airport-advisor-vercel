@@ -646,7 +646,20 @@ export default function LeadAnalysis() {
 
       if (error) {
         console.error("Error fetching lead:", error);
+        
+        // Check if it's a "not found" error
+        if (error.code === 'PGRST116') {
+          toast.error("Lead not found");
+          setLoading(false);
+          // Redirect to CRM page after a moment
+          setTimeout(() => {
+            window.location.href = '/crm';
+          }, 2000);
+          return;
+        }
+        
         toast.error("Failed to load lead information");
+        setLoading(false);
         return;
       }
 
