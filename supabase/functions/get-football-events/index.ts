@@ -16,11 +16,11 @@ serve(async (req) => {
     console.log("Finding games near airport:", airportLat, airportLon);
     console.log("Date range:", startDate, "to", endDate);
 
-    const RAPIDAPI_KEY = Deno.env.get("RAPIDAPI_KEY");
+    const API_SPORTS_KEY = Deno.env.get("API_SPORTS_KEY");
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
-    if (!RAPIDAPI_KEY || !SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+    if (!API_SPORTS_KEY || !SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
       throw new Error("Missing required environment variables");
     }
 
@@ -97,8 +97,7 @@ serve(async (req) => {
       const teamsResponse = await fetch(teamsUrl, {
         method: "GET",
         headers: {
-          "X-RapidAPI-Key": RAPIDAPI_KEY,
-          "X-RapidAPI-Host": "v1.american-football.api-sports.io",
+          "x-apisports-key": API_SPORTS_KEY,
         },
       });
 
@@ -128,8 +127,7 @@ serve(async (req) => {
         const gamesResponse = await fetch(gamesUrl, {
           method: "GET",
           headers: {
-            "X-RapidAPI-Key": RAPIDAPI_KEY,
-            "X-RapidAPI-Host": "v1.american-football.api-sports.io",
+            "x-apisports-key": API_SPORTS_KEY,
           },
         });
 
