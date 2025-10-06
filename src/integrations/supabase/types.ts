@@ -197,6 +197,39 @@ export type Database = {
         }
         Relationships: []
       }
+      aircraft_operators: {
+        Row: {
+          aircraft_type: string | null
+          callsign_prefix: string | null
+          created_at: string | null
+          id: string
+          last_seen_airport: string | null
+          last_updated: string | null
+          operator_name: string | null
+          tail_number: string
+        }
+        Insert: {
+          aircraft_type?: string | null
+          callsign_prefix?: string | null
+          created_at?: string | null
+          id?: string
+          last_seen_airport?: string | null
+          last_updated?: string | null
+          operator_name?: string | null
+          tail_number: string
+        }
+        Update: {
+          aircraft_type?: string | null
+          callsign_prefix?: string | null
+          created_at?: string | null
+          id?: string
+          last_seen_airport?: string | null
+          last_updated?: string | null
+          operator_name?: string | null
+          tail_number?: string
+        }
+        Relationships: []
+      }
       email_templates: {
         Row: {
           created_at: string
