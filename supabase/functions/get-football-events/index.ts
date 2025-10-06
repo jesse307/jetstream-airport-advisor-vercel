@@ -53,11 +53,15 @@ serve(async (req) => {
 
     // Filter teams within 50 miles
     const nearbyTeams = teams?.filter(team => {
+      if (!team || !team.stadium_latitude || !team.stadium_longitude) {
+        console.log("Skipping team with missing coordinates:", team?.team_name);
+        return false;
+      }
       const distance = calculateDistance(
         airportLat,
         airportLon,
-        Number(team.stadium_latitude),
-        Number(team.stadium_longitude)
+        parseFloat(team.stadium_latitude.toString()),
+        parseFloat(team.stadium_longitude.toString())
       );
       console.log(`${team.team_name}: ${distance.toFixed(1)} miles away`);
       return distance <= 50;
@@ -140,8 +144,8 @@ serve(async (req) => {
                 distance_miles: calculateDistance(
                   airportLat,
                   airportLon,
-                  Number(team.stadium_latitude),
-                  Number(team.stadium_longitude)
+                  parseFloat(team.stadium_latitude.toString()),
+                  parseFloat(team.stadium_longitude.toString())
                 ).toFixed(1)
               }
             }));
