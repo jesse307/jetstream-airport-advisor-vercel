@@ -21,10 +21,19 @@ export default function Settings() {
   const loadTemplate = async () => {
     setIsLoading(true);
     try {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setEmailTemplate(getDefaultTemplate());
+        setIsLoading(false);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('email_templates')
         .select('*')
         .eq('is_default', true)
+        .eq('user_id', user.id)
         .single();
 
       if (error && error.code !== 'PGRST116') {
@@ -154,6 +163,14 @@ Jesse
   const handleSaveTemplate = async () => {
     setIsSaving(true);
     try {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error("You must be logged in to save templates");
+        setIsSaving(false);
+        return;
+      }
+
       if (templateId) {
         // Update existing template
         const { error } = await supabase
@@ -176,7 +193,8 @@ Jesse
           .insert({
             name: 'Default Lead Email',
             template_content: emailTemplate,
-            is_default: true
+            is_default: true,
+            user_id: user.id
           })
           .select()
           .single();

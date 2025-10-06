@@ -152,10 +152,18 @@ Jesse
   React.useEffect(() => {
     const loadTemplate = async () => {
       try {
+        // Get current user
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          console.log('No user logged in, using default template');
+          return;
+        }
+
         const { data, error } = await supabase
           .from('email_templates')
           .select('*')
           .eq('is_default', true)
+          .eq('user_id', user.id)
           .single();
 
         if (error) {
@@ -482,6 +490,14 @@ Jesse
   const handleSaveTemplate = async () => {
     setIsSavingTemplate(true);
     try {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error("You must be logged in to save templates");
+        setIsSavingTemplate(false);
+        return;
+      }
+
       if (templateId) {
         // Update existing template
         const { error } = await supabase
@@ -501,7 +517,8 @@ Jesse
           .insert({
             name: 'Default Lead Email',
             template_content: emailTemplate,
-            is_default: true
+            is_default: true,
+            user_id: user.id
           })
           .select()
           .single();
