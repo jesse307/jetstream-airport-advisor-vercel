@@ -43,7 +43,7 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.process-lead-complete]
-verify_jwt = false
+verify_jwt = true
 
 [functions.lead-chat]
 verify_jwt = false

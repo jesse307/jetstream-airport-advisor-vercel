@@ -238,6 +238,7 @@ export type Database = {
           name: string
           template_content: string
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string
@@ -246,6 +247,7 @@ export type Database = {
           name: string
           template_content: string
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string
@@ -254,6 +256,7 @@ export type Database = {
           name?: string
           template_content?: string
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -283,6 +286,7 @@ export type Database = {
           status: string
           trip_type: string
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           analysis_data?: Json | null
@@ -309,6 +313,7 @@ export type Database = {
           status?: string
           trip_type: string
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           analysis_data?: Json | null
@@ -335,6 +340,7 @@ export type Database = {
           status?: string
           trip_type?: string
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -379,6 +385,7 @@ export type Database = {
           processed_at: string | null
           raw_data: string
           source: string | null
+          user_id: string | null
         }
         Insert: {
           created_at?: string
@@ -387,6 +394,7 @@ export type Database = {
           processed_at?: string | null
           raw_data: string
           source?: string | null
+          user_id?: string | null
         }
         Update: {
           created_at?: string
@@ -395,6 +403,34 @@ export type Database = {
           processed_at?: string | null
           raw_data?: string
           source?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string | null
+          email: string | null
+          full_name: string | null
+          id: string
+          updated_at: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string | null
+          email?: string | null
+          full_name?: string | null
+          id: string
+          updated_at?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string | null
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -408,6 +444,7 @@ export type Database = {
           response_body: string | null
           response_status: number | null
           success: boolean
+          user_id: string | null
           webhook_url: string
         }
         Insert: {
@@ -419,6 +456,7 @@ export type Database = {
           response_body?: string | null
           response_status?: number | null
           success?: boolean
+          user_id?: string | null
           webhook_url: string
         }
         Update: {
@@ -430,6 +468,7 @@ export type Database = {
           response_body?: string | null
           response_status?: number | null
           success?: boolean
+          user_id?: string | null
           webhook_url?: string
         }
         Relationships: [

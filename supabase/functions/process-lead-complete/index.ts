@@ -29,10 +29,28 @@ serve(async (req) => {
   try {
     const { rawData } = await req.json();
     console.log('Processing complete workflow for raw data');
-
+    
+    // Extract user from JWT token
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      throw new Error('No authorization header');
+    }
+    
+    const token = authHeader.replace('Bearer ', '');
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseKey, {
+      global: { headers: { Authorization: authHeader } }
+    });
+    
+    // Get the user from the token
+    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+    if (userError || !user) {
+      console.error('Auth error:', userError);
+      throw new Error('Unauthorized');
+    }
+    
+    console.log('Authenticated user:', user.id);
 
     // Step 1: Parse the raw data using AI
     console.log('Step 1: Parsing lead data with AI');
@@ -61,12 +79,13 @@ serve(async (req) => {
       return_time: parsedData.return_time?.trim() || null,
     };
 
-    // Step 2: Create lead in database with status "new"
+    // Step 2: Create lead in database with status "new" and user_id
     console.log('Step 2: Creating lead in database');
     const { data: lead, error: leadError } = await supabase
       .from('leads')
       .insert({
         ...cleanedData,
+        user_id: user.id,
         status: 'new',
         source: 'chrome_extension_auto',
       })
@@ -82,11 +101,12 @@ serve(async (req) => {
 
     // Step 3: Trigger Make.com webhook
     console.log('Step 3: Triggering Make.com webhook');
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const makeResponse = await fetch(`${supabaseUrl}/functions/v1/trigger-make-webhook`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${supabaseKey}`,
+        'Authorization': `Bearer ${serviceRoleKey}`,
       },
       body: JSON.stringify({ leadData: lead }),
     });
@@ -120,7 +140,7 @@ serve(async (req) => {
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500 
+        status: error.message === 'Unauthorized' ? 401 : 500 
       }
     );
   }

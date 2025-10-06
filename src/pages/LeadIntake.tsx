@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 import { AirportSearch } from "@/components/AirportSearch";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 
 const leadSchema = z.object({
   firstName: z.string().min(1, "First name is required").max(50, "First name too long"),
@@ -47,6 +48,7 @@ export default function LeadIntake() {
   const [airportText, setAirportText] = useState("");
   const [isExtractingAirports, setIsExtractingAirports] = useState(false);
   const navigate = useNavigate();
+  const { user } = useAuth();
   
   const form = useForm<LeadFormData>({
     resolver: zodResolver(leadSchema),
@@ -132,6 +134,7 @@ export default function LeadIntake() {
         : null;
       
       const leadData = {
+        user_id: user?.id,
         first_name: data.firstName,
         last_name: data.lastName,
         email: data.email,

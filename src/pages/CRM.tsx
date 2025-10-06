@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ArrowLeft, Search, UserPlus, Mail, Phone, Calendar, MapPin, Eye } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface Lead {
   id: string;
@@ -28,6 +29,7 @@ interface Lead {
 
 const CRM = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [filteredLeads, setFilteredLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
@@ -47,6 +49,7 @@ const CRM = () => {
       const { data, error } = await supabase
         .from("leads")
         .select("*")
+        .eq("user_id", user?.id)
         .order("created_at", { ascending: false });
 
       if (error) throw error;

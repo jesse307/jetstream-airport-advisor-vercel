@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Loader2, Sparkles, Clock, Plane } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface PendingImport {
   id: string;
@@ -17,6 +18,7 @@ interface PendingImport {
 const LeadImport = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
   const [unstructuredData, setUnstructuredData] = useState("");
   const [isParsing, setIsParsing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -53,6 +55,7 @@ const LeadImport = () => {
         .from('pending_lead_imports')
         .select('*')
         .eq('processed', false)
+        .eq('user_id', user?.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -150,6 +153,7 @@ const LeadImport = () => {
     setIsSubmitting(true);
     try {
       const leadData = {
+        user_id: user?.id,
         first_name: parsedData.first_name,
         last_name: parsedData.last_name,
         email: parsedData.email,

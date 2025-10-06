@@ -3,6 +3,34 @@ document.getElementById('captureBtn').addEventListener('click', async () => {
   await handleCapture();
 });
 
+// Check authentication on load
+checkAuth();
+
+async function checkAuth() {
+  const status = document.getElementById('status');
+  
+  // Try to get the session from the Lovable app
+  try {
+    const response = await chrome.tabs.query({ url: "https://id-preview--300e3d3f-6393-4fa8-9ea2-e17c21482f24.lovable.app/*" });
+    
+    if (response.length === 0) {
+      status.className = 'status error';
+      status.textContent = '⚠ Please log in to the Charter Pro app first';
+      status.style.display = 'block';
+      
+      // Offer to open the app
+      document.getElementById('captureBtn').textContent = 'Open Charter Pro';
+      document.getElementById('captureBtn').onclick = () => {
+        chrome.tabs.create({
+          url: 'https://id-preview--300e3d3f-6393-4fa8-9ea2-e17c21482f24.lovable.app/'
+        });
+      };
+    }
+  } catch (error) {
+    console.error('Auth check error:', error);
+  }
+}
+
 async function handleCapture() {
   const captureBtn = document.getElementById('captureBtn');
   const status = document.getElementById('status');
@@ -24,12 +52,52 @@ async function handleCapture() {
     });
 
     const pageData = results[0].result;
+    
+    // Get auth token from the Charter Pro app tab
+    const appTabs = await chrome.tabs.query({ 
+      url: "https://id-preview--300e3d3f-6393-4fa8-9ea2-e17c21482f24.lovable.app/*" 
+    });
+    
+    let authToken = null;
+    if (appTabs.length > 0) {
+      // Execute script to get the Supabase session from localStorage
+      const authResults = await chrome.scripting.executeScript({
+        target: { tabId: appTabs[0].id },
+        func: () => {
+          const session = localStorage.getItem('sb-hwemookrxvflpinfpkrj-auth-token');
+          if (session) {
+            try {
+              const parsed = JSON.parse(session);
+              return parsed.access_token;
+            } catch (e) {
+              return null;
+            }
+          }
+          return null;
+        }
+      });
+      authToken = authResults[0]?.result;
+    }
+
+    if (!authToken) {
+      status.className = 'status error';
+      status.textContent = '⚠ Please log in to Charter Pro first. Opening app...';
+      status.style.display = 'block';
+      
+      setTimeout(() => {
+        chrome.tabs.create({
+          url: 'https://id-preview--300e3d3f-6393-4fa8-9ea2-e17c21482f24.lovable.app/auth'
+        });
+      }, 1500);
+      return;
+    }
 
     // Send to process-lead-complete endpoint for automatic parsing and creation
     const response = await fetch(`https://hwemookrxvflpinfpkrj.supabase.co/functions/v1/process-lead-complete`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`,
       },
       body: JSON.stringify({
         rawData: pageData
