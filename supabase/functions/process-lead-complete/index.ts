@@ -15,10 +15,13 @@ interface LeadData {
   departure_airport?: string;
   arrival_airport?: string;
   departure_date?: string;
+  departure_time?: string;
   return_date?: string;
+  return_time?: string;
   passengers?: number;
   trip_type?: string;
   additional_notes?: string;
+  notes?: string;
 }
 
 serve(async (req) => {
