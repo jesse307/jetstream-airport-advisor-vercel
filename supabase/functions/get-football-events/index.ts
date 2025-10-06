@@ -1,24 +1,10 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.58.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
-
-// Haversine formula to calculate distance between two coordinates in miles
-function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
-  const R = 3959; // Earth's radius in miles
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
-  
-  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-            Math.sin(dLon/2) * Math.sin(dLon/2);
-  
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-  return R * c;
-}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -26,61 +12,58 @@ serve(async (req) => {
   }
 
   try {
-    const { departureAirport, arrivalAirport, startDate, endDate } = await req.json();
-    console.log("Fetching football events near airports");
-    console.log("Departure:", departureAirport);
-    console.log("Arrival:", arrivalAirport);
+    const { airportLat, airportLon, startDate, endDate } = await req.json();
+    console.log("Finding games near airport:", airportLat, airportLon);
     console.log("Date range:", startDate, "to", endDate);
 
     const RAPIDAPI_KEY = Deno.env.get("RAPIDAPI_KEY");
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    
+
     if (!RAPIDAPI_KEY || !SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-      throw new Error("Required environment variables not configured");
+      throw new Error("Missing required environment variables");
     }
 
     // Create Supabase client
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // Get all NFL teams from database
-    const { data: nflTeams, error: teamsError } = await supabase
+    // Calculate distance using Haversine formula
+    const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+      const R = 3959; // Earth's radius in miles
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLon/2) * Math.sin(dLon/2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      return R * c;
+    };
+
+    // Get all NFL teams
+    const { data: teams, error: teamsError } = await supabase
       .from('nfl_teams')
       .select('*');
 
     if (teamsError) {
-      console.error("Error fetching NFL teams:", teamsError);
+      console.error("Error fetching teams:", teamsError);
       throw teamsError;
     }
 
-    console.log(`Found ${nflTeams?.length || 0} NFL teams in database`);
+    console.log("Total NFL teams:", teams?.length || 0);
 
-    // Find teams within 50 miles of either airport
-    const nearbyTeams = nflTeams?.filter(team => {
-      const distanceToDeparture = calculateDistance(
-        departureAirport.latitude,
-        departureAirport.longitude,
-        parseFloat(team.stadium_latitude),
-        parseFloat(team.stadium_longitude)
+    // Filter teams within 50 miles
+    const nearbyTeams = teams?.filter(team => {
+      const distance = calculateDistance(
+        airportLat,
+        airportLon,
+        Number(team.stadium_latitude),
+        Number(team.stadium_longitude)
       );
-      
-      const distanceToArrival = calculateDistance(
-        arrivalAirport.latitude,
-        arrivalAirport.longitude,
-        parseFloat(team.stadium_latitude),
-        parseFloat(team.stadium_longitude)
-      );
-
-      const isNearby = distanceToDeparture <= 50 || distanceToArrival <= 50;
-      
-      if (isNearby) {
-        console.log(`${team.team_name}: ${Math.min(distanceToDeparture, distanceToArrival).toFixed(1)} miles from nearest airport`);
-      }
-
-      return isNearby;
+      console.log(`${team.team_name}: ${distance.toFixed(1)} miles away`);
+      return distance <= 50;
     }) || [];
 
-    console.log(`Found ${nearbyTeams.length} teams within 50 miles`);
+    console.log("Teams within 50 miles:", nearbyTeams.length);
 
     if (nearbyTeams.length === 0) {
       return new Response(JSON.stringify({ games: [] }), {
@@ -88,22 +71,22 @@ serve(async (req) => {
       });
     }
 
-    // Format dates for API (day before departure to day after arrival)
-    const depDate = new Date(startDate);
-    depDate.setDate(depDate.getDate() - 1); // Day before departure
-    const searchStartDate = depDate.toISOString().split('T')[0];
-    
-    const arrDate = new Date(endDate);
-    arrDate.setDate(arrDate.getDate() + 1); // Day after arrival
-    const searchEndDate = arrDate.toISOString().split('T')[0];
+    // Calculate date range (day before to day after)
+    const startDateTime = new Date(startDate);
+    startDateTime.setDate(startDateTime.getDate() - 1);
+    const endDateTime = new Date(endDate);
+    endDateTime.setDate(endDateTime.getDate() + 1);
 
-    console.log(`Searching for games from ${searchStartDate} to ${searchEndDate}`);
+    const searchStartDate = startDateTime.toISOString().split('T')[0];
+    const searchEndDate = endDateTime.toISOString().split('T')[0];
 
-    // Search for games for each nearby team
+    console.log("Searching games from", searchStartDate, "to", searchEndDate);
+
+    // For each nearby team, get their games
     const allGames = [];
     
     for (const team of nearbyTeams) {
-      console.log(`Searching for ${team.team_name} games`);
+      console.log(`Searching for ${team.team_name} games...`);
       
       const teamsUrl = `https://v1.american-football.api-sports.io/teams?league=1&season=2025&search=${encodeURIComponent(team.team_name.split(' ').pop() || '')}`;
       
@@ -123,37 +106,51 @@ serve(async (req) => {
       const teamsData = await teamsResponse.json();
       
       if (!teamsData.response || teamsData.response.length === 0) {
-        console.log(`No API data for ${team.team_name}`);
+        console.log(`No API match for ${team.team_name}`);
         continue;
       }
 
       const teamId = teamsData.response[0].id;
+      console.log(`Found ${team.team_name} with API ID: ${teamId}`);
 
-      // Get games for this team in the date range
-      const gamesUrl = `https://v1.american-football.api-sports.io/games?team=${teamId}&season=2025&date=${searchStartDate}`;
-      
-      const gamesResponse = await fetch(gamesUrl, {
-        method: "GET",
-        headers: {
-          "X-RapidAPI-Key": RAPIDAPI_KEY,
-          "X-RapidAPI-Host": "v1.american-football.api-sports.io",
-        },
-      });
+      // Get games in date range
+      let currentDate = new Date(searchStartDate);
+      const finalDate = new Date(searchEndDate);
 
-      if (gamesResponse.ok) {
-        const gamesData = await gamesResponse.json();
-        if (gamesData.response && gamesData.response.length > 0) {
-          console.log(`Found ${gamesData.response.length} games for ${team.team_name}`);
-          // Add stadium info to each game
-          const gamesWithStadium = gamesData.response.map((game: any) => ({
-            ...game,
-            stadium_info: {
-              name: team.stadium_name,
-              city: team.team_city
-            }
-          }));
-          allGames.push(...gamesWithStadium);
+      while (currentDate <= finalDate) {
+        const dateStr = currentDate.toISOString().split('T')[0];
+        const gamesUrl = `https://v1.american-football.api-sports.io/games?team=${teamId}&season=2025&date=${dateStr}`;
+        
+        const gamesResponse = await fetch(gamesUrl, {
+          method: "GET",
+          headers: {
+            "X-RapidAPI-Key": RAPIDAPI_KEY,
+            "X-RapidAPI-Host": "v1.american-football.api-sports.io",
+          },
+        });
+
+        if (gamesResponse.ok) {
+          const gamesData = await gamesResponse.json();
+          if (gamesData.response && gamesData.response.length > 0) {
+            // Add stadium info to each game
+            const gamesWithStadium = gamesData.response.map((game: any) => ({
+              ...game,
+              stadium_info: {
+                name: team.stadium_name,
+                distance_miles: calculateDistance(
+                  airportLat,
+                  airportLon,
+                  Number(team.stadium_latitude),
+                  Number(team.stadium_longitude)
+                ).toFixed(1)
+              }
+            }));
+            allGames.push(...gamesWithStadium);
+            console.log(`Found ${gamesData.response.length} game(s) for ${team.team_name} on ${dateStr}`);
+          }
         }
+
+        currentDate.setDate(currentDate.getDate() + 1);
       }
     }
 
