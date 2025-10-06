@@ -58,17 +58,39 @@ async function handleCapture() {
       url: "https://id-preview--300e3d3f-6393-4fa8-9ea2-e17c21482f24.lovable.app/*" 
     });
     
-    // Get user ID from Charter Pro app
+    // Get user ID directly from Charter Pro localStorage
     let userId = null;
     if (appTabs.length > 0) {
       try {
-        const userResponse = await chrome.tabs.sendMessage(appTabs[0].id, { action: 'getUserId' });
-        if (userResponse?.success && userResponse.userId) {
-          userId = userResponse.userId;
-          console.log('Got user ID:', userId);
-        } else {
-          console.error('Failed to get user ID:', userResponse?.error);
-        }
+        const userResults = await chrome.scripting.executeScript({
+          target: { tabId: appTabs[0].id },
+          func: () => {
+            // Search for Supabase session in localStorage
+            for (let i = 0; i < localStorage.length; i++) {
+              const key = localStorage.key(i);
+              if (key && key.startsWith('sb-') && key.includes('auth-token')) {
+                const session = localStorage.getItem(key);
+                if (session) {
+                  try {
+                    const parsed = JSON.parse(session);
+                    // Try different session formats
+                    if (parsed.user?.id) {
+                      return parsed.user.id;
+                    } else if (parsed.currentSession?.user?.id) {
+                      return parsed.currentSession.user.id;
+                    }
+                  } catch (e) {
+                    console.error('Parse error:', e);
+                  }
+                }
+              }
+            }
+            return null;
+          }
+        });
+        
+        userId = userResults[0]?.result;
+        console.log('Got user ID:', userId);
       } catch (error) {
         console.error('Error getting user ID:', error);
       }
@@ -88,7 +110,7 @@ async function handleCapture() {
       return;
     }
     
-    console.log('Sending request with user ID');
+    console.log('Sending request with user ID:', userId);
 
     // Send to process-lead-complete endpoint for automatic parsing and creation
     const response = await fetch(`https://hwemookrxvflpinfpkrj.supabase.co/functions/v1/process-lead-complete`, {
