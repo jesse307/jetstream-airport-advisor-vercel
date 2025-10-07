@@ -62,12 +62,12 @@ const handler = async (req: Request): Promise<Response> => {
     const senderEmail = emailData.from?.address || emailData.from || emailData.sender || emailData.From || null;
     const subject = emailData.subject || emailData.Subject || null;
     const htmlBody = emailData.html || emailData.body_html || emailData.html_body || "";
-    const textBody = emailData.text || emailData.body || emailData.body_text || "";
+    const emailTextBody = emailData.text || emailData.body || emailData.body_text || "";
     
     // Extract URLs from email content
     const urlRegex = /https?:\/\/[^\s<>"']+/gi;
     const htmlUrls = htmlBody.match(urlRegex) || [];
-    const textUrls = textBody.match(urlRegex) || [];
+    const textUrls = emailTextBody.match(urlRegex) || [];
     const extractedUrls = [...new Set([...htmlUrls, ...textUrls])];
     
     console.log("Extracted URLs from email:", extractedUrls);
