@@ -215,7 +215,7 @@ export function QuoteComposer() {
             Quote Email Composer
           </CardTitle>
           <p className="text-sm text-muted-foreground">
-            Paste your raw quotes (1-6 at a time) to generate a professional Gmail-ready email
+            Paste your raw quotes (1-6 at a time) to generate a professional Gmail-ready email. Make sure to include the actual URLs on a new line after each quote.
           </p>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -233,18 +233,22 @@ export function QuoteComposer() {
             <Label htmlFor="rawQuotes">Paste Quotes Here</Label>
             <Textarea
               id="rawQuotes"
-              placeholder={`Paste quotes with URLs in this format:
+              placeholder={`Paste quotes in this format (copy the actual URL and paste it on a new line):
 
 Option 1
 $35,590.87 - Citation Ultra - (7 passengers, Light) - ARGUS Gold;
 Click here to view quote for ORL-RBW-CHO-RBW-ORL 10/8/2025-10/9/2025
-https://your-quote-url.com/quote1
+https://your-actual-quote-link.com/quote1
 
 Option 2
-...`}
+$43,462.40 - Lear 60 - (7 passengers, Mid) - Wyvern Registered;
+Click here to view quote for ORL-RBW-CHO-RBW-ORL 10/8/2025-10/9/2025
+https://your-actual-quote-link.com/quote2
+
+TIP: Right-click "Click here" link → Copy link address → Paste on new line`}
               value={rawQuotes}
               onChange={(e) => setRawQuotes(e.target.value)}
-              rows={10}
+              rows={12}
               className="font-mono text-sm"
             />
           </div>
