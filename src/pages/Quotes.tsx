@@ -95,12 +95,17 @@ export default function Quotes() {
           Quotes received via email webhook
         </p>
         <div className="mt-4 p-4 bg-muted rounded-lg">
-          <p className="text-sm font-medium mb-2">Webhook URL:</p>
-          <code className="text-xs bg-background p-2 rounded block">
+          <p className="text-sm font-medium mb-2">📧 Resend Inbound Email Setup:</p>
+          <ol className="text-sm space-y-2 mb-3">
+            <li>1. Go to <a href="https://resend.com/domains" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Resend Domains</a></li>
+            <li>2. Add an inbound route for your domain</li>
+            <li>3. Forward emails to this webhook URL:</li>
+          </ol>
+          <code className="text-xs bg-background p-2 rounded block break-all">
             https://hwemookrxvflpinfpkrj.supabase.co/functions/v1/receive-quote-email
           </code>
-          <p className="text-xs text-muted-foreground mt-2">
-            Forward emails to this webhook to automatically extract quote details
+          <p className="text-xs text-muted-foreground mt-3">
+            💡 Once set up, forward Salesforce quote emails to your Resend address and they'll appear here with URLs extracted!
           </p>
         </div>
       </div>
@@ -204,7 +209,7 @@ export default function Quotes() {
                       <p className="text-sm text-muted-foreground">{extracted.notes}</p>
                     </div>
                   )}
-                  {(extracted.contact_name || extracted.contact_email || extracted.contact_phone) && (
+                   {(extracted.contact_name || extracted.contact_email || extracted.contact_phone) && (
                     <div className="mt-4 p-3 bg-muted rounded-lg">
                       <p className="text-sm font-medium mb-1">Contact Info</p>
                       {extracted.contact_name && (
@@ -216,6 +221,27 @@ export default function Quotes() {
                       {extracted.contact_phone && (
                         <p className="text-sm text-muted-foreground">{extracted.contact_phone}</p>
                       )}
+                    </div>
+                  )}
+                  {extracted.quote_urls && extracted.quote_urls.length > 0 && (
+                    <div className="mt-4 p-3 bg-primary/5 border border-primary/20 rounded-lg">
+                      <p className="text-sm font-medium mb-2 flex items-center gap-2">
+                        <span className="inline-block w-2 h-2 bg-primary rounded-full animate-pulse"></span>
+                        Quote Links ({extracted.quote_urls.length})
+                      </p>
+                      <div className="space-y-1">
+                        {extracted.quote_urls.map((url: string, idx: number) => (
+                          <a
+                            key={idx}
+                            href={url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-primary hover:underline block truncate"
+                          >
+                            {url}
+                          </a>
+                        ))}
+                      </div>
                     </div>
                   )}
                   <p className="text-xs text-muted-foreground mt-4">

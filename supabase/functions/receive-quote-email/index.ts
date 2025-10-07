@@ -39,9 +39,19 @@ const handler = async (req: Request): Promise<Response> => {
     
     console.log("Received email data:", JSON.stringify(emailData).substring(0, 200));
 
-    // Extract basic email info
-    const senderEmail = emailData.from || emailData.sender || emailData.From || null;
+    // Handle Resend inbound email format
+    const senderEmail = emailData.from?.address || emailData.from || emailData.sender || emailData.From || null;
     const subject = emailData.subject || emailData.Subject || null;
+    const htmlBody = emailData.html || emailData.body_html || emailData.html_body || "";
+    const textBody = emailData.text || emailData.body || emailData.body_text || "";
+    
+    // Extract URLs from email content
+    const urlRegex = /https?:\/\/[^\s<>"']+/gi;
+    const htmlUrls = htmlBody.match(urlRegex) || [];
+    const textUrls = textBody.match(urlRegex) || [];
+    const extractedUrls = [...new Set([...htmlUrls, ...textUrls])];
+    
+    console.log("Extracted URLs from email:", extractedUrls);
 
     // Store raw email first
     const { data: quoteRecord, error: insertError } = await supabase
@@ -143,11 +153,16 @@ Return the data in a structured JSON format.`;
       console.log("Extracted data:", extractedData);
     }
 
-    // Update the quote with extracted data
+    // Update the quote with extracted data and URLs
+    const finalExtractedData = {
+      ...extractedData,
+      quote_urls: extractedUrls
+    };
+    
     const { error: updateError } = await supabase
       .from("quotes")
       .update({
-        extracted_data: extractedData,
+        extracted_data: finalExtractedData,
         processed: true,
         status: 'completed'
       })
@@ -162,7 +177,8 @@ Return the data in a structured JSON format.`;
         success: true, 
         message: "Quote received and processed",
         quoteId: quoteRecord.id,
-        extractedData
+        extractedData: finalExtractedData,
+        urlsExtracted: extractedUrls.length
       }),
       {
         status: 200,
