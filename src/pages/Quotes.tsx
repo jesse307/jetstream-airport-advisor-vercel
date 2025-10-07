@@ -118,14 +118,6 @@ export default function Quotes() {
     <tr>
       <td align="center" style="padding: 20px 0;">
         <table width="600" cellpadding="0" cellspacing="0" style="max-width: 600px; background-color: #ffffff;">
-          
-          <!-- Logo Header -->
-          <tr>
-            <td style="padding: 30px 30px 20px 30px; text-align: center; background: linear-gradient(135deg, ${stratosNavy} 0%, ${stratosBlue} 100%);">
-              <img src="https://300e3d3f-6393-4fa8-9ea2-e17c21482f24.lovableproject.com/images/stratos_logo_email.png" alt="Stratos Jets" style="max-width: 220px; height: auto;" />
-            </td>
-          </tr>
-          
           <!-- Greeting -->
           <tr>
             <td style="padding: 30px 30px 20px 30px;">
