@@ -92,10 +92,30 @@ serve(async (req) => {
     console.log('Parsed lead data:', parsedData);
 
     // Clean up empty time strings - convert to null for database
+    // Parse times from AM/PM format to HH:MM:SS format
+    const parseTimeToHHMMSS = (timeStr: string | null | undefined): string | null => {
+      if (!timeStr?.trim()) return null;
+      
+      const match = timeStr.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+      if (!match) return null;
+      
+      let hours = parseInt(match[1]);
+      const minutes = match[2];
+      const meridiem = match[3].toUpperCase();
+      
+      if (meridiem === 'PM' && hours !== 12) hours += 12;
+      if (meridiem === 'AM' && hours === 12) hours = 0;
+      
+      return `${hours.toString().padStart(2, '0')}:${minutes}:00`;
+    };
+
     const cleanedData = {
       ...parsedData,
-      departure_time: parsedData.departure_time?.trim() || null,
-      return_time: parsedData.return_time?.trim() || null,
+      departure_time: parseTimeToHHMMSS(parsedData.departure_time),
+      return_time: parseTimeToHHMMSS(parsedData.return_time),
+      // Don't populate datetime fields - keep as local date/time only
+      departure_datetime: null,
+      return_datetime: null,
     };
 
     // Step 2: Create lead in database with status "new" and user_id
