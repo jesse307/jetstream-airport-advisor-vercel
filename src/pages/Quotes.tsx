@@ -90,12 +90,17 @@ export default function Quotes() {
       return '<p>No quotes found</p>';
     }
     
-    // Extract common route/dates from first quote (assuming they're all the same trip)
+    // Extract common route/dates from first quote
     const firstQuote = quotes[0];
     const route = firstQuote.route || '';
     const dates = firstQuote.dates || '';
     
-    // Build quote HTML with responsive layout
+    // Stratos Jets branding colors
+    const stratosNavy = '#1a3a52';
+    const stratosBlue = '#2c5f8d';
+    const stratosLightBlue = '#3d7ab5';
+    
+    // Build quote HTML with Stratos branding
     const quoteHTML = `<!DOCTYPE html>
 <html>
 <head>
@@ -103,19 +108,28 @@ export default function Quotes() {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     @media only screen and (max-width: 600px) {
-      .quote-card { width: 100% !important; display: block !important; }
+      .quote-card { width: 100% !important; display: block !important; margin-bottom: 16px !important; }
+      .quote-wrapper { padding: 0 !important; }
     }
   </style>
 </head>
-<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5;">
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f8f9fa;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f8f9fa;">
     <tr>
-      <td align="center" style="padding: 20px;">
-        <table width="600" cellpadding="0" cellspacing="0" style="max-width: 600px; background-color: #ffffff; border-radius: 8px; overflow: hidden;">
+      <td align="center" style="padding: 20px 0;">
+        <table width="600" cellpadding="0" cellspacing="0" style="max-width: 600px; background-color: #ffffff;">
+          
+          <!-- Logo Header -->
+          <tr>
+            <td style="padding: 30px 30px 20px 30px; text-align: center; background: linear-gradient(135deg, ${stratosNavy} 0%, ${stratosBlue} 100%);">
+              <img src="https://300e3d3f-6393-4fa8-9ea2-e17c21482f24.lovableproject.com/images/stratos_logo_email.png" alt="Stratos Jets" style="max-width: 220px; height: auto;" />
+            </td>
+          </tr>
+          
           <!-- Greeting -->
           <tr>
             <td style="padding: 30px 30px 20px 30px;">
-              <p style="font-size: 15px; line-height: 1.6; color: #333; margin: 0;">Hello,</p>
+              <p style="font-size: 16px; line-height: 1.6; color: #333; margin: 0;">Hello,</p>
             </td>
           </tr>
           
@@ -123,19 +137,19 @@ export default function Quotes() {
           ${route || dates ? `
           <tr>
             <td style="padding: 0 30px 20px 30px;">
-              <table width="100%" cellpadding="0" cellspacing="0" style="background: linear-gradient(135deg, #0066cc 0%, #0052a3 100%); border-radius: 12px; overflow: hidden;">
+              <table width="100%" cellpadding="0" cellspacing="0" style="background: linear-gradient(135deg, ${stratosNavy} 0%, ${stratosLightBlue} 100%); border-radius: 8px; box-shadow: 0 2px 8px rgba(26, 58, 82, 0.15);">
                 <tr>
                   <td style="padding: 24px; text-align: center;">
                     ${route ? `
-                    <div style="margin-bottom: 12px;">
-                      <span style="color: rgba(255,255,255,0.8); font-size: 12px; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">Route</span>
-                      <h2 style="color: #ffffff; font-size: 28px; font-weight: 700; margin: 8px 0 0 0; letter-spacing: 2px;">${route}</h2>
+                    <div style="margin-bottom: ${dates ? '12px' : '0'};">
+                      <span style="color: rgba(255,255,255,0.9); font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 600;">Your Route</span>
+                      <h2 style="color: #ffffff; font-size: 26px; font-weight: 700; margin: 8px 0 0 0; letter-spacing: 3px;">${route}</h2>
                     </div>
                     ` : ''}
                     ${dates ? `
-                    <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.2);">
-                      <span style="color: rgba(255,255,255,0.8); font-size: 12px; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">Travel Dates</span>
-                      <p style="color: #ffffff; font-size: 18px; font-weight: 600; margin: 6px 0 0 0;">${dates}</p>
+                    <div style="margin-top: ${route ? '12px' : '0'}; padding-top: ${route ? '12px' : '0'}; ${route ? 'border-top: 1px solid rgba(255,255,255,0.25);' : ''}">
+                      <span style="color: rgba(255,255,255,0.9); font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 600;">Travel Dates</span>
+                      <p style="color: #ffffff; font-size: 17px; font-weight: 600; margin: 6px 0 0 0; letter-spacing: 0.5px;">${dates}</p>
                     </div>
                     ` : ''}
                   </td>
@@ -148,54 +162,54 @@ export default function Quotes() {
           <!-- Introduction -->
           <tr>
             <td style="padding: 0 30px 24px 30px;">
-              <p style="font-size: 15px; line-height: 1.6; color: #333; margin: 0;">
-                Thank you for your interest. Below are the available aircraft options:
+              <p style="font-size: 15px; line-height: 1.6; color: #555; margin: 0;">
+                Thank you for your interest. Below are the available aircraft options for your flight:
               </p>
             </td>
           </tr>
 
           <!-- Quotes Container -->
           <tr>
-            <td style="padding: 0 30px 30px 30px;">
+            <td class="quote-wrapper" style="padding: 0 20px 30px 20px;">
               <table width="100%" cellpadding="0" cellspacing="0">
                 <tr>
                   ${quotes.map((q: any, index: number) => `
-                    <td class="quote-card" style="width: ${100 / Math.min(quotes.length, 2)}%; vertical-align: top; padding: ${index % 2 === 1 ? '0 0 0 12px' : '0 12px 0 0'};">
-                      <table width="100%" cellpadding="0" cellspacing="0" style="background: #f8f9fa; border-left: 4px solid #0066cc; border-radius: 8px; margin-bottom: 16px;">
+                    <td class="quote-card" style="width: ${100 / Math.min(quotes.length, 2)}%; vertical-align: top; padding: ${index % 2 === 1 ? '0 0 0 10px' : '0 10px 0 0'};">
+                      <table width="100%" cellpadding="0" cellspacing="0" style="background: #ffffff; border: 2px solid ${stratosBlue}; border-radius: 8px; box-shadow: 0 2px 6px rgba(26, 58, 82, 0.08);">
                         <tr>
                           <td style="padding: 20px;">
                             <!-- Option Badge -->
-                            <span style="display: inline-block; background: #0066cc; color: white; padding: 4px 12px; border-radius: 4px; font-size: 11px; font-weight: 600; margin-bottom: 12px;">
-                              OPTION ${index + 1}
+                            <span style="display: inline-block; background: ${stratosNavy}; color: white; padding: 4px 12px; border-radius: 4px; font-size: 10px; font-weight: 700; letter-spacing: 1px; margin-bottom: 12px; text-transform: uppercase;">
+                              Option ${index + 1}
                             </span>
                             
                             <!-- Aircraft Name -->
-                            <h3 style="margin: 0 0 12px 0; font-size: 22px; font-weight: 700; color: #1a1a1a; line-height: 1.2;">
+                            <h3 style="margin: 0 0 10px 0; font-size: 20px; font-weight: 700; color: ${stratosNavy}; line-height: 1.2;">
                               ${q.aircraft_type}
                             </h3>
                             
                             <!-- Price -->
                             ${q.price ? `
-                            <h4 style="margin: 0 0 12px 0; font-size: 24px; font-weight: 700; color: #0066cc;">
+                            <h4 style="margin: 0 0 10px 0; font-size: 22px; font-weight: 700; color: ${stratosLightBlue};">
                               ${q.currency ? q.currency + ' ' : ''}${q.price}
                             </h4>
                             ` : ''}
                             
                             <!-- Details -->
-                            <p style="margin: 0 0 8px 0; font-size: 13px; color: #555; line-height: 1.4;">
-                              ${q.passengers ? `<strong>${q.passengers} pax</strong>` : ''}
+                            <p style="margin: 0 0 6px 0; font-size: 13px; color: #666; line-height: 1.4;">
+                              ${q.passengers ? `<strong>${q.passengers} passengers</strong>` : ''}
                               ${q.category ? ` • ${q.category}` : ''}
                             </p>
                             
                             ${q.certifications ? `
-                            <p style="margin: 0 0 12px 0; font-size: 12px; color: #666; font-style: italic; line-height: 1.3;">
+                            <p style="margin: 0 0 12px 0; font-size: 11px; color: #888; line-height: 1.3; font-style: italic;">
                               ${q.certifications}
                             </p>
                             ` : ''}
                             
                             <!-- View Button -->
                             ${q.url ? `
-                            <a href="${q.url}" style="display: inline-block; margin-top: 8px; padding: 10px 20px; background: #0066cc; color: white; text-decoration: none; border-radius: 6px; font-size: 13px; font-weight: 600;">
+                            <a href="${q.url}" style="display: inline-block; margin-top: 8px; padding: 10px 18px; background: ${stratosNavy}; color: white; text-decoration: none; border-radius: 4px; font-size: 12px; font-weight: 600; letter-spacing: 0.5px;">
                               View Details →
                             </a>
                             ` : ''}
@@ -212,12 +226,23 @@ export default function Quotes() {
 
           <!-- Closing -->
           <tr>
-            <td style="padding: 0 30px 30px 30px; border-top: 2px solid #e5e7eb;">
-              <p style="font-size: 15px; line-height: 1.6; color: #333; margin: 20px 0 0 0;">
-                Please review the options and let me know if you have any questions or would like to proceed with booking.
+            <td style="padding: 0 30px 30px 30px; border-top: 1px solid #e5e7eb;">
+              <p style="font-size: 15px; line-height: 1.6; color: #555; margin: 20px 0 0 0;">
+                Please review these options and let me know if you have any questions or would like to proceed with booking.
               </p>
-              <p style="font-size: 15px; line-height: 1.6; color: #333; margin: 16px 0 0 0;">
+              <p style="font-size: 15px; line-height: 1.6; color: #555; margin: 16px 0 0 0;">
                 Best regards
+              </p>
+            </td>
+          </tr>
+          
+          <!-- Footer -->
+          <tr>
+            <td style="padding: 20px 30px; background-color: #f8f9fa; text-align: center; border-top: 1px solid #e5e7eb;">
+              <p style="margin: 0; font-size: 12px; color: #888; line-height: 1.5;">
+                <strong style="color: ${stratosNavy};">Stratos Jets</strong><br>
+                Transparent Pricing • Simplified Bookings • Flawless Coordination<br>
+                <a href="https://www.stratosjets.com" style="color: ${stratosBlue}; text-decoration: none;">www.stratosjets.com</a>
               </p>
             </td>
           </tr>
