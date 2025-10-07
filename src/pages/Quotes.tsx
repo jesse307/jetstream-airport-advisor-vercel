@@ -85,78 +85,131 @@ export default function Quotes() {
     const extracted = quote.extracted_data || {};
     const urls = extracted.quote_urls || [];
     
-    let formattedText = '';
+    const route = extracted.departure_airport && extracted.arrival_airport 
+      ? `${extracted.departure_airport}-${extracted.arrival_airport}` 
+      : '';
     
-    // Add operator/company info
-    if (extracted.operator) {
-      formattedText += `Operator: ${extracted.operator}\n`;
-    }
+    // Build quote HTML similar to QuoteComposer format
+    const quoteHTML = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+  <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+    <p style="font-size: 15px; line-height: 1.6; color: #333; margin: 0 0 20px 0;">Hello,</p>
     
-    // Add aircraft type
-    if (extracted.aircraft_type) {
-      formattedText += `Aircraft: ${extracted.aircraft_type}\n`;
-    }
+    <p style="font-size: 15px; line-height: 1.6; color: #333; margin: 0 0 24px 0;">
+      Thank you for your interest in private jet charter services. Below is the available option for your upcoming trip:
+    </p>
+
+    <div style="margin-bottom: 0; padding: 24px; background: #f8f9fa; border-left: 4px solid #0066cc; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+      ${extracted.operator ? `
+      <div style="margin-bottom: 16px;">
+        <span style="display: inline-block; background: #0066cc; color: white; padding: 6px 16px; border-radius: 4px; font-size: 14px; font-weight: 600; margin-bottom: 12px;">
+          ${extracted.operator}
+        </span>
+      </div>
+      ` : ''}
+      
+      <h3 style="margin: 0 0 16px 0; font-size: 32px; font-weight: 700; color: #1a1a1a; letter-spacing: -0.5px;">
+        ${extracted.aircraft_type || 'Aircraft'}
+      </h3>
+      
+      <h4 style="margin: 0 0 12px 0; font-size: 28px; font-weight: 700; color: #0066cc;">
+        ${extracted.currency ? extracted.currency + ' ' : ''}${extracted.price || 'Price TBD'}
+      </h4>
+      
+      ${extracted.passengers ? `
+      <p style="margin: 0 0 8px 0; font-size: 15px; color: #555; line-height: 1.5;">
+        <strong>Capacity:</strong> ${extracted.passengers} passenger${parseInt(extracted.passengers) > 1 ? 's' : ''}
+      </p>
+      ` : ''}
+      
+      ${extracted.notes ? `
+      <p style="margin: 0 0 16px 0; font-size: 14px; color: #666; font-style: italic; line-height: 1.4;">
+        ${extracted.notes}
+      </p>
+      ` : ''}
+      
+      ${route || extracted.travel_date ? `
+      <p style="margin: 0 0 16px 0; font-size: 13px; color: #888;">
+        ${route ? `<strong>Route:</strong> ${route}` : ''} 
+        ${route && extracted.travel_date ? ' • ' : ''}
+        ${extracted.travel_date ? `<strong>Date:</strong> ${extracted.travel_date}` : ''}
+      </p>
+      ` : ''}
+      
+      ${urls.length > 0 ? `
+      <a href="${urls[0]}" style="display: inline-block; margin-top: 8px; padding: 12px 24px; background: #0066cc; color: white; text-decoration: none; border-radius: 6px; font-size: 15px; font-weight: 600; box-shadow: 0 2px 4px rgba(0,102,204,0.3);">
+        View Full Quote Details →
+      </a>
+      ` : ''}
+      
+      ${urls.length > 1 ? `
+      <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #e5e7eb;">
+        <p style="margin: 0 0 8px 0; font-size: 13px; color: #666; font-weight: 600;">Additional Quote Links:</p>
+        ${urls.slice(1).map((url: string, idx: number) => `
+        <a href="${url}" style="display: block; margin: 4px 0; font-size: 13px; color: #0066cc; text-decoration: underline;">
+          Quote Link ${idx + 2}
+        </a>
+        `).join('')}
+      </div>
+      ` : ''}
+    </div>
+
+    <div style="margin-top: 32px; padding-top: 24px; border-top: 2px solid #e5e7eb;">
+      <p style="font-size: 15px; line-height: 1.6; color: #333; margin: 0 0 16px 0;">
+        Please review the option above and let me know if you have any questions or would like to proceed with booking.
+      </p>
+      
+      <p style="font-size: 15px; line-height: 1.6; color: #333; margin: 0 0 16px 0;">
+        I'm here to help make your journey seamless and comfortable.
+      </p>
+      
+      <p style="font-size: 15px; line-height: 1.6; color: #333; margin: 0;">
+        Best regards
+      </p>
+    </div>
+  </div>
+</body>
+</html>`;
     
-    // Add route
-    if (extracted.departure_airport || extracted.arrival_airport) {
-      formattedText += `Route: ${extracted.departure_airport || '?'} → ${extracted.arrival_airport || '?'}\n`;
-    }
-    
-    // Add date
-    if (extracted.travel_date) {
-      formattedText += `Date: ${extracted.travel_date}\n`;
-    }
-    
-    // Add passengers
-    if (extracted.passengers) {
-      formattedText += `Passengers: ${extracted.passengers}\n`;
-    }
-    
-    // Add price
-    if (extracted.price) {
-      formattedText += `Price: ${extracted.currency ? extracted.currency + ' ' : ''}${extracted.price}\n`;
-    }
-    
-    // Add notes
-    if (extracted.notes) {
-      formattedText += `\nNotes: ${extracted.notes}\n`;
-    }
-    
-    // Add contact info
-    if (extracted.contact_name || extracted.contact_email || extracted.contact_phone) {
-      formattedText += '\nContact:\n';
-      if (extracted.contact_name) formattedText += `  ${extracted.contact_name}\n`;
-      if (extracted.contact_email) formattedText += `  ${extracted.contact_email}\n`;
-      if (extracted.contact_phone) formattedText += `  ${extracted.contact_phone}\n`;
-    }
-    
-    // Add URLs
-    if (urls.length > 0) {
-      formattedText += '\nQuote Links:\n';
-      urls.forEach((url: string, idx: number) => {
-        formattedText += `${idx + 1}. ${url}\n`;
-      });
-    }
-    
-    return formattedText;
+    return quoteHTML;
   };
 
   const copyToClipboard = async (quote: Quote) => {
-    const formatted = formatForGmail(quote);
+    const html = formatForGmail(quote);
+    
     try {
-      await navigator.clipboard.writeText(formatted);
+      // Try to copy as HTML for Gmail
+      const blob = new Blob([html], { type: 'text/html' });
+      const data = [new ClipboardItem({ 'text/html': blob })];
+      await navigator.clipboard.write(data);
       setCopiedId(quote.id);
       setTimeout(() => setCopiedId(null), 2000);
       toast({
         title: "Copied!",
-        description: "Quote formatted and copied to clipboard",
+        description: "HTML copied! Paste directly into Gmail",
       });
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to copy to clipboard",
-        variant: "destructive",
-      });
+      // Fallback to plain text
+      try {
+        await navigator.clipboard.writeText(html);
+        setCopiedId(quote.id);
+        setTimeout(() => setCopiedId(null), 2000);
+        toast({
+          title: "Copied!",
+          description: "HTML code copied to clipboard",
+        });
+      } catch {
+        toast({
+          title: "Error",
+          description: "Failed to copy to clipboard",
+          variant: "destructive",
+        });
+      }
     }
   };
 
