@@ -101,18 +101,19 @@ const handler = async (req: Request): Promise<Response> => {
     const emailBody = emailData.body || emailData.text || emailData.html || JSON.stringify(emailData);
     const attachmentInfo = emailData.attachments ? `\n\nAttachments: ${JSON.stringify(emailData.attachments)}` : '';
     
-    const systemPrompt = `You are a quote extraction assistant. Extract structured information from charter quote emails.
-Extract the following information if available:
-- Charter operator/company name
-- Aircraft type/model
-- Route (departure and arrival airports)
-- Date(s) of travel
-- Number of passengers
-- Price/cost information
-- Any special requirements or notes
-- Contact information
+    const systemPrompt = `You are a quote extraction assistant. Extract ONLY the charter quote options from emails, ignoring all other content like greetings, signatures, or unrelated text.
 
-Return the data in a structured JSON format.`;
+For each quote option found, extract:
+- Aircraft type/model
+- Price (with currency if available)
+- Number of passengers
+- Aircraft category (Light, Mid, Heavy, etc.)
+- Any certifications or notes
+- The URL/link associated with that specific quote
+- Route information if available
+- Date information if available
+
+Return an array of quotes, with each quote having its own URL. Make sure each quote's URL is correctly matched to that specific quote option.`;
 
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -124,36 +125,44 @@ Return the data in a structured JSON format.`;
         model: "google/gemini-2.5-flash",
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: `Extract quote details from this email:\n\nSubject: ${subject}\nFrom: ${senderEmail}\n\nBody:\n${emailBody}${attachmentInfo}` }
+          { role: "user", content: `Extract all quote options from this email. Each quote should have its own URL.\n\nSubject: ${subject}\nFrom: ${senderEmail}\n\nBody:\n${emailBody}${attachmentInfo}` }
         ],
         tools: [
           {
             type: "function",
             function: {
-              name: "extract_quote_details",
-              description: "Extract structured quote information from the email",
+              name: "extract_quotes",
+              description: "Extract all quote options with their details and URLs",
               parameters: {
                 type: "object",
                 properties: {
-                  operator: { type: "string", description: "Charter operator/company name" },
-                  aircraft_type: { type: "string", description: "Aircraft model or type" },
-                  departure_airport: { type: "string", description: "Departure airport code or name" },
-                  arrival_airport: { type: "string", description: "Arrival airport code or name" },
-                  travel_date: { type: "string", description: "Date of travel" },
-                  passengers: { type: "number", description: "Number of passengers" },
-                  price: { type: "string", description: "Price or cost information" },
-                  currency: { type: "string", description: "Currency code (USD, EUR, etc.)" },
-                  notes: { type: "string", description: "Additional notes or requirements" },
-                  contact_name: { type: "string", description: "Contact person name" },
-                  contact_email: { type: "string", description: "Contact email" },
-                  contact_phone: { type: "string", description: "Contact phone number" }
+                  quotes: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        aircraft_type: { type: "string", description: "Aircraft model or type" },
+                        price: { type: "string", description: "Price amount" },
+                        currency: { type: "string", description: "Currency code (USD, EUR, etc.)" },
+                        passengers: { type: "number", description: "Number of passengers" },
+                        category: { type: "string", description: "Aircraft category (Light, Mid, Heavy, etc.)" },
+                        certifications: { type: "string", description: "Any certifications or safety ratings" },
+                        url: { type: "string", description: "The specific URL/link for this quote" },
+                        route: { type: "string", description: "Flight route" },
+                        dates: { type: "string", description: "Travel dates" }
+                      },
+                      required: ["aircraft_type"],
+                      additionalProperties: false
+                    }
+                  }
                 },
+                required: ["quotes"],
                 additionalProperties: false
               }
             }
           }
         ],
-        tool_choice: { type: "function", function: { name: "extract_quote_details" } }
+        tool_choice: { type: "function", function: { name: "extract_quotes" } }
       }),
     });
 
@@ -165,23 +174,19 @@ Return the data in a structured JSON format.`;
     const aiData = await aiResponse.json();
     console.log("AI response received");
     
-    let extractedData = {};
+    let extractedQuotes = [];
     if (aiData.choices?.[0]?.message?.tool_calls?.[0]) {
       const toolCall = aiData.choices[0].message.tool_calls[0];
-      extractedData = JSON.parse(toolCall.function.arguments);
-      console.log("Extracted data:", extractedData);
+      const parsedData = JSON.parse(toolCall.function.arguments);
+      extractedQuotes = parsedData.quotes || [];
+      console.log("Extracted quotes:", extractedQuotes);
     }
 
-    // Update the quote with extracted data and URLs
-    const finalExtractedData = {
-      ...extractedData,
-      quote_urls: extractedUrls
-    };
-    
+    // Update the quote with extracted data
     const { error: updateError } = await supabase
       .from("quotes")
       .update({
-        extracted_data: finalExtractedData,
+        extracted_data: { quotes: extractedQuotes },
         processed: true,
         status: 'completed'
       })
@@ -194,10 +199,9 @@ Return the data in a structured JSON format.`;
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: "Quote received and processed",
+        message: "Quotes received and processed",
         quoteId: quoteRecord.id,
-        extractedData: finalExtractedData,
-        urlsExtracted: extractedUrls.length
+        quotesExtracted: extractedQuotes.length
       }),
       {
         status: 200,

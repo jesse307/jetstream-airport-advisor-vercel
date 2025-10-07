@@ -84,13 +84,13 @@ export default function Quotes() {
 
   const formatForGmail = (quote: Quote) => {
     const extracted = quote.extracted_data || {};
-    const urls = extracted.quote_urls || [];
+    const quotes = extracted.quotes || [];
     
-    const route = extracted.departure_airport && extracted.arrival_airport 
-      ? `${extracted.departure_airport}-${extracted.arrival_airport}` 
-      : '';
+    if (quotes.length === 0) {
+      return '<p>No quotes found</p>';
+    }
     
-    // Build quote HTML similar to QuoteComposer format
+    // Build quote HTML with multiple options
     const quoteHTML = `<!DOCTYPE html>
 <html>
 <head>
@@ -102,67 +102,57 @@ export default function Quotes() {
     <p style="font-size: 15px; line-height: 1.6; color: #333; margin: 0 0 20px 0;">Hello,</p>
     
     <p style="font-size: 15px; line-height: 1.6; color: #333; margin: 0 0 24px 0;">
-      Thank you for your interest in private jet charter services. Below is the available option for your upcoming trip:
+      Thank you for your interest in private jet charter services. Below are the available options for your upcoming trip:
     </p>
 
-    <div style="margin-bottom: 0; padding: 24px; background: #f8f9fa; border-left: 4px solid #0066cc; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-      ${extracted.operator ? `
+    ${quotes.map((q: any, index: number) => `
+    <div style="margin-bottom: ${index < quotes.length - 1 ? '32px' : '0'}; padding: 24px; background: #f8f9fa; border-left: 4px solid #0066cc; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
       <div style="margin-bottom: 16px;">
         <span style="display: inline-block; background: #0066cc; color: white; padding: 6px 16px; border-radius: 4px; font-size: 14px; font-weight: 600; margin-bottom: 12px;">
-          ${extracted.operator}
+          Option ${index + 1}
         </span>
       </div>
-      ` : ''}
       
       <h3 style="margin: 0 0 16px 0; font-size: 32px; font-weight: 700; color: #1a1a1a; letter-spacing: -0.5px;">
-        ${extracted.aircraft_type || 'Aircraft'}
+        ${q.aircraft_type}
       </h3>
       
+      ${q.price ? `
       <h4 style="margin: 0 0 12px 0; font-size: 28px; font-weight: 700; color: #0066cc;">
-        ${extracted.currency ? extracted.currency + ' ' : ''}${extracted.price || 'Price TBD'}
+        ${q.currency ? q.currency + ' ' : ''}${q.price}
       </h4>
+      ` : ''}
       
-      ${extracted.passengers ? `
       <p style="margin: 0 0 8px 0; font-size: 15px; color: #555; line-height: 1.5;">
-        <strong>Capacity:</strong> ${extracted.passengers} passenger${parseInt(extracted.passengers) > 1 ? 's' : ''}
+        ${q.passengers ? `<strong>Capacity:</strong> ${q.passengers} passenger${q.passengers > 1 ? 's' : ''}` : ''}
+        ${q.category ? ` • <strong>Category:</strong> ${q.category}` : ''}
       </p>
-      ` : ''}
       
-      ${extracted.notes ? `
+      ${q.certifications ? `
       <p style="margin: 0 0 16px 0; font-size: 14px; color: #666; font-style: italic; line-height: 1.4;">
-        ${extracted.notes}
+        ${q.certifications}
       </p>
       ` : ''}
       
-      ${route || extracted.travel_date ? `
+      ${q.route || q.dates ? `
       <p style="margin: 0 0 16px 0; font-size: 13px; color: #888;">
-        ${route ? `<strong>Route:</strong> ${route}` : ''} 
-        ${route && extracted.travel_date ? ' • ' : ''}
-        ${extracted.travel_date ? `<strong>Date:</strong> ${extracted.travel_date}` : ''}
+        ${q.route ? `<strong>Route:</strong> ${q.route}` : ''} 
+        ${q.route && q.dates ? ' • ' : ''}
+        ${q.dates ? `<strong>Dates:</strong> ${q.dates}` : ''}
       </p>
       ` : ''}
       
-      ${urls.length > 0 ? `
-      <a href="${urls[0]}" style="display: inline-block; margin-top: 8px; padding: 12px 24px; background: #0066cc; color: white; text-decoration: none; border-radius: 6px; font-size: 15px; font-weight: 600; box-shadow: 0 2px 4px rgba(0,102,204,0.3);">
+      ${q.url ? `
+      <a href="${q.url}" style="display: inline-block; margin-top: 8px; padding: 12px 24px; background: #0066cc; color: white; text-decoration: none; border-radius: 6px; font-size: 15px; font-weight: 600; box-shadow: 0 2px 4px rgba(0,102,204,0.3);">
         View Full Quote Details →
       </a>
       ` : ''}
-      
-      ${urls.length > 1 ? `
-      <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #e5e7eb;">
-        <p style="margin: 0 0 8px 0; font-size: 13px; color: #666; font-weight: 600;">Additional Quote Links:</p>
-        ${urls.slice(1).map((url: string, idx: number) => `
-        <a href="${url}" style="display: block; margin: 4px 0; font-size: 13px; color: #0066cc; text-decoration: underline;">
-          Quote Link ${idx + 2}
-        </a>
-        `).join('')}
-      </div>
-      ` : ''}
     </div>
+    `).join('')}
 
     <div style="margin-top: 32px; padding-top: 24px; border-top: 2px solid #e5e7eb;">
       <p style="font-size: 15px; line-height: 1.6; color: #333; margin: 0 0 16px 0;">
-        Please review the option above and let me know if you have any questions or would like to proceed with booking.
+        Please review the options above and let me know if you have any questions or would like to proceed with booking.
       </p>
       
       <p style="font-size: 15px; line-height: 1.6; color: #333; margin: 0 0 16px 0;">
@@ -306,107 +296,60 @@ export default function Quotes() {
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {extracted.operator && (
-                      <div className="flex items-start gap-2">
-                        <Plane className="h-5 w-5 text-muted-foreground mt-0.5" />
-                        <div>
-                          <p className="text-sm font-medium">Operator</p>
-                          <p className="text-sm text-muted-foreground">{extracted.operator}</p>
+                    {(() => {
+                      const quotes = extracted.quotes || [];
+                      if (quotes.length === 0) {
+                        return <p className="text-sm text-muted-foreground col-span-2">No quotes extracted yet</p>;
+                      }
+                      
+                      return (
+                        <div className="col-span-2 space-y-4">
+                          <p className="text-sm font-semibold">{quotes.length} Quote{quotes.length > 1 ? 's' : ''} Found:</p>
+                          {quotes.map((q: any, idx: number) => (
+                            <div key={idx} className="p-4 bg-muted rounded-lg space-y-2">
+                              <div className="flex items-center gap-2">
+                                <Badge variant="secondary">Option {idx + 1}</Badge>
+                                {q.aircraft_type && <span className="font-semibold">{q.aircraft_type}</span>}
+                              </div>
+                              {q.price && (
+                                <p className="text-lg font-bold text-primary">
+                                  {q.currency ? `${q.currency} ` : ''}{q.price}
+                                </p>
+                              )}
+                              <div className="text-sm space-y-1">
+                                {q.passengers && (
+                                  <p><strong>Passengers:</strong> {q.passengers}</p>
+                                )}
+                                {q.category && (
+                                  <p><strong>Category:</strong> {q.category}</p>
+                                )}
+                                {q.certifications && (
+                                  <p className="text-muted-foreground italic">{q.certifications}</p>
+                                )}
+                                {q.route && (
+                                  <p><strong>Route:</strong> {q.route}</p>
+                                )}
+                                {q.dates && (
+                                  <p><strong>Dates:</strong> {q.dates}</p>
+                                )}
+                                {q.url && (
+                                  <a 
+                                    href={q.url} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="text-xs text-primary hover:underline block truncate"
+                                  >
+                                    {q.url}
+                                  </a>
+                                )}
+                              </div>
+                            </div>
+                          ))}
                         </div>
-                      </div>
-                    )}
-                    {extracted.aircraft_type && (
-                      <div className="flex items-start gap-2">
-                        <Plane className="h-5 w-5 text-muted-foreground mt-0.5" />
-                        <div>
-                          <p className="text-sm font-medium">Aircraft</p>
-                          <p className="text-sm text-muted-foreground">{extracted.aircraft_type}</p>
-                        </div>
-                      </div>
-                    )}
-                    {(extracted.departure_airport || extracted.arrival_airport) && (
-                      <div className="flex items-start gap-2">
-                        <Plane className="h-5 w-5 text-muted-foreground mt-0.5" />
-                        <div>
-                          <p className="text-sm font-medium">Route</p>
-                          <p className="text-sm text-muted-foreground">
-                            {extracted.departure_airport || '?'} → {extracted.arrival_airport || '?'}
-                          </p>
-                        </div>
-                      </div>
-                    )}
-                    {extracted.travel_date && (
-                      <div className="flex items-start gap-2">
-                        <Calendar className="h-5 w-5 text-muted-foreground mt-0.5" />
-                        <div>
-                          <p className="text-sm font-medium">Travel Date</p>
-                          <p className="text-sm text-muted-foreground">{extracted.travel_date}</p>
-                        </div>
-                      </div>
-                    )}
-                    {extracted.passengers && (
-                      <div className="flex items-start gap-2">
-                        <Users className="h-5 w-5 text-muted-foreground mt-0.5" />
-                        <div>
-                          <p className="text-sm font-medium">Passengers</p>
-                          <p className="text-sm text-muted-foreground">{extracted.passengers}</p>
-                        </div>
-                      </div>
-                    )}
-                    {extracted.price && (
-                      <div className="flex items-start gap-2">
-                        <DollarSign className="h-5 w-5 text-muted-foreground mt-0.5" />
-                        <div>
-                          <p className="text-sm font-medium">Price</p>
-                          <p className="text-sm text-muted-foreground">
-                            {extracted.currency && `${extracted.currency} `}{extracted.price}
-                          </p>
-                        </div>
-                      </div>
-                    )}
+                      );
+                    })()}
                   </div>
-                  {extracted.notes && (
-                    <div className="mt-4 p-3 bg-muted rounded-lg">
-                      <p className="text-sm font-medium mb-1">Notes</p>
-                      <p className="text-sm text-muted-foreground">{extracted.notes}</p>
-                    </div>
-                  )}
-                   {(extracted.contact_name || extracted.contact_email || extracted.contact_phone) && (
-                    <div className="mt-4 p-3 bg-muted rounded-lg">
-                      <p className="text-sm font-medium mb-1">Contact Info</p>
-                      {extracted.contact_name && (
-                        <p className="text-sm text-muted-foreground">{extracted.contact_name}</p>
-                      )}
-                      {extracted.contact_email && (
-                        <p className="text-sm text-muted-foreground">{extracted.contact_email}</p>
-                      )}
-                      {extracted.contact_phone && (
-                        <p className="text-sm text-muted-foreground">{extracted.contact_phone}</p>
-                      )}
-                    </div>
-                  )}
-                  {extracted.quote_urls && extracted.quote_urls.length > 0 && (
-                    <div className="mt-4 p-3 bg-primary/5 border border-primary/20 rounded-lg">
-                      <p className="text-sm font-medium mb-2 flex items-center gap-2">
-                        <span className="inline-block w-2 h-2 bg-primary rounded-full animate-pulse"></span>
-                        Quote Links ({extracted.quote_urls.length})
-                      </p>
-                      <div className="space-y-1">
-                        {extracted.quote_urls.map((url: string, idx: number) => (
-                          <a
-                            key={idx}
-                            href={url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-xs text-primary hover:underline block truncate"
-                          >
-                            {url}
-                          </a>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                   <p className="text-xs text-muted-foreground mt-4">
+                  <p className="text-xs text-muted-foreground mt-4">
                     Received: {new Date(quote.created_at).toLocaleString()}
                   </p>
                   
