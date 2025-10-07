@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, Mail, Plane, Calendar, Users, DollarSign, Copy, Check } from "lucide-react";
+import { Loader2, Mail, Plane, Calendar, Users, DollarSign, Copy, Check, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface Quote {
@@ -19,6 +19,7 @@ export default function Quotes() {
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [loading, setLoading] = useState(true);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [previewId, setPreviewId] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -274,6 +275,14 @@ export default function Quotes() {
                     <div className="flex items-center gap-2">
                       <Button
                         size="sm"
+                        onClick={() => setPreviewId(previewId === quote.id ? null : quote.id)}
+                        variant="outline"
+                      >
+                        <Eye className="h-4 w-4 mr-1" />
+                        {previewId === quote.id ? 'Hide Preview' : 'Preview'}
+                      </Button>
+                      <Button
+                        size="sm"
                         onClick={() => copyToClipboard(quote)}
                         variant="outline"
                       >
@@ -397,9 +406,22 @@ export default function Quotes() {
                       </div>
                     </div>
                   )}
-                  <p className="text-xs text-muted-foreground mt-4">
+                   <p className="text-xs text-muted-foreground mt-4">
                     Received: {new Date(quote.created_at).toLocaleString()}
                   </p>
+                  
+                  {previewId === quote.id && (
+                    <div className="mt-6 pt-6 border-t">
+                      <h4 className="text-sm font-semibold mb-3">Email Preview</h4>
+                      <div 
+                        className="border rounded-lg p-4 bg-white overflow-auto max-h-[600px]"
+                        dangerouslySetInnerHTML={{ __html: formatForGmail(quote) }}
+                      />
+                      <p className="text-xs text-muted-foreground mt-3">
+                        This is how your email will look when pasted into Gmail
+                      </p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             );
