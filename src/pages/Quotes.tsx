@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Mail, Plane, Calendar, Users, DollarSign } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Loader2, Mail, Plane, Calendar, Users, DollarSign, Copy, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface Quote {
@@ -17,6 +18,7 @@ interface Quote {
 export default function Quotes() {
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [loading, setLoading] = useState(true);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -79,6 +81,85 @@ export default function Quotes() {
     }
   };
 
+  const formatForGmail = (quote: Quote) => {
+    const extracted = quote.extracted_data || {};
+    const urls = extracted.quote_urls || [];
+    
+    let formattedText = '';
+    
+    // Add operator/company info
+    if (extracted.operator) {
+      formattedText += `Operator: ${extracted.operator}\n`;
+    }
+    
+    // Add aircraft type
+    if (extracted.aircraft_type) {
+      formattedText += `Aircraft: ${extracted.aircraft_type}\n`;
+    }
+    
+    // Add route
+    if (extracted.departure_airport || extracted.arrival_airport) {
+      formattedText += `Route: ${extracted.departure_airport || '?'} → ${extracted.arrival_airport || '?'}\n`;
+    }
+    
+    // Add date
+    if (extracted.travel_date) {
+      formattedText += `Date: ${extracted.travel_date}\n`;
+    }
+    
+    // Add passengers
+    if (extracted.passengers) {
+      formattedText += `Passengers: ${extracted.passengers}\n`;
+    }
+    
+    // Add price
+    if (extracted.price) {
+      formattedText += `Price: ${extracted.currency ? extracted.currency + ' ' : ''}${extracted.price}\n`;
+    }
+    
+    // Add notes
+    if (extracted.notes) {
+      formattedText += `\nNotes: ${extracted.notes}\n`;
+    }
+    
+    // Add contact info
+    if (extracted.contact_name || extracted.contact_email || extracted.contact_phone) {
+      formattedText += '\nContact:\n';
+      if (extracted.contact_name) formattedText += `  ${extracted.contact_name}\n`;
+      if (extracted.contact_email) formattedText += `  ${extracted.contact_email}\n`;
+      if (extracted.contact_phone) formattedText += `  ${extracted.contact_phone}\n`;
+    }
+    
+    // Add URLs
+    if (urls.length > 0) {
+      formattedText += '\nQuote Links:\n';
+      urls.forEach((url: string, idx: number) => {
+        formattedText += `${idx + 1}. ${url}\n`;
+      });
+    }
+    
+    return formattedText;
+  };
+
+  const copyToClipboard = async (quote: Quote) => {
+    const formatted = formatForGmail(quote);
+    try {
+      await navigator.clipboard.writeText(formatted);
+      setCopiedId(quote.id);
+      setTimeout(() => setCopiedId(null), 2000);
+      toast({
+        title: "Copied!",
+        description: "Quote formatted and copied to clipboard",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to copy to clipboard",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -137,9 +218,28 @@ export default function Quotes() {
                         {quote.sender_email}
                       </CardDescription>
                     </div>
-                    <Badge variant={getStatusColor(quote.status)}>
-                      {quote.status}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        onClick={() => copyToClipboard(quote)}
+                        variant="outline"
+                      >
+                        {copiedId === quote.id ? (
+                          <>
+                            <Check className="h-4 w-4 mr-1" />
+                            Copied
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="h-4 w-4 mr-1" />
+                            Copy for Gmail
+                          </>
+                        )}
+                      </Button>
+                      <Badge variant={getStatusColor(quote.status)}>
+                        {quote.status}
+                      </Badge>
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent>
