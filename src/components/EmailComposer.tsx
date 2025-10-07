@@ -194,11 +194,19 @@ Jesse
   const populateTemplate = (template: string, data: any) => {
     let populated = template;
     
-    // Format date to US format (MM/DD/YYYY)
+    // Format date to US format (MM/DD/YYYY) without timezone conversion
     const formatToUSDate = (dateString: string) => {
       try {
-        const date = new Date(dateString);
-        return date.toLocaleDateString('en-US');
+        if (!dateString) return dateString;
+        // Parse YYYY-MM-DD format directly without timezone conversion
+        const parts = dateString.split('-');
+        if (parts.length === 3) {
+          const year = parts[0];
+          const month = parts[1];
+          const day = parts[2];
+          return `${month}/${day}/${year}`;
+        }
+        return dateString;
       } catch {
         return dateString;
       }
