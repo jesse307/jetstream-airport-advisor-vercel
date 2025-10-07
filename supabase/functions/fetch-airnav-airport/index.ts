@@ -101,70 +101,124 @@ serve(async (req) => {
 
 function parseAirNavHTML(html: string, code: string): any {
   try {
-    // Extract airport name
-    const nameMatch = html.match(/<title>([^<]+)\s+\(/);
-    const name = nameMatch ? nameMatch[1].trim() : null;
+    console.log('Parsing AirNav HTML for code:', code);
+    
+    // Extract airport name from title
+    const titleMatch = html.match(/<title>([^-]+)-\s*([^(]+)\s*\(/i);
+    let name = null;
+    let iata = null;
+    if (titleMatch) {
+      iata = titleMatch[1].trim();
+      name = titleMatch[2].trim();
+    }
+    
+    // Alternative name extraction
+    if (!name) {
+      const nameMatch = html.match(/Airport:<\/b>\s*<[^>]+>([^<]+)</i) || 
+                        html.match(/<h1[^>]*>([^<]+)<\/h1>/i);
+      name = nameMatch ? nameMatch[1].trim() : null;
+    }
 
-    // Extract location (city, state)
-    const locationMatch = html.match(/Location:<\/b>\s*([^<]+)/);
+    // Extract location - try multiple patterns
     let city = null;
     let state = null;
-    if (locationMatch) {
-      const location = locationMatch[1].trim();
-      const parts = location.split(',');
-      if (parts.length >= 2) {
-        city = parts[0].trim();
-        state = parts[1].trim().split(' ')[0]; // Get state code
+    
+    const locationPatterns = [
+      /Location:<\/b>\s*([^<,]+),\s*([A-Z]{2})/i,
+      /City:<\/b>\s*([^<]+)<\/td>\s*<td[^>]*>State:<\/b>\s*([A-Z]{2})/i,
+      /ownership:<\/b>[^<]*<\/td>\s*<td[^>]*>([^<,]+),\s*([A-Z]{2})/i
+    ];
+    
+    for (const pattern of locationPatterns) {
+      const match = html.match(pattern);
+      if (match) {
+        city = match[1].trim();
+        state = match[2].trim();
+        break;
       }
     }
 
-    // Extract coordinates
-    const latMatch = html.match(/Lat\/Long:<\/b>\s*([\d.-]+),\s*([\d.-]+)/);
-    const latitude = latMatch ? parseFloat(latMatch[1]) : null;
-    const longitude = latMatch ? parseFloat(latMatch[2]) : null;
+    // Extract coordinates - multiple formats
+    let latitude = null;
+    let longitude = null;
+    
+    const coordPatterns = [
+      /Lat\/Long:<\/b>\s*([\d.-]+)\s*,\s*([\d.-]+)/i,
+      /Latitude:<\/b>\s*([\d.-]+)[^<]*Longitude:<\/b>\s*([\d.-]+)/i,
+      /(\d{1,3}\.\d+)°?\s*[NS],?\s*([\d.-]+)°?\s*[EW]/i
+    ];
+    
+    for (const pattern of coordPatterns) {
+      const match = html.match(pattern);
+      if (match) {
+        latitude = parseFloat(match[1]);
+        longitude = parseFloat(match[2]);
+        // Ensure longitude is negative for western hemisphere
+        if (longitude > 0 && html.includes('W')) {
+          longitude = -longitude;
+        }
+        break;
+      }
+    }
 
     // Extract elevation
-    const elevMatch = html.match(/Elevation:<\/b>\s*([\d,]+)/);
-    const elevation = elevMatch ? parseInt(elevMatch[1].replace(/,/g, '')) : null;
+    let elevation = null;
+    const elevPatterns = [
+      /Elevation:<\/b>\s*([\d,]+)\s*ft/i,
+      /(\d{1,5})\s*ft\s*MSL/i
+    ];
+    
+    for (const pattern of elevPatterns) {
+      const match = html.match(pattern);
+      if (match) {
+        elevation = parseInt(match[1].replace(/,/g, ''));
+        break;
+      }
+    }
 
-    // Extract runway length (longest runway)
-    const runwayMatch = html.match(/(\d+)\s*x\s*\d+\s*ft/);
-    const runway_length = runwayMatch ? parseInt(runwayMatch[1]) : null;
+    // Extract ALL runway lengths and find the longest
+    const runwayMatches = html.matchAll(/(\d{3,5})\s*x\s*\d+\s*ft/gi);
+    const runwayLengths = Array.from(runwayMatches, m => parseInt(m[1]));
+    const runway_length = runwayLengths.length > 0 ? Math.max(...runwayLengths) : null;
 
-    // Extract runway surface
-    const surfaceMatch = html.match(/Surface:<\/b>\s*([A-Z]+)/i);
-    const runway_surface = surfaceMatch ? surfaceMatch[1] : null;
+    // Extract runway surface - get most common or first
+    const surfaceMatches = html.matchAll(/Surface:<\/b>\s*([A-Za-z]+)/gi);
+    const surfaces = Array.from(surfaceMatches, m => m[1]);
+    const runway_surface = surfaces.length > 0 ? surfaces[0] : null;
 
-    // Extract FBO information
-    const fboMatches = html.matchAll(/FBO:<\/b>\s*<[^>]+>([^<]+)</g);
-    const fbos = Array.from(fboMatches, m => m[1].trim());
+    // Extract FBO information - multiple patterns
+    const fboList: string[] = [];
+    
+    // Pattern 1: FBO links
+    const fboLinkMatches = html.matchAll(/FBO[^<]*<a[^>]*>([^<]+)<\/a>/gi);
+    fboList.push(...Array.from(fboLinkMatches, m => m[1].trim()));
+    
+    // Pattern 2: FBO in tables
+    const fboTableMatches = html.matchAll(/<td[^>]*>([^<]*FBO[^<]*)<\/td>/gi);
+    fboList.push(...Array.from(fboTableMatches, m => m[1].trim().replace(/\s+/g, ' ')));
+    
+    // Clean and deduplicate FBOs
+    const fbos = [...new Set(fboList.filter(f => f && f.length > 2))];
 
-    console.log('Parsed data:', {
-      name,
-      city,
-      state,
+    const parsedData = {
+      name: name || code,
+      city: city || 'Unknown',
+      state: state || '',
+      country: 'US',
       latitude,
       longitude,
       elevation,
       runway_length,
-      runway_surface,
-      fbo: fbos.length > 0 ? fbos : null
-    });
-
-    return {
-      name,
-      city,
-      state,
-      country: 'US', // AirNav is primarily US airports
-      latitude,
-      longitude,
-      elevation,
-      runway_length,
-      runway_surface,
-      fbo: fbos.length > 0 ? fbos : null
+      runway_surface: runway_surface || 'Unknown',
+      fbo: fbos.length > 0 ? fbos : null,
+      iata_code: iata
     };
+
+    console.log('Successfully parsed AirNav data:', parsedData);
+    return parsedData;
+    
   } catch (error) {
-    console.error('Error parsing HTML:', error);
+    console.error('Error parsing AirNav HTML:', error);
     return null;
   }
 }

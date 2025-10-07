@@ -1015,9 +1015,17 @@ export default function LeadAnalysis() {
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <div className="flex items-center gap-2">
-                      <span className="font-bold text-primary">{departureAirportData?.code || lead.departure_airport.split(' ')[0]}</span>
+                      <span className="font-bold text-primary">
+                        {departureAirportData?.code || (lead.departure_airport.includes(' - ') 
+                          ? lead.departure_airport.split(' - ')[0] 
+                          : lead.departure_airport)}
+                      </span>
                       <ArrowRight className="h-3 w-3 text-muted-foreground" />
-                      <span className="font-bold text-primary">{arrivalAirportData?.code || lead.arrival_airport.split(' ')[0]}</span>
+                      <span className="font-bold text-primary">
+                        {arrivalAirportData?.code || (lead.arrival_airport.includes(' - ')
+                          ? lead.arrival_airport.split(' - ')[0]
+                          : lead.arrival_airport)}
+                      </span>
                     </div>
                     <Badge variant="outline" className="text-xs">
                       {lead.trip_type}
@@ -1054,7 +1062,9 @@ export default function LeadAnalysis() {
                 <div className="flex items-center justify-between mb-6">
                   <div className="text-center flex-1">
                     <div className="text-3xl font-bold text-primary mb-1">
-                      {departureAirportData?.code || lead.departure_airport.split(' ')[0]}
+                      {departureAirportData?.code || (lead.departure_airport.includes(' - ')
+                        ? lead.departure_airport.split(' - ')[0]
+                        : lead.departure_airport)}
                     </div>
                     <div className="text-sm text-muted-foreground">
                       {departureAirportData?.city || 'Departure'}
@@ -1101,7 +1111,9 @@ export default function LeadAnalysis() {
                   
                   <div className="text-center flex-1">
                     <div className="text-3xl font-bold text-primary mb-1">
-                      {arrivalAirportData?.code || lead.arrival_airport.split(' ')[0]}
+                      {arrivalAirportData?.code || (lead.arrival_airport.includes(' - ')
+                        ? lead.arrival_airport.split(' - ')[0]
+                        : lead.arrival_airport)}
                     </div>
                     <div className="text-sm text-muted-foreground">
                       {arrivalAirportData?.city || 'Arrival'}
@@ -1125,7 +1137,9 @@ export default function LeadAnalysis() {
                   <div className="flex items-center justify-between mb-6 pt-4 border-t">
                     <div className="text-center flex-1">
                       <div className="text-3xl font-bold text-secondary mb-1">
-                        {arrivalAirportData?.code || lead.arrival_airport.split(' ')[0]}
+                        {arrivalAirportData?.code || (lead.arrival_airport.includes(' - ')
+                          ? lead.arrival_airport.split(' - ')[0]
+                          : lead.arrival_airport)}
                       </div>
                       <div className="text-sm text-muted-foreground">
                         Return From
@@ -1161,7 +1175,9 @@ export default function LeadAnalysis() {
                     
                     <div className="text-center flex-1">
                       <div className="text-3xl font-bold text-secondary mb-1">
-                        {departureAirportData?.code || lead.departure_airport.split(' ')[0]}
+                        {departureAirportData?.code || (lead.departure_airport.includes(' - ')
+                          ? lead.departure_airport.split(' - ')[0]
+                          : lead.departure_airport)}
                       </div>
                       <div className="text-sm text-muted-foreground">
                         Return To

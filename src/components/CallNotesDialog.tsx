@@ -133,7 +133,13 @@ export function CallNotesDialog({
             {/* Route Info */}
             <div>
               <p className="text-xs text-muted-foreground mb-1">Route</p>
-              <p className="font-medium">{leadData.departure_airport.split(' - ')[0]} → {leadData.arrival_airport.split(' - ')[0]}</p>
+              <p className="font-medium">
+                {leadData.departure_airport.includes(' - ') 
+                  ? leadData.departure_airport.split(' - ')[0] 
+                  : leadData.departure_airport} → {leadData.arrival_airport.includes(' - ')
+                  ? leadData.arrival_airport.split(' - ')[0]
+                  : leadData.arrival_airport}
+              </p>
               <p className="text-xs text-muted-foreground">
                 Depart: {leadData.departure_datetime 
                   ? new Date(leadData.departure_datetime).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })

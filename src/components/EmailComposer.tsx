@@ -370,8 +370,12 @@ Jesse
     try {
       // Calculate actual flight capabilities based on route
       const calculateFlightCapabilities = () => {
-        const departureCode = leadData.departure_airport.split(' - ')[0] || leadData.departure_airport;
-        const arrivalCode = leadData.arrival_airport.split(' - ')[0] || leadData.arrival_airport;
+        const departureCode = leadData.departure_airport.includes(' - ') 
+          ? leadData.departure_airport.split(' - ')[0] 
+          : leadData.departure_airport;
+        const arrivalCode = leadData.arrival_airport.includes(' - ')
+          ? leadData.arrival_airport.split(' - ')[0]
+          : leadData.arrival_airport;
         
         // EWR to LAS distance is approximately 2400nm
         const routeDistance = 2400; // This should come from actual calculation
