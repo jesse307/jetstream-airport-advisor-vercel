@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, ArrowRight, User, Phone, Mail, Calendar, Clock, Plane, Users, MapPin, CheckCircle2, XCircle, Settings, ClipboardList, Send, Trophy } from "lucide-react";
+import { ArrowLeft, ArrowRight, User, Phone, Mail, Calendar, Clock, Plane, Users, MapPin, CheckCircle2, XCircle, Settings, ClipboardList, Send, Trophy, Edit2, Save } from "lucide-react";
 import { format } from "date-fns";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,6 +8,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { AirportSearch } from "@/components/AirportSearch";
 import { CallNotesDialog } from "@/components/CallNotesDialog";
 import { AircraftSuggestions } from "@/components/AircraftSuggestions";
 import { EmailComposer } from "@/components/EmailComposer";
@@ -81,6 +84,19 @@ export default function LeadAnalysis() {
   const [isPostingToAviapages, setIsPostingToAviapages] = useState(false);
   const [footballEvents, setFootballEvents] = useState<{ departure: any[], arrival: any[] }>({ departure: [], arrival: [] });
   const [loadingEvents, setLoadingEvents] = useState(false);
+  
+  // Edit mode state
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editedData, setEditedData] = useState({
+    departureAirport: '',
+    arrivalAirport: '',
+    departureDate: '',
+    departureTime: '',
+    returnDate: '',
+    returnTime: '',
+    passengers: 1
+  });
+  const [isSaving, setIsSaving] = useState(false);
 
   // Helper function to format date from timestamp
   const formatDate = (datetime: string | undefined, fallbackDate?: string) => {
@@ -472,6 +488,64 @@ export default function LeadAnalysis() {
       fetchLead(id);
     }
   }, [id]);
+
+  // Initialize edit data when lead loads
+  useEffect(() => {
+    if (lead) {
+      setEditedData({
+        departureAirport: lead.departure_airport,
+        arrivalAirport: lead.arrival_airport,
+        departureDate: lead.departure_date,
+        departureTime: lead.departure_time,
+        returnDate: lead.return_date || '',
+        returnTime: lead.return_time || '',
+        passengers: lead.passengers
+      });
+    }
+  }, [lead]);
+
+  const handleSaveChanges = async () => {
+    if (!lead) return;
+    
+    setIsSaving(true);
+    try {
+      const updates: any = {};
+      
+      if (editedData.departureAirport !== lead.departure_airport) {
+        updates.departureAirport = editedData.departureAirport;
+      }
+      if (editedData.arrivalAirport !== lead.arrival_airport) {
+        updates.arrivalAirport = editedData.arrivalAirport;
+      }
+      if (editedData.departureDate !== lead.departure_date) {
+        updates.departureDate = editedData.departureDate;
+      }
+      if (editedData.departureTime !== lead.departure_time) {
+        updates.departureTime = editedData.departureTime;
+      }
+      if (editedData.returnDate !== (lead.return_date || '')) {
+        updates.returnDate = editedData.returnDate;
+      }
+      if (editedData.returnTime !== (lead.return_time || '')) {
+        updates.returnTime = editedData.returnTime;
+      }
+      if (editedData.passengers !== lead.passengers) {
+        updates.passengers = editedData.passengers;
+      }
+      
+      if (Object.keys(updates).length > 0) {
+        await handleUpdateItinerary(updates);
+        toast.success('Trip details updated successfully');
+      }
+      
+      setIsEditMode(false);
+    } catch (error) {
+      console.error('Error saving changes:', error);
+      toast.error('Failed to save changes');
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   useEffect(() => {
     const fetchFootballEvents = async () => {
@@ -1100,6 +1174,175 @@ export default function LeadAnalysis() {
             </Card>
 
             </div>
+
+            {/* Editable Trip Details */}
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+                <CardTitle className="flex items-center gap-2">
+                  <ClipboardList className="h-5 w-5 text-primary" />
+                  Trip Details
+                </CardTitle>
+                <Button
+                  variant={isEditMode ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => {
+                    if (isEditMode) {
+                      handleSaveChanges();
+                    } else {
+                      setIsEditMode(true);
+                    }
+                  }}
+                  disabled={isSaving}
+                >
+                  {isSaving ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-background mr-2"></div>
+                      Saving...
+                    </>
+                  ) : isEditMode ? (
+                    <>
+                      <Save className="h-4 w-4 mr-2" />
+                      Save Changes
+                    </>
+                  ) : (
+                    <>
+                      <Edit2 className="h-4 w-4 mr-2" />
+                      Edit
+                    </>
+                  )}
+                </Button>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {!isEditMode ? (
+                  <>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-muted-foreground text-xs">Departure Airport</Label>
+                        <p className="font-semibold">{lead.departure_airport}</p>
+                      </div>
+                      <div>
+                        <Label className="text-muted-foreground text-xs">Arrival Airport</Label>
+                        <p className="font-semibold">{lead.arrival_airport}</p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-muted-foreground text-xs">Departure Date</Label>
+                        <p className="font-semibold">{formatDate(lead.departure_datetime, lead.departure_date)}</p>
+                      </div>
+                      <div>
+                        <Label className="text-muted-foreground text-xs">Departure Time</Label>
+                        <p className="font-semibold">{formatTime(getTime(lead.departure_datetime, lead.departure_time))}</p>
+                      </div>
+                    </div>
+                    {lead.trip_type === "Round Trip" && (
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label className="text-muted-foreground text-xs">Return Date</Label>
+                          <p className="font-semibold">{lead.return_date ? formatDate(lead.return_datetime, lead.return_date) : 'N/A'}</p>
+                        </div>
+                        <div>
+                          <Label className="text-muted-foreground text-xs">Return Time</Label>
+                          <p className="font-semibold">{lead.return_time ? formatTime(getTime(lead.return_datetime, lead.return_time)) : 'N/A'}</p>
+                        </div>
+                      </div>
+                    )}
+                    <div>
+                      <Label className="text-muted-foreground text-xs">Passengers</Label>
+                      <p className="font-semibold">{lead.passengers}</p>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="space-y-2">
+                      <Label>Departure Airport</Label>
+                      <AirportSearch
+                        value={editedData.departureAirport}
+                        onChange={(value) => setEditedData({ ...editedData, departureAirport: value })}
+                        placeholder="Search departure airport..."
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Arrival Airport</Label>
+                      <AirportSearch
+                        value={editedData.arrivalAirport}
+                        onChange={(value) => setEditedData({ ...editedData, arrivalAirport: value })}
+                        placeholder="Search arrival airport..."
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Departure Date</Label>
+                        <Input
+                          type="date"
+                          value={editedData.departureDate}
+                          onChange={(e) => setEditedData({ ...editedData, departureDate: e.target.value })}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Departure Time</Label>
+                        <Input
+                          type="time"
+                          value={editedData.departureTime}
+                          onChange={(e) => setEditedData({ ...editedData, departureTime: e.target.value })}
+                        />
+                      </div>
+                    </div>
+                    {lead.trip_type === "Round Trip" && (
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>Return Date</Label>
+                          <Input
+                            type="date"
+                            value={editedData.returnDate}
+                            onChange={(e) => setEditedData({ ...editedData, returnDate: e.target.value })}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Return Time</Label>
+                          <Input
+                            type="time"
+                            value={editedData.returnTime}
+                            onChange={(e) => setEditedData({ ...editedData, returnTime: e.target.value })}
+                          />
+                        </div>
+                      </div>
+                    )}
+                    <div className="space-y-2">
+                      <Label>Passengers</Label>
+                      <Input
+                        type="number"
+                        min="1"
+                        value={editedData.passengers}
+                        onChange={(e) => setEditedData({ ...editedData, passengers: parseInt(e.target.value) || 1 })}
+                      />
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full"
+                      onClick={() => {
+                        setIsEditMode(false);
+                        // Reset to original values
+                        if (lead) {
+                          setEditedData({
+                            departureAirport: lead.departure_airport,
+                            arrivalAirport: lead.arrival_airport,
+                            departureDate: lead.departure_date,
+                            departureTime: lead.departure_time,
+                            returnDate: lead.return_date || '',
+                            returnTime: lead.return_time || '',
+                            passengers: lead.passengers
+                          });
+                        }
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                  </>
+                )}
+              </CardContent>
+            </Card>
 
             {/* Football Events */}
             {(footballEvents.departure.length > 0 || footballEvents.arrival.length > 0) && (
