@@ -90,80 +90,141 @@ export default function Quotes() {
       return '<p>No quotes found</p>';
     }
     
-    // Build quote HTML with multiple options
+    // Extract common route/dates from first quote (assuming they're all the same trip)
+    const firstQuote = quotes[0];
+    const route = firstQuote.route || '';
+    const dates = firstQuote.dates || '';
+    
+    // Build quote HTML with responsive layout
     const quoteHTML = `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    @media only screen and (max-width: 600px) {
+      .quote-card { width: 100% !important; display: block !important; }
+    }
+  </style>
 </head>
-<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
-  <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-    <p style="font-size: 15px; line-height: 1.6; color: #333; margin: 0 0 20px 0;">Hello,</p>
-    
-    <p style="font-size: 15px; line-height: 1.6; color: #333; margin: 0 0 24px 0;">
-      Thank you for your interest in private jet charter services. Below are the available options for your upcoming trip:
-    </p>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5;">
+    <tr>
+      <td align="center" style="padding: 20px;">
+        <table width="600" cellpadding="0" cellspacing="0" style="max-width: 600px; background-color: #ffffff; border-radius: 8px; overflow: hidden;">
+          <!-- Greeting -->
+          <tr>
+            <td style="padding: 30px 30px 20px 30px;">
+              <p style="font-size: 15px; line-height: 1.6; color: #333; margin: 0;">Hello,</p>
+            </td>
+          </tr>
+          
+          <!-- Route & Dates Header -->
+          ${route || dates ? `
+          <tr>
+            <td style="padding: 0 30px 20px 30px;">
+              <table width="100%" cellpadding="0" cellspacing="0" style="background: linear-gradient(135deg, #0066cc 0%, #0052a3 100%); border-radius: 12px; overflow: hidden;">
+                <tr>
+                  <td style="padding: 24px; text-align: center;">
+                    ${route ? `
+                    <div style="margin-bottom: 12px;">
+                      <span style="color: rgba(255,255,255,0.8); font-size: 12px; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">Route</span>
+                      <h2 style="color: #ffffff; font-size: 28px; font-weight: 700; margin: 8px 0 0 0; letter-spacing: 2px;">${route}</h2>
+                    </div>
+                    ` : ''}
+                    ${dates ? `
+                    <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.2);">
+                      <span style="color: rgba(255,255,255,0.8); font-size: 12px; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">Travel Dates</span>
+                      <p style="color: #ffffff; font-size: 18px; font-weight: 600; margin: 6px 0 0 0;">${dates}</p>
+                    </div>
+                    ` : ''}
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          ` : ''}
+          
+          <!-- Introduction -->
+          <tr>
+            <td style="padding: 0 30px 24px 30px;">
+              <p style="font-size: 15px; line-height: 1.6; color: #333; margin: 0;">
+                Thank you for your interest. Below are the available aircraft options:
+              </p>
+            </td>
+          </tr>
 
-    ${quotes.map((q: any, index: number) => `
-    <div style="margin-bottom: ${index < quotes.length - 1 ? '32px' : '0'}; padding: 24px; background: #f8f9fa; border-left: 4px solid #0066cc; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-      <div style="margin-bottom: 16px;">
-        <span style="display: inline-block; background: #0066cc; color: white; padding: 6px 16px; border-radius: 4px; font-size: 14px; font-weight: 600; margin-bottom: 12px;">
-          Option ${index + 1}
-        </span>
-      </div>
-      
-      <h3 style="margin: 0 0 16px 0; font-size: 32px; font-weight: 700; color: #1a1a1a; letter-spacing: -0.5px;">
-        ${q.aircraft_type}
-      </h3>
-      
-      ${q.price ? `
-      <h4 style="margin: 0 0 12px 0; font-size: 28px; font-weight: 700; color: #0066cc;">
-        ${q.currency ? q.currency + ' ' : ''}${q.price}
-      </h4>
-      ` : ''}
-      
-      <p style="margin: 0 0 8px 0; font-size: 15px; color: #555; line-height: 1.5;">
-        ${q.passengers ? `<strong>Capacity:</strong> ${q.passengers} passenger${q.passengers > 1 ? 's' : ''}` : ''}
-        ${q.category ? ` • <strong>Category:</strong> ${q.category}` : ''}
-      </p>
-      
-      ${q.certifications ? `
-      <p style="margin: 0 0 16px 0; font-size: 14px; color: #666; font-style: italic; line-height: 1.4;">
-        ${q.certifications}
-      </p>
-      ` : ''}
-      
-      ${q.route || q.dates ? `
-      <p style="margin: 0 0 16px 0; font-size: 13px; color: #888;">
-        ${q.route ? `<strong>Route:</strong> ${q.route}` : ''} 
-        ${q.route && q.dates ? ' • ' : ''}
-        ${q.dates ? `<strong>Dates:</strong> ${q.dates}` : ''}
-      </p>
-      ` : ''}
-      
-      ${q.url ? `
-      <a href="${q.url}" style="display: inline-block; margin-top: 8px; padding: 12px 24px; background: #0066cc; color: white; text-decoration: none; border-radius: 6px; font-size: 15px; font-weight: 600; box-shadow: 0 2px 4px rgba(0,102,204,0.3);">
-        View Full Quote Details →
-      </a>
-      ` : ''}
-    </div>
-    `).join('')}
+          <!-- Quotes Container -->
+          <tr>
+            <td style="padding: 0 30px 30px 30px;">
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  ${quotes.map((q: any, index: number) => `
+                    <td class="quote-card" style="width: ${100 / Math.min(quotes.length, 2)}%; vertical-align: top; padding: ${index % 2 === 1 ? '0 0 0 12px' : '0 12px 0 0'};">
+                      <table width="100%" cellpadding="0" cellspacing="0" style="background: #f8f9fa; border-left: 4px solid #0066cc; border-radius: 8px; margin-bottom: 16px;">
+                        <tr>
+                          <td style="padding: 20px;">
+                            <!-- Option Badge -->
+                            <span style="display: inline-block; background: #0066cc; color: white; padding: 4px 12px; border-radius: 4px; font-size: 11px; font-weight: 600; margin-bottom: 12px;">
+                              OPTION ${index + 1}
+                            </span>
+                            
+                            <!-- Aircraft Name -->
+                            <h3 style="margin: 0 0 12px 0; font-size: 22px; font-weight: 700; color: #1a1a1a; line-height: 1.2;">
+                              ${q.aircraft_type}
+                            </h3>
+                            
+                            <!-- Price -->
+                            ${q.price ? `
+                            <h4 style="margin: 0 0 12px 0; font-size: 24px; font-weight: 700; color: #0066cc;">
+                              ${q.currency ? q.currency + ' ' : ''}${q.price}
+                            </h4>
+                            ` : ''}
+                            
+                            <!-- Details -->
+                            <p style="margin: 0 0 8px 0; font-size: 13px; color: #555; line-height: 1.4;">
+                              ${q.passengers ? `<strong>${q.passengers} pax</strong>` : ''}
+                              ${q.category ? ` • ${q.category}` : ''}
+                            </p>
+                            
+                            ${q.certifications ? `
+                            <p style="margin: 0 0 12px 0; font-size: 12px; color: #666; font-style: italic; line-height: 1.3;">
+                              ${q.certifications}
+                            </p>
+                            ` : ''}
+                            
+                            <!-- View Button -->
+                            ${q.url ? `
+                            <a href="${q.url}" style="display: inline-block; margin-top: 8px; padding: 10px 20px; background: #0066cc; color: white; text-decoration: none; border-radius: 6px; font-size: 13px; font-weight: 600;">
+                              View Details →
+                            </a>
+                            ` : ''}
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                    ${(index + 1) % 2 === 0 && index < quotes.length - 1 ? '</tr><tr>' : ''}
+                  `).join('')}
+                </tr>
+              </table>
+            </td>
+          </tr>
 
-    <div style="margin-top: 32px; padding-top: 24px; border-top: 2px solid #e5e7eb;">
-      <p style="font-size: 15px; line-height: 1.6; color: #333; margin: 0 0 16px 0;">
-        Please review the options above and let me know if you have any questions or would like to proceed with booking.
-      </p>
-      
-      <p style="font-size: 15px; line-height: 1.6; color: #333; margin: 0 0 16px 0;">
-        I'm here to help make your journey seamless and comfortable.
-      </p>
-      
-      <p style="font-size: 15px; line-height: 1.6; color: #333; margin: 0;">
-        Best regards
-      </p>
-    </div>
-  </div>
+          <!-- Closing -->
+          <tr>
+            <td style="padding: 0 30px 30px 30px; border-top: 2px solid #e5e7eb;">
+              <p style="font-size: 15px; line-height: 1.6; color: #333; margin: 20px 0 0 0;">
+                Please review the options and let me know if you have any questions or would like to proceed with booking.
+              </p>
+              <p style="font-size: 15px; line-height: 1.6; color: #333; margin: 16px 0 0 0;">
+                Best regards
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
 </body>
 </html>`;
     
