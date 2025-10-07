@@ -103,102 +103,83 @@ function parseAirNavHTML(html: string, code: string): any {
   try {
     console.log('Parsing AirNav HTML for code:', code);
     
-    // Extract airport name from title
-    const titleMatch = html.match(/<title>([^-]+)-\s*([^(]+)\s*\(/i);
-    let name = null;
-    let iata = null;
-    if (titleMatch) {
-      iata = titleMatch[1].trim();
-      name = titleMatch[2].trim();
-    }
+    // Extract IATA code (FAA Identifier)
+    const iataMatch = html.match(/FAA Identifier:<\/b><\/td><td>([A-Z0-9]{3,4})/i);
+    const iata = iataMatch ? iataMatch[1].trim() : null;
+    console.log('Extracted IATA:', iata);
     
-    // Alternative name extraction
-    if (!name) {
-      const nameMatch = html.match(/Airport:<\/b>\s*<[^>]+>([^<]+)</i) || 
-                        html.match(/<h1[^>]*>([^<]+)<\/h1>/i);
-      name = nameMatch ? nameMatch[1].trim() : null;
-    }
-
-    // Extract location - try multiple patterns
+    // Extract airport name from header
+    const nameMatch = html.match(/<font[^>]*size="\+1"[^>]*><b>([^<]+)<\/b>/i);
+    const name = nameMatch ? nameMatch[1].trim() : null;
+    console.log('Extracted name:', name);
+    
+    // Extract city from same header
+    const cityMatch = html.match(/<b>([^<]+)<\/b><br>([^,]+),\s*([A-Za-z\s]+),\s*USA/i);
     let city = null;
     let state = null;
-    
-    const locationPatterns = [
-      /Location:<\/b>\s*([^<,]+),\s*([A-Z]{2})/i,
-      /City:<\/b>\s*([^<]+)<\/td>\s*<td[^>]*>State:<\/b>\s*([A-Z]{2})/i,
-      /ownership:<\/b>[^<]*<\/td>\s*<td[^>]*>([^<,]+),\s*([A-Z]{2})/i
-    ];
-    
-    for (const pattern of locationPatterns) {
-      const match = html.match(pattern);
-      if (match) {
-        city = match[1].trim();
-        state = match[2].trim();
-        break;
-      }
+    if (cityMatch) {
+      city = cityMatch[2].trim();
+      state = cityMatch[3].trim();
     }
-
-    // Extract coordinates - multiple formats
+    console.log('Extracted city/state:', city, state);
+    
+    // Extract coordinates (decimal format)
+    const coordMatch = html.match(/([-\d.]+),([-\d.]+)<br>\(estimated\)|Lat\/Long:<\/b><\/td><td[^>]*>[^<]*<br>[^<]*<br>([-\d.]+),([-\d.]+)/i);
     let latitude = null;
     let longitude = null;
-    
-    const coordPatterns = [
-      /Lat\/Long:<\/b>\s*([\d.-]+)\s*,\s*([\d.-]+)/i,
-      /Latitude:<\/b>\s*([\d.-]+)[^<]*Longitude:<\/b>\s*([\d.-]+)/i,
-      /(\d{1,3}\.\d+)°?\s*[NS],?\s*([\d.-]+)°?\s*[EW]/i
-    ];
-    
-    for (const pattern of coordPatterns) {
-      const match = html.match(pattern);
-      if (match) {
-        latitude = parseFloat(match[1]);
-        longitude = parseFloat(match[2]);
-        // Ensure longitude is negative for western hemisphere
-        if (longitude > 0 && html.includes('W')) {
-          longitude = -longitude;
-        }
-        break;
-      }
+    if (coordMatch) {
+      latitude = parseFloat(coordMatch[3] || coordMatch[1]);
+      longitude = parseFloat(coordMatch[4] || coordMatch[2]);
     }
-
-    // Extract elevation
-    let elevation = null;
-    const elevPatterns = [
-      /Elevation:<\/b>\s*([\d,]+)\s*ft/i,
-      /(\d{1,5})\s*ft\s*MSL/i
-    ];
+    console.log('Extracted coordinates:', latitude, longitude);
     
-    for (const pattern of elevPatterns) {
-      const match = html.match(pattern);
-      if (match) {
-        elevation = parseInt(match[1].replace(/,/g, ''));
-        break;
-      }
-    }
+    // Extract elevation from Location section
+    const elevMatch = html.match(/Elevation:<\/b><\/td><td[^>]*>(\d+)\s*ft/i);
+    const elevation = elevMatch ? parseInt(elevMatch[1]) : null;
+    console.log('Extracted elevation:', elevation);
 
-    // Extract ALL runway lengths and find the longest
-    const runwayMatches = html.matchAll(/(\d{3,5})\s*x\s*\d+\s*ft/gi);
-    const runwayLengths = Array.from(runwayMatches, m => parseInt(m[1]));
+    // Extract ALL runway dimensions (format: "8002 x 150 ft")
+    const runwayMatches = Array.from(html.matchAll(/Dimensions:<\/b><\/td><td[^>]*valign="top">(\d{3,5})\s*x\s*\d+\s*ft/gi));
+    const runwayLengths = runwayMatches.map(m => parseInt(m[1]));
     const runway_length = runwayLengths.length > 0 ? Math.max(...runwayLengths) : null;
+    console.log('Extracted runway lengths:', runwayLengths, 'Longest:', runway_length);
 
-    // Extract runway surface - get most common or first
-    const surfaceMatches = html.matchAll(/Surface:<\/b>\s*([A-Za-z]+)/gi);
-    const surfaces = Array.from(surfaceMatches, m => m[1]);
-    const runway_surface = surfaces.length > 0 ? surfaces[0] : null;
+    // Extract runway surface (get first occurrence after "Surface:")
+    const surfaceMatch = html.match(/Surface:<\/b><\/td><td[^>]*valign="top">([^,<]+)/i);
+    const runway_surface = surfaceMatch ? surfaceMatch[1].trim() : null;
+    console.log('Extracted surface:', runway_surface);
 
-    // Extract FBO information - multiple patterns
+    // Extract FBO names from the FBO section
+    // Pattern: <img src="..." alt="FBO Name" ...> in the FBO section
+    const fboSection = html.match(/<h3>FBO, Fuel Providers[^<]*<\/h3>([\s\S]*?)<a name="/i);
     const fboList: string[] = [];
     
-    // Pattern 1: FBO links
-    const fboLinkMatches = html.matchAll(/FBO[^<]*<a[^>]*>([^<]+)<\/a>/gi);
-    fboList.push(...Array.from(fboLinkMatches, m => m[1].trim()));
-    
-    // Pattern 2: FBO in tables
-    const fboTableMatches = html.matchAll(/<td[^>]*>([^<]*FBO[^<]*)<\/td>/gi);
-    fboList.push(...Array.from(fboTableMatches, m => m[1].trim().replace(/\s+/g, ' ')));
+    if (fboSection) {
+      // Extract from alt attributes of FBO logo images
+      const fboImgMatches = fboSection[1].matchAll(/alt="([^"]+)"\s+border="0"><\/a>/gi);
+      for (const match of fboImgMatches) {
+        const fboName = match[1].trim();
+        if (fboName && !fboName.includes('Aviation') && fboName !== 'Paragon Aviation Group') {
+          fboList.push(fboName);
+        } else if (fboName && fboName !== '') {
+          fboList.push(fboName);
+        }
+      }
+      
+      // Also extract from the FBO links/names if images don't have good alt text
+      const fboNameMatches = fboSection[1].matchAll(/<td width="240"><a[^>]*><a[^>]*><img[^>]*alt="([^"]+)"/gi);
+      fboList.push(...Array.from(fboNameMatches, m => m[1].trim()));
+    }
     
     // Clean and deduplicate FBOs
-    const fbos = [...new Set(fboList.filter(f => f && f.length > 2))];
+    const fbos = [...new Set(fboList.filter(f => 
+      f && 
+      f.length > 2 && 
+      !f.includes('http') && 
+      !f.includes('.gif') &&
+      f !== 'Paragon Aviation Group'
+    ))];
+    console.log('Extracted FBOs:', fbos);
 
     const parsedData = {
       name: name || code,
@@ -209,12 +190,13 @@ function parseAirNavHTML(html: string, code: string): any {
       longitude,
       elevation,
       runway_length,
-      runway_surface: runway_surface || 'Unknown',
+      runway_surface: runway_surface || 'Asphalt',
       fbo: fbos.length > 0 ? fbos : null,
       iata_code: iata
     };
 
-    console.log('Successfully parsed AirNav data:', parsedData);
+    console.log('=== FINAL PARSED DATA ===');
+    console.log(JSON.stringify(parsedData, null, 2));
     return parsedData;
     
   } catch (error) {

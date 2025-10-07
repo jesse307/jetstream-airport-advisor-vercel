@@ -290,37 +290,33 @@ serve(async (req) => {
       if (airports.length === 0 && query.length >= 3 && query.length <= 4 && /^[A-Za-z]+$/.test(query)) {
         console.log(`No results found, trying AirNav for: ${query}`);
         try {
-          const airnavUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/fetch-airnav-airport`;
-          const airnavResponse = await fetch(airnavUrl, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')}`
-            },
-            body: JSON.stringify({ code: query })
+          const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2.38.4');
+          const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+          const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+          const supabase = createClient(supabaseUrl, supabaseKey);
+          
+          const { data: airnavData, error: airnavError } = await supabase.functions.invoke('fetch-airnav-airport', {
+            body: { code: query }
           });
           
-          if (airnavResponse.ok) {
-            const airnavData = await airnavResponse.json();
-            if (airnavData.success && airnavData.data) {
-              console.log('Successfully fetched from AirNav:', airnavData.data);
-              airports.push({
-                code: airnavData.data.code,
-                icao_code: airnavData.data.code,
-                name: airnavData.data.name || 'Unknown',
-                city: airnavData.data.city || 'Unknown',
-                state: airnavData.data.state || '',
-                country: airnavData.data.country || 'US',
-                latitude: airnavData.data.latitude,
-                longitude: airnavData.data.longitude,
-                elevation: airnavData.data.elevation,
-                runwayLength: airnavData.data.runway_length,
-                type: 'airport',
-                source: 'AirNav'
-              });
-            }
+          if (!airnavError && airnavData?.success && airnavData.data) {
+            console.log('Successfully fetched from AirNav:', airnavData.data);
+            airports.push({
+              code: airnavData.data.code,
+              icao_code: airnavData.data.code,
+              name: airnavData.data.name || 'Unknown',
+              city: airnavData.data.city || 'Unknown',
+              state: airnavData.data.state || '',
+              country: airnavData.data.country || 'US',
+              latitude: airnavData.data.latitude,
+              longitude: airnavData.data.longitude,
+              elevation: airnavData.data.elevation,
+              runwayLength: airnavData.data.runway_length,
+              type: 'airport',
+              source: 'AirNav'
+            });
           } else {
-            console.log('AirNav fetch failed:', airnavResponse.status);
+            console.log('AirNav fetch failed:', airnavError || 'No data returned');
           }
         } catch (airnavError) {
           console.error('Error fetching from AirNav:', airnavError);

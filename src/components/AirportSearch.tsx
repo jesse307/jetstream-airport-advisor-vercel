@@ -155,6 +155,8 @@ export const AirportSearch: React.FC<AirportSearchProps> = ({
                             airport.source === 'AirportDB.io' ? 'bg-green-100 text-green-700' :
                             airport.source === 'Aviation Edge' ? 'bg-blue-100 text-blue-700' :
                             airport.source === 'AeroDataBox' ? 'bg-purple-100 text-purple-700' :
+                            airport.source === 'AirNav' ? 'bg-sky-100 text-sky-700' :
+                            airport.source === 'Fallback Database' ? 'bg-gray-100 text-gray-700' :
                             'bg-orange-100 text-orange-700'
                           }`}>
                             {airport.source}
