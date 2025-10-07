@@ -17,6 +17,7 @@ import { EmailComposer } from "@/components/EmailComposer";
 import { LeadChatbot } from "@/components/LeadChatbot";
 import { AircraftClassRecommendations } from "@/components/AircraftClassRecommendations";
 import { CharterQuoteRequest } from "@/components/CharterQuoteRequest";
+import { QuoteComposer } from "@/components/QuoteComposer";
 
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -1466,6 +1467,9 @@ export default function LeadAnalysis() {
 
           {/* Charter Quote Request */}
           <CharterQuoteRequest leadData={lead} />
+
+          {/* Quote Email Composer */}
+          <QuoteComposer />
           </div>
 
           {/* Right Column - Chatbot & Actions */}
