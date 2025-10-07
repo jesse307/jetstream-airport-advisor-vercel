@@ -41,27 +41,39 @@ export function QuoteComposer() {
         const priceMatch = block.match(/\$[\d,]+\.?\d*/);
         const price = priceMatch ? priceMatch[0] : "";
 
-        // Extract aircraft name (text before the first hyphen or parenthesis)
-        const aircraftMatch = block.match(/^[^-\(]+/);
-        const aircraft = aircraftMatch ? aircraftMatch[0].trim() : "";
+        // Extract aircraft name (everything between price and passenger count)
+        const aircraftMatch = block.match(/\$[\d,]+\.?\d*\s*-\s*([^-\(]+)/);
+        const aircraft = aircraftMatch ? aircraftMatch[1].trim() : "";
 
         // Extract passengers and category
         const passengerMatch = block.match(/\((\d+)\s+passengers?,\s*([^)]+)\)/i);
         const passengers = passengerMatch ? passengerMatch[1] : "";
         const category = passengerMatch ? passengerMatch[2] : "";
 
-        // Extract certifications (text between category and link)
-        const certMatch = block.match(/\)\s*-\s*([^;]+);?\s*Click here/i);
-        const certifications = certMatch ? certMatch[1].trim() : "";
+        // Extract certifications (text between category and "Click here")
+        const certMatch = block.match(/\)\s*-\s*([^;]+(?:;[^C]+)*?)(?=Click here|$)/i);
+        const certifications = certMatch ? certMatch[1].replace(/;$/, '').trim() : "";
 
-        // Extract link
-        const linkMatch = block.match(/Click here to view quote for ([^\s]+)\s+([\d\/\-]+)\s*$/i);
+        // Extract route and dates from the "Click here" line
+        const linkMatch = block.match(/Click here to view quote for ([^\s]+)\s+([\d\/\-]+)/i);
         const route = linkMatch ? linkMatch[1] : "";
         const dates = linkMatch ? linkMatch[2] : "";
 
-        // Find the actual URL (though in your format it seems to be implicit)
-        const urlMatch = block.match(/https?:\/\/[^\s]+/);
-        const link = urlMatch ? urlMatch[0] : "#";
+        // Extract actual URL - look for http/https URLs
+        const urlMatch = block.match(/https?:\/\/[^\s\n]+/);
+        let link = urlMatch ? urlMatch[0] : "";
+        
+        // If no URL found, check if there's a "Click here" that might have a URL on next line
+        if (!link && block.includes("Click here")) {
+          const lines = block.split('\n');
+          for (const line of lines) {
+            const url = line.match(/https?:\/\/[^\s]+/);
+            if (url) {
+              link = url[0];
+              break;
+            }
+          }
+        }
 
         if (price && aircraft) {
           quotes.push({
@@ -71,7 +83,7 @@ export function QuoteComposer() {
             passengers,
             category,
             certifications,
-            link,
+            link: link || "#",
             route,
             dates
           });
@@ -110,34 +122,40 @@ export function QuoteComposer() {
     </p>
 
     ${parsedQuotes.map((quote, index) => `
-    <div style="margin-bottom: ${index < parsedQuotes.length - 1 ? '24px' : '0'}; padding: 20px; background: #f8f9fa; border-left: 4px solid #0066cc; border-radius: 4px;">
-      <div style="margin-bottom: 12px;">
-        <span style="display: inline-block; background: #0066cc; color: white; padding: 4px 12px; border-radius: 4px; font-size: 13px; font-weight: 600; margin-bottom: 8px;">
+    <div style="margin-bottom: ${index < parsedQuotes.length - 1 ? '32px' : '0'}; padding: 24px; background: #f8f9fa; border-left: 4px solid #0066cc; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+      <div style="margin-bottom: 16px;">
+        <span style="display: inline-block; background: #0066cc; color: white; padding: 6px 16px; border-radius: 4px; font-size: 14px; font-weight: 600; margin-bottom: 12px;">
           ${quote.option}
         </span>
       </div>
       
-      <h3 style="margin: 0 0 8px 0; font-size: 24px; font-weight: 700; color: #0066cc;">
-        ${quote.price}
+      <h3 style="margin: 0 0 16px 0; font-size: 32px; font-weight: 700; color: #1a1a1a; letter-spacing: -0.5px;">
+        ${quote.aircraft}
       </h3>
       
-      <h4 style="margin: 0 0 4px 0; font-size: 18px; font-weight: 600; color: #1a1a1a;">
-        ${quote.aircraft}
+      <h4 style="margin: 0 0 12px 0; font-size: 28px; font-weight: 700; color: #0066cc;">
+        ${quote.price}
       </h4>
       
-      <p style="margin: 0 0 8px 0; font-size: 14px; color: #666;">
+      <p style="margin: 0 0 8px 0; font-size: 15px; color: #555; line-height: 1.5;">
         <strong>Capacity:</strong> ${quote.passengers} passenger${parseInt(quote.passengers) > 1 ? 's' : ''} 
         ${quote.category ? `• <strong>Category:</strong> ${quote.category}` : ''}
       </p>
       
       ${quote.certifications ? `
-      <p style="margin: 0 0 12px 0; font-size: 13px; color: #666; font-style: italic;">
+      <p style="margin: 0 0 16px 0; font-size: 14px; color: #666; font-style: italic; line-height: 1.4;">
         ${quote.certifications}
       </p>
       ` : ''}
       
-      <a href="${quote.link}" style="display: inline-block; margin-top: 8px; padding: 10px 20px; background: #0066cc; color: white; text-decoration: none; border-radius: 4px; font-size: 14px; font-weight: 500;">
-        View Full Quote Details
+      ${quote.route ? `
+      <p style="margin: 0 0 16px 0; font-size: 13px; color: #888;">
+        <strong>Route:</strong> ${quote.route} ${quote.dates ? `• <strong>Dates:</strong> ${quote.dates}` : ''}
+      </p>
+      ` : ''}
+      
+      <a href="${quote.link}" style="display: inline-block; margin-top: 8px; padding: 12px 24px; background: #0066cc; color: white; text-decoration: none; border-radius: 6px; font-size: 15px; font-weight: 600; box-shadow: 0 2px 4px rgba(0,102,204,0.3);">
+        View Full Quote Details →
       </a>
     </div>
     `).join('')}
@@ -215,17 +233,18 @@ export function QuoteComposer() {
             <Label htmlFor="rawQuotes">Paste Quotes Here</Label>
             <Textarea
               id="rawQuotes"
-              placeholder={`Paste quotes in this format:
+              placeholder={`Paste quotes with URLs in this format:
 
 Option 1
 $35,590.87 - Citation Ultra - (7 passengers, Light) - ARGUS Gold;
 Click here to view quote for ORL-RBW-CHO-RBW-ORL 10/8/2025-10/9/2025
+https://your-quote-url.com/quote1
 
 Option 2
 ...`}
               value={rawQuotes}
               onChange={(e) => setRawQuotes(e.target.value)}
-              rows={8}
+              rows={10}
               className="font-mono text-sm"
             />
           </div>
