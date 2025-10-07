@@ -434,6 +434,45 @@ export type Database = {
         }
         Relationships: []
       }
+      quotes: {
+        Row: {
+          created_at: string
+          extracted_data: Json | null
+          id: string
+          processed: boolean
+          raw_email_data: Json | null
+          sender_email: string | null
+          status: string
+          subject: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          extracted_data?: Json | null
+          id?: string
+          processed?: boolean
+          raw_email_data?: Json | null
+          sender_email?: string | null
+          status?: string
+          subject?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          extracted_data?: Json | null
+          id?: string
+          processed?: boolean
+          raw_email_data?: Json | null
+          sender_email?: string | null
+          status?: string
+          subject?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string | null
