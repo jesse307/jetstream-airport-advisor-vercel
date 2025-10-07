@@ -164,30 +164,89 @@ export default function Quotes() {
           <tr>
             <td class="quote-wrapper" style="padding: 0 20px 30px 20px;">
               <table width="100%" cellpadding="0" cellspacing="0">
-                <tr>
-                  ${quotes.map((q: any, index: number) => `
-                    <td class="quote-card" style="width: ${100 / Math.min(quotes.length, 2)}%; vertical-align: top; padding: ${index % 2 === 1 ? '0 0 0 10px' : '0 10px 0 0'};">
+                ${quotes.map((q: any, index: number) => {
+                  const isLastAndOdd = index === quotes.length - 1 && quotes.length % 2 === 1;
+                  const isEvenIndex = index % 2 === 0;
+                  const shouldStartNewRow = isEvenIndex && index > 0;
+                  
+                  let html = '';
+                  
+                  // Start new row for even indices (except first)
+                  if (shouldStartNewRow) {
+                    html += '</tr><tr>';
+                  }
+                  
+                  // If this is the last quote and odd number total, make it full width
+                  if (isLastAndOdd) {
+                    html += `
+                    <td colspan="2" style="padding: 10px;">
+                      <table width="100%" cellpadding="0" cellspacing="0" style="background: linear-gradient(135deg, ${stratosNavy} 0%, ${stratosBlue} 100%); border-radius: 8px; box-shadow: 0 4px 12px rgba(26, 58, 82, 0.15);">
+                        <tr>
+                          <td style="padding: 24px;">
+                            <div style="text-align: center; margin-bottom: 16px;">
+                              <span style="display: inline-block; background: rgba(255,255,255,0.2); color: white; padding: 6px 16px; border-radius: 4px; font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;">
+                                Option ${index + 1}
+                              </span>
+                            </div>
+                            
+                            <table width="100%" cellpadding="0" cellspacing="0">
+                              <tr>
+                                <td style="width: 60%; vertical-align: middle; padding-right: 20px;">
+                                  <h3 style="margin: 0 0 12px 0; font-size: 28px; font-weight: 700; color: #ffffff; line-height: 1.2;">
+                                    ${q.aircraft_type}
+                                  </h3>
+                                  
+                                  ${q.price ? `
+                                  <h4 style="margin: 0 0 12px 0; font-size: 32px; font-weight: 700; color: #ffffff;">
+                                    ${q.currency ? q.currency + ' ' : ''}${q.price}
+                                  </h4>
+                                  ` : ''}
+                                  
+                                  <p style="margin: 0 0 8px 0; font-size: 14px; color: rgba(255,255,255,0.9); line-height: 1.4;">
+                                    ${q.passengers ? `<strong>${q.passengers} passengers</strong>` : ''}
+                                    ${q.category ? ` • ${q.category}` : ''}
+                                  </p>
+                                  
+                                  ${q.certifications ? `
+                                  <p style="margin: 0; font-size: 12px; color: rgba(255,255,255,0.8); line-height: 1.3; font-style: italic;">
+                                    ${q.certifications}
+                                  </p>
+                                  ` : ''}
+                                </td>
+                                <td style="width: 40%; vertical-align: middle; text-align: right;">
+                                  ${q.url ? `
+                                  <a href="${q.url}" style="display: inline-block; padding: 14px 28px; background: #ffffff; color: ${stratosNavy}; text-decoration: none; border-radius: 6px; font-size: 14px; font-weight: 700; letter-spacing: 0.5px; box-shadow: 0 2px 8px rgba(0,0,0,0.15);">
+                                    View Full Details →
+                                  </a>
+                                  ` : ''}
+                                </td>
+                              </tr>
+                            </table>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>`;
+                  } else {
+                    // Regular card layout for paired quotes
+                    html += `
+                    <td class="quote-card" style="width: 50%; vertical-align: top; padding: ${index % 2 === 1 ? '10px 10px 10px 5px' : '10px 5px 10px 10px'};">
                       <table width="100%" cellpadding="0" cellspacing="0" style="background: #ffffff; border: 2px solid ${stratosBlue}; border-radius: 8px; box-shadow: 0 2px 6px rgba(26, 58, 82, 0.08);">
                         <tr>
                           <td style="padding: 20px;">
-                            <!-- Option Badge -->
                             <span style="display: inline-block; background: ${stratosNavy}; color: white; padding: 4px 12px; border-radius: 4px; font-size: 10px; font-weight: 700; letter-spacing: 1px; margin-bottom: 12px; text-transform: uppercase;">
                               Option ${index + 1}
                             </span>
                             
-                            <!-- Aircraft Name -->
                             <h3 style="margin: 0 0 10px 0; font-size: 20px; font-weight: 700; color: ${stratosNavy}; line-height: 1.2;">
                               ${q.aircraft_type}
                             </h3>
                             
-                            <!-- Price -->
                             ${q.price ? `
                             <h4 style="margin: 0 0 10px 0; font-size: 22px; font-weight: 700; color: ${stratosLightBlue};">
                               ${q.currency ? q.currency + ' ' : ''}${q.price}
                             </h4>
                             ` : ''}
                             
-                            <!-- Details -->
                             <p style="margin: 0 0 6px 0; font-size: 13px; color: #666; line-height: 1.4;">
                               ${q.passengers ? `<strong>${q.passengers} passengers</strong>` : ''}
                               ${q.category ? ` • ${q.category}` : ''}
@@ -199,7 +258,6 @@ export default function Quotes() {
                             </p>
                             ` : ''}
                             
-                            <!-- View Button -->
                             ${q.url ? `
                             <a href="${q.url}" style="display: inline-block; margin-top: 8px; padding: 10px 18px; background: ${stratosNavy}; color: white; text-decoration: none; border-radius: 4px; font-size: 12px; font-weight: 600; letter-spacing: 0.5px;">
                               View Details →
@@ -208,9 +266,11 @@ export default function Quotes() {
                           </td>
                         </tr>
                       </table>
-                    </td>
-                    ${(index + 1) % 2 === 0 && index < quotes.length - 1 ? '</tr><tr>' : ''}
-                  `).join('')}
+                    </td>`;
+                  }
+                  
+                  return html;
+                }).join('')}
                 </tr>
               </table>
             </td>
