@@ -35,32 +35,25 @@ const handler = async (req: Request): Promise<Response> => {
 
     const supabase = createClient(supabaseUrl, supabaseKey);
     
-    // Get content type and parse accordingly
-    const contentType = req.headers.get("content-type") || "";
+    // Always read as text first to handle Make.com's inconsistent formatting
+    const textBody = await req.text();
+    console.log("Raw body (first 200 chars):", textBody.substring(0, 200));
+    
     let emailData: any = {};
     
-    console.log("Content-Type:", contentType);
-    
-    if (contentType.includes("application/json")) {
-      emailData = await req.json();
-    } else if (contentType.includes("application/x-www-form-urlencoded")) {
-      const formData = await req.formData();
-      emailData = Object.fromEntries(formData.entries());
-    } else {
-      // Try to parse as text first
-      const textBody = await req.text();
-      console.log("Raw body:", textBody.substring(0, 200));
-      
-      // Try to parse as JSON if it looks like JSON
-      if (textBody.trim().startsWith("{") || textBody.trim().startsWith("[")) {
-        try {
-          emailData = JSON.parse(textBody);
-        } catch {
-          emailData = { raw_text: textBody };
-        }
-      } else {
+    // Try to parse as JSON if it looks like JSON
+    if (textBody.trim().startsWith("{") || textBody.trim().startsWith("[")) {
+      try {
+        emailData = JSON.parse(textBody);
+        console.log("Successfully parsed as JSON");
+      } catch (e) {
+        console.log("Failed to parse as JSON:", e);
         emailData = { raw_text: textBody };
       }
+    } else {
+      // If it's HTML or other format, store it as raw text
+      console.log("Non-JSON content received");
+      emailData = { raw_text: textBody };
     }
     
     console.log("Received email data:", JSON.stringify(emailData).substring(0, 200));
