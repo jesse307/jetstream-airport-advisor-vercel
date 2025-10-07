@@ -260,6 +260,60 @@ export type Database = {
         }
         Relationships: []
       }
+      fallback_airports: {
+        Row: {
+          city: string | null
+          code: string
+          country: string | null
+          created_at: string
+          elevation: number | null
+          fbo: Json | null
+          id: string
+          latitude: number | null
+          longitude: number | null
+          name: string | null
+          runway_length: number | null
+          runway_surface: string | null
+          source: string
+          state: string | null
+          updated_at: string
+        }
+        Insert: {
+          city?: string | null
+          code: string
+          country?: string | null
+          created_at?: string
+          elevation?: number | null
+          fbo?: Json | null
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          name?: string | null
+          runway_length?: number | null
+          runway_surface?: string | null
+          source?: string
+          state?: string | null
+          updated_at?: string
+        }
+        Update: {
+          city?: string | null
+          code?: string
+          country?: string | null
+          created_at?: string
+          elevation?: number | null
+          fbo?: Json | null
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          name?: string | null
+          runway_length?: number | null
+          runway_surface?: string | null
+          source?: string
+          state?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       leads: {
         Row: {
           analysis_data: Json | null

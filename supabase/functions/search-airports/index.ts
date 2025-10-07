@@ -248,11 +248,87 @@ serve(async (req) => {
       }
     }
 
-    // Fallback to local database if no results
+    // Fallback to database and AirNav scraping if no results
     if (airports.length === 0) {
-      console.log('No AeroDataBox results, using fallback database...');
-    // Use hardcoded database
-    const fallbackAirports = [
+      console.log('No AeroDataBox results, checking fallback database...');
+      
+      // First check the fallback_airports table in Supabase
+      try {
+        const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+        const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+        const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2.38.4');
+        const supabase = createClient(supabaseUrl, supabaseKey);
+        
+        const { data: fallbackData, error } = await supabase
+          .from('fallback_airports')
+          .select('*')
+          .or(`code.ilike.%${query}%,name.ilike.%${query}%,city.ilike.%${query}%`)
+          .limit(15);
+        
+        if (!error && fallbackData && fallbackData.length > 0) {
+          console.log(`Found ${fallbackData.length} airports in fallback database`);
+          airports = fallbackData.map((airport: any) => ({
+            code: airport.code,
+            icao_code: airport.code,
+            name: airport.name || 'Unknown',
+            city: airport.city || 'Unknown',
+            state: airport.state || '',
+            country: airport.country || 'US',
+            latitude: airport.latitude,
+            longitude: airport.longitude,
+            elevation: airport.elevation,
+            runwayLength: airport.runway_length,
+            type: 'airport',
+            source: 'Fallback Database'
+          }));
+        }
+      } catch (dbError) {
+        console.error('Error checking fallback database:', dbError);
+      }
+      
+      // If still no results and query looks like an airport code, try AirNav
+      if (airports.length === 0 && query.length >= 3 && query.length <= 4 && /^[A-Za-z]+$/.test(query)) {
+        console.log(`No results found, trying AirNav for: ${query}`);
+        try {
+          const airnavUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/fetch-airnav-airport`;
+          const airnavResponse = await fetch(airnavUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')}`
+            },
+            body: JSON.stringify({ code: query })
+          });
+          
+          if (airnavResponse.ok) {
+            const airnavData = await airnavResponse.json();
+            if (airnavData.success && airnavData.data) {
+              console.log('Successfully fetched from AirNav:', airnavData.data);
+              airports.push({
+                code: airnavData.data.code,
+                icao_code: airnavData.data.code,
+                name: airnavData.data.name || 'Unknown',
+                city: airnavData.data.city || 'Unknown',
+                state: airnavData.data.state || '',
+                country: airnavData.data.country || 'US',
+                latitude: airnavData.data.latitude,
+                longitude: airnavData.data.longitude,
+                elevation: airnavData.data.elevation,
+                runwayLength: airnavData.data.runway_length,
+                type: 'airport',
+                source: 'AirNav'
+              });
+            }
+          } else {
+            console.log('AirNav fetch failed:', airnavResponse.status);
+          }
+        } catch (airnavError) {
+          console.error('Error fetching from AirNav:', airnavError);
+        }
+      }
+      
+    // Use hardcoded database as last resort
+    const hardcodedAirports = [
         { code: 'EYW', name: 'Key West International Airport', city: 'Key West', state: 'FL', country: 'US', type: 'Commercial', runwayLength: 4801, source: 'Fallback Database' },
         { code: 'KEYW', name: 'Key West International Airport', city: 'Key West', state: 'FL', country: 'US', type: 'Commercial', runwayLength: 4801, source: 'Fallback Database' },
         { code: 'RYY', name: 'Cobb County Airport-McCollum Field', city: 'Atlanta', state: 'GA', country: 'US', type: 'General Aviation', runwayLength: 6305, source: 'Fallback Database' },
@@ -299,15 +375,18 @@ serve(async (req) => {
         { code: 'PHOG', name: 'Kahului', city: 'Kahului', state: 'HI', country: 'US', type: 'Commercial', runwayLength: 7021, source: 'Fallback Database' }
     ];
 
-    const filteredFallback = fallbackAirports.filter(airport => {
-      const codeMatch = airport.code.toLowerCase().includes(query.toLowerCase());
-      const nameMatch = airport.name.toLowerCase().includes(query.toLowerCase());
-      const cityMatch = airport.city.toLowerCase().includes(query.toLowerCase());
-      return codeMatch || nameMatch || cityMatch;
-    });
+      // Use hardcoded airports as last resort if still no results
+      if (airports.length === 0) {
+        const filteredFallback = hardcodedAirports.filter(airport => {
+          const codeMatch = airport.code.toLowerCase().includes(query.toLowerCase());
+          const nameMatch = airport.name.toLowerCase().includes(query.toLowerCase());
+          const cityMatch = airport.city.toLowerCase().includes(query.toLowerCase());
+          return codeMatch || nameMatch || cityMatch;
+        });
 
-      airports = filteredFallback.slice(0, 10);
-      console.log('Found', airports.length, 'airports in database');
+        airports = filteredFallback.slice(0, 10);
+        console.log('Found', airports.length, 'airports in hardcoded database');
+      }
     }
 
     console.log('=== SEARCH COMPLETE ===');
