@@ -196,7 +196,7 @@ export default function Quotes() {
                                   
                                   ${q.price ? `
                                   <h4 style="margin: 0 0 10px 0; font-size: 22px; font-weight: 700; color: ${stratosLightBlue};">
-                                    ${q.currency ? q.currency + ' ' : ''}${q.price}
+                                    $${q.price}
                                   </h4>
                                   ` : ''}
                                   
@@ -241,7 +241,7 @@ export default function Quotes() {
                             
                             ${q.price ? `
                             <h4 style="margin: 0 0 10px 0; font-size: 22px; font-weight: 700; color: ${stratosLightBlue};">
-                              ${q.currency ? q.currency + ' ' : ''}${q.price}
+                              $${q.price}
                             </h4>
                             ` : ''}
                             
