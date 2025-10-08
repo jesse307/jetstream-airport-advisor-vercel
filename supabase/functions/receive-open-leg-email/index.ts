@@ -23,8 +23,17 @@ const handler = async (req: Request): Promise<Response> => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Parse the incoming request
-    const { html } = await req.json();
+    // Parse the incoming request - handle both JSON and raw HTML
+    const contentType = req.headers.get("content-type") || "";
+    let html: string;
+
+    if (contentType.includes("application/json")) {
+      const body = await req.json();
+      html = body.html;
+    } else {
+      // Assume raw HTML/text body
+      html = await req.text();
+    }
 
     if (!html) {
       return new Response(
