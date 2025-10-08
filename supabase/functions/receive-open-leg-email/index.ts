@@ -74,6 +74,7 @@ AIRPORT CODE EXTRACTION:
 - If airport codes are in parentheses like "(KDAL)", extract just KDAL
 - If full airport names are provided, extract just the code portion
 - If destination mentions "transient", "various", "TBD", or similar, use "transient" as the arrival airport
+- If destination mentions a region like "Midwest", "Northeast", "Southwest", "Southeast", "Northwest", "West Coast", "East Coast", use that region name as the arrival airport
 
 AVAILABILITY DATE RANGE:
 - If the email mentions a date range for availability (e.g., "Oct 8-9", "available Oct 8 through Oct 10"), extract both start and end dates
@@ -89,7 +90,7 @@ Return the data in this exact JSON format:
       "aircraft_type": "aircraft type/model",
       "tail_number": "registration/tail number if available",
       "departure_airport": "ONLY the airport code (e.g., KDAL, KHOU)",
-      "arrival_airport": "ONLY the airport code OR 'transient' if mentioned",
+      "arrival_airport": "ONLY the airport code OR 'transient' OR a region name (Midwest, Northeast, etc.) if mentioned",
       "departure_date": "YYYY-MM-DD format - departure date if different from availability period",
       "departure_time": "HH:MM:SS format if specific time available, null otherwise",
       "arrival_date": "YYYY-MM-DD format if available",
