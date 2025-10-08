@@ -85,6 +85,8 @@ export default function LeadAnalysis() {
   const [isPostingToAviapages, setIsPostingToAviapages] = useState(false);
   const [footballEvents, setFootballEvents] = useState<{ departure: any[], arrival: any[] }>({ departure: [], arrival: [] });
   const [loadingEvents, setLoadingEvents] = useState(false);
+  const [matchingOpenLegs, setMatchingOpenLegs] = useState<any[]>([]);
+  const [loadingOpenLegs, setLoadingOpenLegs] = useState(false);
   
   // Edit mode state
   const [isEditMode, setIsEditMode] = useState(false);
@@ -756,6 +758,63 @@ export default function LeadAnalysis() {
     }
   };
 
+  const checkMatchingOpenLegs = async (leadData: Lead) => {
+    if (!leadData) return;
+    
+    setLoadingOpenLegs(true);
+    try {
+      const { data: openLegs, error } = await supabase
+        .from('open_legs')
+        .select('*')
+        .order('availability_start_date', { ascending: true, nullsFirst: false });
+
+      if (error) {
+        console.error('Error fetching open legs:', error);
+        return;
+      }
+
+      if (!openLegs || openLegs.length === 0) {
+        setMatchingOpenLegs([]);
+        return;
+      }
+
+      // Filter open legs based on dates and airports
+      const matches = openLegs.filter(leg => {
+        // Check airport matches (either departure or arrival)
+        const airportMatch = 
+          leg.departure_airport?.includes(leadData.departure_airport) ||
+          leg.departure_airport?.includes(leadData.arrival_airport) ||
+          leg.arrival_airport?.includes(leadData.departure_airport) ||
+          leg.arrival_airport?.includes(leadData.arrival_airport);
+
+        // Check date matches
+        const leadDate = new Date(leadData.departure_date);
+        let dateMatch = false;
+
+        if (leg.availability_start_date && leg.availability_end_date) {
+          const startDate = new Date(leg.availability_start_date);
+          const endDate = new Date(leg.availability_end_date);
+          dateMatch = leadDate >= startDate && leadDate <= endDate;
+        } else if (leg.departure_date) {
+          const legDate = new Date(leg.departure_date);
+          // Match if within 3 days
+          const daysDiff = Math.abs((leadDate.getTime() - legDate.getTime()) / (1000 * 60 * 60 * 24));
+          dateMatch = daysDiff <= 3;
+        }
+
+        // Match if either airport OR date matches
+        return airportMatch || dateMatch;
+      });
+
+      setMatchingOpenLegs(matches);
+      console.log(`Found ${matches.length} matching open legs`);
+    } catch (error) {
+      console.error('Error checking open legs:', error);
+    } finally {
+      setLoadingOpenLegs(false);
+    }
+  };
+
   const fetchLead = async (leadId: string) => {
     try {
       const { data, error } = await supabase
@@ -784,6 +843,9 @@ export default function LeadAnalysis() {
       }
 
       setLead(data as Lead);
+
+      // Check for matching open legs
+      checkMatchingOpenLegs(data as Lead);
 
       // Check for spam on load
       if (data.email_valid === false && data.phone_valid === false) {
@@ -1425,6 +1487,80 @@ export default function LeadAnalysis() {
                         </div>
                       )}
                     </>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Matching Open Legs */}
+            {matchingOpenLegs.length > 0 && (
+              <Card className="bg-gradient-to-br from-purple-500/5 to-pink-500/5 border-purple-200">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Plane className="h-5 w-5 text-purple-600" />
+                    Available Aircraft ({matchingOpenLegs.length})
+                  </CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    Open legs matching your route or dates
+                  </p>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {loadingOpenLegs ? (
+                    <div className="text-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                      <p className="text-muted-foreground">Checking availability...</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {matchingOpenLegs.map((leg) => (
+                        <div key={leg.id} className="p-4 bg-background rounded-lg border border-purple-200 space-y-2">
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <p className="font-semibold text-sm">{leg.aircraft_type || 'Unknown Type'}</p>
+                              {leg.operator_name && (
+                                <p className="text-xs text-muted-foreground">{leg.operator_name}</p>
+                              )}
+                            </div>
+                            {leg.price && (
+                              <Badge variant="secondary" className="ml-2">
+                                ${leg.price.toLocaleString()}
+                              </Badge>
+                            )}
+                          </div>
+                          
+                          <div className="flex items-center gap-2 text-sm">
+                            <MapPin className="h-3 w-3 text-muted-foreground" />
+                            <span>{leg.route || `${leg.departure_airport || 'N/A'} → ${leg.arrival_airport || 'N/A'}`}</span>
+                          </div>
+                          
+                          <div className="flex items-center gap-2 text-sm">
+                            <Calendar className="h-3 w-3 text-muted-foreground" />
+                            <span>
+                              {leg.availability_start_date && leg.availability_end_date ? (
+                                <>
+                                  {format(new Date(leg.availability_start_date + 'T00:00:00'), "MMM dd")}
+                                  {leg.availability_start_date !== leg.availability_end_date && (
+                                    <> - {format(new Date(leg.availability_end_date + 'T00:00:00'), "MMM dd, yyyy")}</>
+                                  )}
+                                </>
+                              ) : leg.departure_date ? (
+                                format(new Date(leg.departure_date + 'T00:00:00'), "MMM dd, yyyy")
+                              ) : 'Date TBD'}
+                            </span>
+                          </div>
+                          
+                          {leg.tail_number && (
+                            <div className="flex items-center gap-2">
+                              <Badge variant="outline" className="text-xs">{leg.tail_number}</Badge>
+                            </div>
+                          )}
+                          
+                          {leg.notes && (
+                            <p className="text-xs text-muted-foreground mt-2 line-clamp-2">{leg.notes}</p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
                   )}
                 </CardContent>
               </Card>
