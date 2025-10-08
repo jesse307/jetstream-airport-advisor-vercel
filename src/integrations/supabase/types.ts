@@ -431,6 +431,66 @@ export type Database = {
         }
         Relationships: []
       }
+      open_legs: {
+        Row: {
+          aircraft_type: string | null
+          arrival_airport: string | null
+          arrival_date: string | null
+          arrival_time: string | null
+          created_at: string
+          departure_airport: string | null
+          departure_date: string | null
+          departure_time: string | null
+          id: string
+          notes: string | null
+          operator_name: string | null
+          parsed_data: Json | null
+          passengers: number | null
+          price: number | null
+          raw_html: string | null
+          tail_number: string | null
+          updated_at: string
+        }
+        Insert: {
+          aircraft_type?: string | null
+          arrival_airport?: string | null
+          arrival_date?: string | null
+          arrival_time?: string | null
+          created_at?: string
+          departure_airport?: string | null
+          departure_date?: string | null
+          departure_time?: string | null
+          id?: string
+          notes?: string | null
+          operator_name?: string | null
+          parsed_data?: Json | null
+          passengers?: number | null
+          price?: number | null
+          raw_html?: string | null
+          tail_number?: string | null
+          updated_at?: string
+        }
+        Update: {
+          aircraft_type?: string | null
+          arrival_airport?: string | null
+          arrival_date?: string | null
+          arrival_time?: string | null
+          created_at?: string
+          departure_airport?: string | null
+          departure_date?: string | null
+          departure_time?: string | null
+          id?: string
+          notes?: string | null
+          operator_name?: string | null
+          parsed_data?: Json | null
+          passengers?: number | null
+          price?: number | null
+          raw_html?: string | null
+          tail_number?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       pending_lead_imports: {
         Row: {
           created_at: string

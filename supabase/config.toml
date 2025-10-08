@@ -1,5 +1,8 @@
 project_id = "hwemookrxvflpinfpkrj"
 
+[functions.receive-open-leg-email]
+verify_jwt = false
+
 [functions.fetch-airnav-airport]
 verify_jwt = false
 

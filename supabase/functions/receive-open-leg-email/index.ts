@@ -1,0 +1,211 @@
+import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
+const handler = async (req: Request): Promise<Response> => {
+  // Handle CORS preflight requests
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
+
+    if (!supabaseUrl || !supabaseServiceKey || !lovableApiKey) {
+      throw new Error("Missing required environment variables");
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Parse the incoming request
+    const { html } = await req.json();
+
+    if (!html) {
+      return new Response(
+        JSON.stringify({ error: "No HTML content provided" }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
+    console.log("Received HTML email, parsing with AI...");
+
+    // Use Lovable AI to parse the HTML
+    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${lovableApiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-pro",
+        messages: [
+          {
+            role: "system",
+            content: `You are an expert at parsing aviation open leg and aircraft availability emails. Extract structured data from the HTML email content provided. 
+
+Return the data in this exact JSON format:
+{
+  "legs": [
+    {
+      "operator_name": "operator name if mentioned",
+      "aircraft_type": "aircraft type/model",
+      "tail_number": "registration/tail number if available",
+      "departure_airport": "departure airport code or name",
+      "arrival_airport": "arrival airport code or name",
+      "departure_date": "YYYY-MM-DD format",
+      "departure_time": "HH:MM:SS format if available",
+      "arrival_date": "YYYY-MM-DD format if available",
+      "arrival_time": "HH:MM:SS format if available",
+      "passengers": number of passengers as integer,
+      "price": numeric price if mentioned,
+      "notes": "any additional notes, restrictions, or details"
+    }
+  ]
+}
+
+If a field is not available in the email, use null. Extract multiple legs if the email contains multiple aircraft/routes.`,
+          },
+          {
+            role: "user",
+            content: html,
+          },
+        ],
+        tools: [
+          {
+            type: "function",
+            function: {
+              name: "extract_open_legs",
+              description: "Extract structured open leg data from email HTML",
+              parameters: {
+                type: "object",
+                properties: {
+                  legs: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        operator_name: { type: "string" },
+                        aircraft_type: { type: "string" },
+                        tail_number: { type: "string" },
+                        departure_airport: { type: "string" },
+                        arrival_airport: { type: "string" },
+                        departure_date: { type: "string" },
+                        departure_time: { type: "string" },
+                        arrival_date: { type: "string" },
+                        arrival_time: { type: "string" },
+                        passengers: { type: "integer" },
+                        price: { type: "number" },
+                        notes: { type: "string" },
+                      },
+                    },
+                  },
+                },
+                required: ["legs"],
+              },
+            },
+          },
+        ],
+        tool_choice: { type: "function", function: { name: "extract_open_legs" } },
+      }),
+    });
+
+    if (!aiResponse.ok) {
+      if (aiResponse.status === 429) {
+        return new Response(
+          JSON.stringify({ error: "Rate limit exceeded. Please try again later." }),
+          {
+            status: 429,
+            headers: { "Content-Type": "application/json", ...corsHeaders },
+          }
+        );
+      }
+      if (aiResponse.status === 402) {
+        return new Response(
+          JSON.stringify({ error: "Payment required. Please add credits to your Lovable AI workspace." }),
+          {
+            status: 402,
+            headers: { "Content-Type": "application/json", ...corsHeaders },
+          }
+        );
+      }
+      const errorText = await aiResponse.text();
+      console.error("AI API error:", aiResponse.status, errorText);
+      throw new Error(`AI API error: ${errorText}`);
+    }
+
+    const aiData = await aiResponse.json();
+    console.log("AI response received:", JSON.stringify(aiData));
+
+    // Extract the parsed data from tool call
+    const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
+    if (!toolCall || toolCall.function.name !== "extract_open_legs") {
+      throw new Error("AI did not return expected tool call");
+    }
+
+    const parsedData = JSON.parse(toolCall.function.arguments);
+    console.log("Parsed data:", JSON.stringify(parsedData));
+
+    // Insert each leg into the database
+    const insertPromises = parsedData.legs.map(async (leg: any) => {
+      const { data, error } = await supabase.from("open_legs").insert({
+        operator_name: leg.operator_name || null,
+        aircraft_type: leg.aircraft_type || null,
+        tail_number: leg.tail_number || null,
+        departure_airport: leg.departure_airport || null,
+        arrival_airport: leg.arrival_airport || null,
+        departure_date: leg.departure_date || null,
+        departure_time: leg.departure_time || null,
+        arrival_date: leg.arrival_date || null,
+        arrival_time: leg.arrival_time || null,
+        passengers: leg.passengers || null,
+        price: leg.price || null,
+        notes: leg.notes || null,
+        raw_html: html,
+        parsed_data: leg,
+      });
+
+      if (error) {
+        console.error("Error inserting open leg:", error);
+        throw error;
+      }
+
+      return data;
+    });
+
+    await Promise.all(insertPromises);
+
+    console.log(`Successfully inserted ${parsedData.legs.length} open leg(s)`);
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        message: `Successfully parsed and stored ${parsedData.legs.length} open leg(s)`,
+        legs: parsedData.legs,
+      }),
+      {
+        status: 200,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      }
+    );
+  } catch (error: any) {
+    console.error("Error in receive-open-leg-email function:", error);
+    return new Response(
+      JSON.stringify({ error: error.message }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      }
+    );
+  }
+};
+
+serve(handler);
