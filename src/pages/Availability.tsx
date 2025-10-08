@@ -21,6 +21,7 @@ interface OpenLeg {
   tail_number: string | null;
   departure_airport: string | null;
   arrival_airport: string | null;
+  route: string | null;
   departure_date: string | null;
   departure_time: string | null;
   arrival_date: string | null;
@@ -117,8 +118,7 @@ const Availability = () => {
         (leg) =>
           leg.aircraft_type?.toLowerCase().includes(search) ||
           leg.operator_name?.toLowerCase().includes(search) ||
-          leg.departure_airport?.toLowerCase().includes(search) ||
-          leg.arrival_airport?.toLowerCase().includes(search) ||
+          leg.route?.toLowerCase().includes(search) ||
           leg.tail_number?.toLowerCase().includes(search) ||
           leg.notes?.toLowerCase().includes(search)
       );
@@ -313,7 +313,7 @@ const Availability = () => {
                           </div>
                         </TableCell>
                         <TableCell>
-                          {leg.departure_airport || "N/A"} → {leg.arrival_airport || "N/A"}
+                          {leg.route || "—"}
                         </TableCell>
                         <TableCell>{leg.operator_name || "—"}</TableCell>
                         <TableCell>
