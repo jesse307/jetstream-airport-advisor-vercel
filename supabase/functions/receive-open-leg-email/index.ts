@@ -189,6 +189,20 @@ Be extremely careful with dates - verify they match what's in the email exactly.
     const parsedData = JSON.parse(toolCall.function.arguments);
     console.log("Parsed data:", JSON.stringify(parsedData));
 
+    // If we can identify an operator, delete their old legs first
+    const operatorName = parsedData.legs[0]?.operator_name;
+    if (operatorName) {
+      console.log(`Deleting old legs from operator: ${operatorName}`);
+      const { error: deleteError } = await supabase
+        .from("open_legs")
+        .delete()
+        .eq("operator_name", operatorName);
+      
+      if (deleteError) {
+        console.error("Error deleting old legs:", deleteError);
+      }
+    }
+
     // Insert each leg into the database
     const insertPromises = parsedData.legs.map(async (leg: any) => {
       const { data, error } = await supabase.from("open_legs").insert({

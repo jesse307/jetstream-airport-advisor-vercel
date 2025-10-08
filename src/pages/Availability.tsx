@@ -32,6 +32,7 @@ interface OpenLeg {
   price: number | null;
   notes: string | null;
   created_at: string;
+  updated_at: string | null;
 }
 
 const Availability = () => {
@@ -55,8 +56,8 @@ const Availability = () => {
     try {
       const { data, error } = await supabase
         .from("open_legs")
-        .select("*")
-        .order("created_at", { ascending: false });
+        .select("*, updated_at")
+        .order("updated_at", { ascending: false });
 
       if (error) throw error;
 
@@ -293,6 +294,7 @@ const Availability = () => {
                       <TableHead>Operator</TableHead>
                       <TableHead>Tail Number</TableHead>
                       <TableHead>Price</TableHead>
+                      <TableHead>Updated</TableHead>
                       <TableHead>Notes</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -347,6 +349,11 @@ const Availability = () => {
                         </TableCell>
                         <TableCell>
                           {leg.price ? `$${leg.price.toLocaleString()}` : "—"}
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-sm text-muted-foreground">
+                            {formatDate(leg.updated_at || leg.created_at)}
+                          </span>
                         </TableCell>
                         <TableCell className="max-w-xs">
                           <p className="text-sm text-muted-foreground line-clamp-2">
