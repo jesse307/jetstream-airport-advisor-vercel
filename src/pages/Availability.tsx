@@ -26,6 +26,8 @@ interface OpenLeg {
   departure_time: string | null;
   arrival_date: string | null;
   arrival_time: string | null;
+  availability_start_date: string | null;
+  availability_end_date: string | null;
   passengers: number | null;
   price: number | null;
   notes: string | null;
@@ -286,7 +288,7 @@ const Availability = () => {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Aircraft Type</TableHead>
-                      <TableHead>Availability</TableHead>
+                      <TableHead>Availability Period</TableHead>
                       <TableHead>Route</TableHead>
                       <TableHead>Operator</TableHead>
                       <TableHead>Tail Number</TableHead>
@@ -302,13 +304,33 @@ const Availability = () => {
                         </TableCell>
                         <TableCell>
                           <div className="flex flex-col">
-                            <span className="font-medium">
-                              {leg.departure_date ? formatDate(leg.departure_date) : "N/A"}
-                            </span>
-                            {leg.departure_time && (
-                              <span className="text-sm text-muted-foreground">
-                                {formatTime(leg.departure_time)}
-                              </span>
+                            {leg.availability_start_date && leg.availability_end_date ? (
+                              <>
+                                <span className="font-medium">
+                                  {format(new Date(leg.availability_start_date), "MMM dd, yyyy")}
+                                  {leg.availability_start_date !== leg.availability_end_date && (
+                                    <> - {format(new Date(leg.availability_end_date), "MMM dd, yyyy")}</>
+                                  )}
+                                </span>
+                                {leg.departure_time && (
+                                  <span className="text-sm text-muted-foreground">
+                                    {formatTime(leg.departure_time)}
+                                  </span>
+                                )}
+                              </>
+                            ) : leg.departure_date ? (
+                              <>
+                                <span className="font-medium">
+                                  {formatDate(leg.departure_date)}
+                                </span>
+                                {leg.departure_time && (
+                                  <span className="text-sm text-muted-foreground">
+                                    {formatTime(leg.departure_time)}
+                                  </span>
+                                )}
+                              </>
+                            ) : (
+                              <span className="text-muted-foreground">N/A</span>
                             )}
                           </div>
                         </TableCell>

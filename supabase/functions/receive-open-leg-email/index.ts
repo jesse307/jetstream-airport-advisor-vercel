@@ -69,6 +69,18 @@ CRITICAL DATE PARSING RULES:
 - Parse times as HH:MM:SS in 24-hour format when available
 - If only general time mentioned (morning, afternoon, evening), put that in notes instead
 
+AIRPORT CODE EXTRACTION:
+- Extract only the airport codes (3-4 letter codes like KDAL, KHOU, KASE)
+- If airport codes are in parentheses like "(KDAL)", extract just KDAL
+- If full airport names are provided, extract just the code portion
+- If destination mentions "transient", "various", "TBD", or similar, use "transient" as the arrival airport
+
+AVAILABILITY DATE RANGE:
+- If the email mentions a date range for availability (e.g., "Oct 8-9", "available Oct 8 through Oct 10"), extract both start and end dates
+- availability_start_date should be the first date mentioned
+- availability_end_date should be the last date mentioned
+- If only a single date is mentioned, use the same date for both start and end
+
 Return the data in this exact JSON format:
 {
   "legs": [
@@ -76,12 +88,14 @@ Return the data in this exact JSON format:
       "operator_name": "operator name if mentioned",
       "aircraft_type": "aircraft type/model",
       "tail_number": "registration/tail number if available",
-      "departure_airport": "departure airport code or name",
-      "arrival_airport": "arrival airport code or name",
-      "departure_date": "YYYY-MM-DD format - CRITICAL: Follow the date rules above",
+      "departure_airport": "ONLY the airport code (e.g., KDAL, KHOU)",
+      "arrival_airport": "ONLY the airport code OR 'transient' if mentioned",
+      "departure_date": "YYYY-MM-DD format - departure date if different from availability period",
       "departure_time": "HH:MM:SS format if specific time available, null otherwise",
       "arrival_date": "YYYY-MM-DD format if available",
       "arrival_time": "HH:MM:SS format if available",
+      "availability_start_date": "YYYY-MM-DD format - first date of availability period",
+      "availability_end_date": "YYYY-MM-DD format - last date of availability period",
       "passengers": number of passengers as integer,
       "price": numeric price if mentioned (no currency symbols, just number),
       "notes": "any additional notes, time of day (morning/afternoon/evening), restrictions, or details"
@@ -120,6 +134,8 @@ Be extremely careful with dates - verify they match what's in the email exactly.
                         departure_time: { type: "string" },
                         arrival_date: { type: "string" },
                         arrival_time: { type: "string" },
+                        availability_start_date: { type: "string" },
+                        availability_end_date: { type: "string" },
                         passengers: { type: "integer" },
                         price: { type: "number" },
                         notes: { type: "string" },
@@ -184,6 +200,8 @@ Be extremely careful with dates - verify they match what's in the email exactly.
         departure_time: leg.departure_time || null,
         arrival_date: leg.arrival_date || null,
         arrival_time: leg.arrival_time || null,
+        availability_start_date: leg.availability_start_date || null,
+        availability_end_date: leg.availability_end_date || null,
         passengers: leg.passengers || null,
         price: leg.price || null,
         notes: leg.notes || null,

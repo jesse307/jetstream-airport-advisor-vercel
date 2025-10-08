@@ -437,6 +437,8 @@ export type Database = {
           arrival_airport: string | null
           arrival_date: string | null
           arrival_time: string | null
+          availability_end_date: string | null
+          availability_start_date: string | null
           created_at: string
           departure_airport: string | null
           departure_date: string | null
@@ -457,6 +459,8 @@ export type Database = {
           arrival_airport?: string | null
           arrival_date?: string | null
           arrival_time?: string | null
+          availability_end_date?: string | null
+          availability_start_date?: string | null
           created_at?: string
           departure_airport?: string | null
           departure_date?: string | null
@@ -477,6 +481,8 @@ export type Database = {
           arrival_airport?: string | null
           arrival_date?: string | null
           arrival_time?: string | null
+          availability_end_date?: string | null
+          availability_start_date?: string | null
           created_at?: string
           departure_airport?: string | null
           departure_date?: string | null
