@@ -24,15 +24,13 @@ serve(async (req) => {
 
     console.log('Skip tracing for:', firstName, lastName, email, phone);
 
-    // Call the skip tracing API
-    // Note: This is a general implementation - may need adjustment based on actual API endpoints
-    const searchParams = new URLSearchParams();
-    searchParams.append('first_name', firstName);
-    searchParams.append('last_name', lastName);
-    if (email) searchParams.append('email', email);
-    if (phone) searchParams.append('phone', phone);
-
-    const response = await fetch(`https://skip-tracing-working-api.p.rapidapi.com/api/person?${searchParams.toString()}`, {
+    // Step 1: Search by name to get peo_id
+    const fullName = `${firstName} ${lastName}`;
+    const searchUrl = `https://skip-tracing-working-api.p.rapidapi.com/search/byname?name=${encodeURIComponent(fullName)}&page=1`;
+    
+    console.log('Searching for person:', searchUrl);
+    
+    const searchResponse = await fetch(searchUrl, {
       method: 'GET',
       headers: {
         'X-RapidAPI-Key': RAPIDAPI_KEY,
@@ -40,23 +38,61 @@ serve(async (req) => {
       },
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Skip tracing API error:', response.status, errorText);
-      throw new Error(`Skip tracing API error: ${response.status}`);
+    if (!searchResponse.ok) {
+      const errorText = await searchResponse.text();
+      console.error('Skip tracing search error:', searchResponse.status, errorText);
+      throw new Error(`Skip tracing search error: ${searchResponse.status}`);
     }
 
-    const data = await response.json();
-    console.log('Skip tracing response:', JSON.stringify(data, null, 2));
+    const searchData = await searchResponse.json();
+    console.log('Search results:', JSON.stringify(searchData, null, 2));
 
-    // Extract relevant information
+    // Check if we got results
+    if (!searchData || !searchData.people || searchData.people.length === 0) {
+      console.log('No results found for:', fullName);
+      return new Response(JSON.stringify({ 
+        error: 'No results found',
+        netWorth: null,
+        linkedInProfile: null,
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Get the first result's peo_id
+    const peoId = searchData.people[0].peo_id;
+    console.log('Found peo_id:', peoId);
+
+    // Step 2: Get detailed information using peo_id
+    const detailsUrl = `https://skip-tracing-working-api.p.rapidapi.com/search/detailsbyID?peo_id=${peoId}`;
+    
+    console.log('Fetching details:', detailsUrl);
+    
+    const detailsResponse = await fetch(detailsUrl, {
+      method: 'GET',
+      headers: {
+        'X-RapidAPI-Key': RAPIDAPI_KEY,
+        'X-RapidAPI-Host': 'skip-tracing-working-api.p.rapidapi.com',
+      },
+    });
+
+    if (!detailsResponse.ok) {
+      const errorText = await detailsResponse.text();
+      console.error('Skip tracing details error:', detailsResponse.status, errorText);
+      throw new Error(`Skip tracing details error: ${detailsResponse.status}`);
+    }
+
+    const data = await detailsResponse.json();
+    console.log('Details response:', JSON.stringify(data, null, 2));
+
+    // Extract relevant information from the response
     const result = {
-      netWorth: data.net_worth || data.estimated_net_worth || data.wealth || null,
-      linkedInProfile: data.linkedin_url || data.linkedin || data.social_profiles?.linkedin || null,
-      income: data.income || data.estimated_income || null,
-      properties: data.properties || data.property_records || null,
-      businesses: data.businesses || data.business_affiliations || null,
-      socialProfiles: data.social_profiles || null,
+      netWorth: data.net_worth || data.estimated_net_worth || data.wealth || data.financials?.net_worth || null,
+      linkedInProfile: data.linkedin_url || data.linkedin || data.social_profiles?.linkedin || data.social_media?.linkedin || null,
+      income: data.income || data.estimated_income || data.financials?.income || null,
+      properties: data.properties || data.property_records || data.real_estate || null,
+      businesses: data.businesses || data.business_affiliations || data.business_records || null,
+      socialProfiles: data.social_profiles || data.social_media || null,
       rawData: data, // Include full response for debugging
     };
 
