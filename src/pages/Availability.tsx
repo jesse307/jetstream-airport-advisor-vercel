@@ -77,7 +77,10 @@ const Availability = () => {
   const formatDate = (date: string | null) => {
     if (!date) return "N/A";
     try {
-      return format(new Date(date), "MMM dd, yyyy");
+      // Parse as local date to avoid timezone shifts
+      const [year, month, day] = date.split('-').map(Number);
+      const localDate = new Date(year, month - 1, day);
+      return format(localDate, "MMM dd, yyyy");
     } catch {
       return date;
     }
@@ -99,7 +102,9 @@ const Availability = () => {
       filtered = filtered.filter((leg) => {
         if (!leg.departure_date) return false;
         try {
-          const legDate = parseISO(leg.departure_date);
+          // Parse as local date
+          const [year, month, day] = leg.departure_date.split('-').map(Number);
+          const legDate = new Date(year, month - 1, day);
           if (startDate && endDate) {
             return isWithinInterval(legDate, { start: startDate, end: endDate });
           } else if (startDate) {
@@ -309,9 +314,9 @@ const Availability = () => {
                             {leg.availability_start_date && leg.availability_end_date ? (
                               <>
                                 <span className="font-medium">
-                                  {format(new Date(leg.availability_start_date), "MMM dd, yyyy")}
+                                  {formatDate(leg.availability_start_date)}
                                   {leg.availability_start_date !== leg.availability_end_date && (
-                                    <> - {format(new Date(leg.availability_end_date), "MMM dd, yyyy")}</>
+                                    <> - {formatDate(leg.availability_end_date)}</>
                                   )}
                                 </span>
                                 {leg.departure_time && (
