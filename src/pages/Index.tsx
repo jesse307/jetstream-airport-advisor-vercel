@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plane, MapPin, Navigation, Settings, TestTube, UserPlus, Upload, History, Users, Radio, FileText } from "lucide-react";
+import { Plane, MapPin, Navigation, Settings, TestTube, UserPlus, Upload, History, Users, Radio, FileText, Calendar } from "lucide-react";
 import { Link } from "react-router-dom";
 import { AirportSearch } from "@/components/AirportSearch";
 import { FlightCalculator } from "@/components/FlightCalculator";
@@ -54,6 +54,12 @@ const Index = () => {
                 <Link to="/quotes">
                   <FileText className="h-4 w-4 mr-1" />
                   Quotes
+                </Link>
+              </Button>
+              <Button asChild size="sm" variant="secondary">
+                <Link to="/availability">
+                  <Calendar className="h-4 w-4 mr-1" />
+                  Availability
                 </Link>
               </Button>
               <Button asChild size="sm">
