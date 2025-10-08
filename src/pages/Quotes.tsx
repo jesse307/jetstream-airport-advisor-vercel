@@ -113,11 +113,11 @@ export default function Quotes() {
     }
   </style>
 </head>
-<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f8f9fa;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f8f9fa;">
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0">
     <tr>
       <td align="center" style="padding: 20px 0;">
-        <table width="600" cellpadding="0" cellspacing="0" style="max-width: 600px; background-color: #ffffff;">
+        <table width="600" cellpadding="0" cellspacing="0" style="max-width: 600px;">
           <!-- Greeting -->
           <tr>
             <td style="padding: 30px 30px 20px 30px;">
@@ -195,7 +195,7 @@ export default function Quotes() {
                                   </h3>
                                   
                                   ${q.price ? `
-                                  <h4 style="margin: 0 0 10px 0; font-size: 22px; font-weight: 700; color: ${stratosLightBlue};">
+                                  <h4 style="margin: 0 0 10px 0; font-size: 22px; font-weight: 700; color: ${stratosNavy};">
                                     $${q.price}
                                   </h4>
                                   ` : ''}
@@ -240,7 +240,7 @@ export default function Quotes() {
                             </h3>
                             
                             ${q.price ? `
-                            <h4 style="margin: 0 0 10px 0; font-size: 22px; font-weight: 700; color: ${stratosLightBlue};">
+                            <h4 style="margin: 0 0 10px 0; font-size: 22px; font-weight: 700; color: ${stratosNavy};">
                               $${q.price}
                             </h4>
                             ` : ''}
