@@ -57,7 +57,8 @@ const Availability = () => {
       const { data, error } = await supabase
         .from("open_legs")
         .select("*, updated_at")
-        .order("updated_at", { ascending: false });
+        .order("availability_start_date", { ascending: true, nullsFirst: false })
+        .order("departure_date", { ascending: true, nullsFirst: false });
 
       if (error) throw error;
 
