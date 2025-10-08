@@ -59,7 +59,15 @@ const handler = async (req: Request): Promise<Response> => {
         messages: [
           {
             role: "system",
-            content: `You are an expert at parsing aviation open leg and aircraft availability emails. Extract structured data from the HTML email content provided. 
+            content: `You are an expert at parsing aviation open leg and aircraft availability emails. Extract structured data from the HTML email content provided.
+
+CRITICAL DATE PARSING RULES:
+- Today's date is ${new Date().toISOString().split('T')[0]}
+- If a date mentions only month and day (e.g., "Oct 8", "October 8"), use the current year (${new Date().getFullYear()})
+- If the parsed date would be in the past, assume it's for next year
+- Always return dates in YYYY-MM-DD format
+- Parse times as HH:MM:SS in 24-hour format when available
+- If only general time mentioned (morning, afternoon, evening), put that in notes instead
 
 Return the data in this exact JSON format:
 {
@@ -70,18 +78,19 @@ Return the data in this exact JSON format:
       "tail_number": "registration/tail number if available",
       "departure_airport": "departure airport code or name",
       "arrival_airport": "arrival airport code or name",
-      "departure_date": "YYYY-MM-DD format",
-      "departure_time": "HH:MM:SS format if available",
+      "departure_date": "YYYY-MM-DD format - CRITICAL: Follow the date rules above",
+      "departure_time": "HH:MM:SS format if specific time available, null otherwise",
       "arrival_date": "YYYY-MM-DD format if available",
       "arrival_time": "HH:MM:SS format if available",
       "passengers": number of passengers as integer,
-      "price": numeric price if mentioned,
-      "notes": "any additional notes, restrictions, or details"
+      "price": numeric price if mentioned (no currency symbols, just number),
+      "notes": "any additional notes, time of day (morning/afternoon/evening), restrictions, or details"
     }
   ]
 }
 
-If a field is not available in the email, use null. Extract multiple legs if the email contains multiple aircraft/routes.`,
+If a field is not available in the email, use null. Extract multiple legs if the email contains multiple aircraft/routes.
+Be extremely careful with dates - verify they match what's in the email exactly.`,
           },
           {
             role: "user",
