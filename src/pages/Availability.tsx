@@ -1,12 +1,18 @@
 import { useState, useEffect } from "react";
-import { Plane, Calendar, MapPin, Users, DollarSign, FileText } from "lucide-react";
+import { Plane, Calendar, Search, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { format } from "date-fns";
+import { format, isWithinInterval, parseISO } from "date-fns";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
 
 interface OpenLeg {
   id: string;
@@ -27,12 +33,20 @@ interface OpenLeg {
 
 const Availability = () => {
   const [openLegs, setOpenLegs] = useState<OpenLeg[]>([]);
+  const [filteredLegs, setFilteredLegs] = useState<OpenLeg[]>([]);
   const [loading, setLoading] = useState(true);
+  const [startDate, setStartDate] = useState<Date | undefined>(undefined);
+  const [endDate, setEndDate] = useState<Date | undefined>(undefined);
+  const [searchTerm, setSearchTerm] = useState("");
   const { toast } = useToast();
 
   useEffect(() => {
     fetchOpenLegs();
   }, []);
+
+  useEffect(() => {
+    filterLegs();
+  }, [openLegs, startDate, endDate, searchTerm]);
 
   const fetchOpenLegs = async () => {
     try {
@@ -67,7 +81,56 @@ const Availability = () => {
 
   const formatTime = (time: string | null) => {
     if (!time) return "";
-    return time.substring(0, 5);
+    const hour = parseInt(time.substring(0, 2));
+    if (hour < 12) return "Morning";
+    if (hour < 17) return "Afternoon";
+    return "Evening";
+  };
+
+  const filterLegs = () => {
+    let filtered = [...openLegs];
+
+    // Filter by date range
+    if (startDate || endDate) {
+      filtered = filtered.filter((leg) => {
+        if (!leg.departure_date) return false;
+        try {
+          const legDate = parseISO(leg.departure_date);
+          if (startDate && endDate) {
+            return isWithinInterval(legDate, { start: startDate, end: endDate });
+          } else if (startDate) {
+            return legDate >= startDate;
+          } else if (endDate) {
+            return legDate <= endDate;
+          }
+        } catch {
+          return false;
+        }
+        return true;
+      });
+    }
+
+    // Filter by search term
+    if (searchTerm) {
+      const search = searchTerm.toLowerCase();
+      filtered = filtered.filter(
+        (leg) =>
+          leg.aircraft_type?.toLowerCase().includes(search) ||
+          leg.operator_name?.toLowerCase().includes(search) ||
+          leg.departure_airport?.toLowerCase().includes(search) ||
+          leg.arrival_airport?.toLowerCase().includes(search) ||
+          leg.tail_number?.toLowerCase().includes(search) ||
+          leg.notes?.toLowerCase().includes(search)
+      );
+    }
+
+    setFilteredLegs(filtered);
+  };
+
+  const clearFilters = () => {
+    setStartDate(undefined);
+    setEndDate(undefined);
+    setSearchTerm("");
   };
 
   return (
@@ -111,101 +174,169 @@ const Availability = () => {
             </Badge>
           </div>
 
+          {/* Filters */}
+          <Card>
+            <CardContent className="pt-6">
+              <div className="grid gap-4 md:grid-cols-4">
+                <div className="md:col-span-1">
+                  <Label htmlFor="search">Search</Label>
+                  <div className="relative mt-1.5">
+                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="search"
+                      placeholder="Aircraft, operator, route..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-8"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label>Start Date</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal mt-1.5",
+                          !startDate && "text-muted-foreground"
+                        )}
+                      >
+                        <Calendar className="mr-2 h-4 w-4" />
+                        {startDate ? format(startDate, "MMM dd, yyyy") : "Pick a date"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <CalendarComponent
+                        mode="single"
+                        selected={startDate}
+                        onSelect={setStartDate}
+                        initialFocus
+                        className={cn("p-3 pointer-events-auto")}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                <div>
+                  <Label>End Date</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal mt-1.5",
+                          !endDate && "text-muted-foreground"
+                        )}
+                      >
+                        <Calendar className="mr-2 h-4 w-4" />
+                        {endDate ? format(endDate, "MMM dd, yyyy") : "Pick a date"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <CalendarComponent
+                        mode="single"
+                        selected={endDate}
+                        onSelect={setEndDate}
+                        initialFocus
+                        className={cn("p-3 pointer-events-auto")}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                <div className="flex items-end">
+                  <Button
+                    variant="outline"
+                    onClick={clearFilters}
+                    className="w-full"
+                    disabled={!startDate && !endDate && !searchTerm}
+                  >
+                    <X className="mr-2 h-4 w-4" />
+                    Clear Filters
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           {loading ? (
             <div className="flex items-center justify-center py-12">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
             </div>
-          ) : openLegs.length === 0 ? (
+          ) : filteredLegs.length === 0 ? (
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-12">
                 <Plane className="h-12 w-12 text-muted-foreground mb-4" />
                 <p className="text-lg font-medium text-muted-foreground">
-                  No availability data yet
+                  {openLegs.length === 0 ? "No availability data yet" : "No results found"}
                 </p>
                 <p className="text-sm text-muted-foreground mt-2">
-                  Open legs will appear here when received from operators
+                  {openLegs.length === 0
+                    ? "Open legs will appear here when received from operators"
+                    : "Try adjusting your filters"}
                 </p>
               </CardContent>
             </Card>
           ) : (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {openLegs.map((leg) => (
-                <Card key={leg.id} className="hover:shadow-md transition-shadow">
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <CardTitle className="text-lg">
-                          {leg.aircraft_type || "Unknown Aircraft"}
-                        </CardTitle>
-                        {leg.operator_name && (
-                          <p className="text-sm text-muted-foreground mt-1">
-                            {leg.operator_name}
+            <Card>
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Aircraft Type</TableHead>
+                      <TableHead>Availability</TableHead>
+                      <TableHead>Route</TableHead>
+                      <TableHead>Operator</TableHead>
+                      <TableHead>Tail Number</TableHead>
+                      <TableHead>Price</TableHead>
+                      <TableHead>Notes</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredLegs.map((leg) => (
+                      <TableRow key={leg.id}>
+                        <TableCell className="font-medium">
+                          {leg.aircraft_type || "Unknown"}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-col">
+                            <span className="font-medium">
+                              {leg.departure_date ? formatDate(leg.departure_date) : "N/A"}
+                            </span>
+                            {leg.departure_time && (
+                              <span className="text-sm text-muted-foreground">
+                                {formatTime(leg.departure_time)}
+                              </span>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {leg.departure_airport || "N/A"} → {leg.arrival_airport || "N/A"}
+                        </TableCell>
+                        <TableCell>{leg.operator_name || "—"}</TableCell>
+                        <TableCell>
+                          {leg.tail_number ? (
+                            <Badge variant="outline">{leg.tail_number}</Badge>
+                          ) : (
+                            "—"
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {leg.price ? `$${leg.price.toLocaleString()}` : "—"}
+                        </TableCell>
+                        <TableCell className="max-w-xs">
+                          <p className="text-sm text-muted-foreground line-clamp-2">
+                            {leg.notes || "—"}
                           </p>
-                        )}
-                      </div>
-                      {leg.tail_number && (
-                        <Badge variant="outline">{leg.tail_number}</Badge>
-                      )}
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    {/* Route */}
-                    <div className="flex items-center gap-2">
-                      <MapPin className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">
-                        {leg.departure_airport || "N/A"} → {leg.arrival_airport || "N/A"}
-                      </span>
-                    </div>
-
-                    {/* Departure Date/Time */}
-                    {leg.departure_date && (
-                      <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm">
-                          {formatDate(leg.departure_date)}
-                          {leg.departure_time && ` at ${formatTime(leg.departure_time)}`}
-                        </span>
-                      </div>
-                    )}
-
-                    {/* Passengers */}
-                    {leg.passengers && (
-                      <div className="flex items-center gap-2">
-                        <Users className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm">{leg.passengers} passengers</span>
-                      </div>
-                    )}
-
-                    {/* Price */}
-                    {leg.price && (
-                      <div className="flex items-center gap-2">
-                        <DollarSign className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm font-medium">
-                          ${leg.price.toLocaleString()}
-                        </span>
-                      </div>
-                    )}
-
-                    {/* Notes */}
-                    {leg.notes && (
-                      <div className="flex items-start gap-2 pt-2 border-t">
-                        <FileText className="h-4 w-4 text-muted-foreground mt-0.5" />
-                        <p className="text-sm text-muted-foreground line-clamp-2">
-                          {leg.notes}
-                        </p>
-                      </div>
-                    )}
-
-                    {/* Received timestamp */}
-                    <div className="pt-2 border-t">
-                      <p className="text-xs text-muted-foreground">
-                        Received {format(new Date(leg.created_at), "MMM dd, yyyy 'at' h:mm a")}
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
           )}
         </div>
       </main>
