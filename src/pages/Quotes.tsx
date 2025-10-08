@@ -274,9 +274,134 @@ export default function Quotes() {
             </td>
           </tr>
 
+          <!-- Why Stratos Section -->
+          <tr>
+            <td style="padding: 30px 30px 20px 30px;">
+              <table width="100%" cellpadding="0" cellspacing="0" style="background: linear-gradient(135deg, ${stratosNavy} 0%, ${stratosBlue} 100%); border-radius: 8px; overflow: hidden;">
+                <tr>
+                  <td style="padding: 28px 24px;">
+                    <h3 style="color: #ffffff; font-size: 22px; font-weight: 700; margin: 0 0 20px 0; text-align: center; letter-spacing: 1px;">
+                      Why Stratos Jets?
+                    </h3>
+                    <table width="100%" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td style="padding: 12px 0;">
+                          <table width="100%" cellpadding="0" cellspacing="0">
+                            <tr>
+                              <td style="width: 32px; vertical-align: top; padding-right: 12px;">
+                                <div style="width: 24px; height: 24px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                                  <span style="color: #ffffff; font-weight: 700; font-size: 12px;">✓</span>
+                                </div>
+                              </td>
+                              <td style="vertical-align: top;">
+                                <p style="color: #ffffff; font-size: 14px; line-height: 1.5; margin: 0;">
+                                  Rigorous safety vetting beyond standards (ARGUS, Wyvern, internal audits)
+                                </p>
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 12px 0;">
+                          <table width="100%" cellpadding="0" cellspacing="0">
+                            <tr>
+                              <td style="width: 32px; vertical-align: top; padding-right: 12px;">
+                                <div style="width: 24px; height: 24px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                                  <span style="color: #ffffff; font-weight: 700; font-size: 12px;">✓</span>
+                                </div>
+                              </td>
+                              <td style="vertical-align: top;">
+                                <p style="color: #ffffff; font-size: 14px; line-height: 1.5; margin: 0;">
+                                  Real-time transparency via client portal and live quotes
+                                </p>
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 12px 0;">
+                          <table width="100%" cellpadding="0" cellspacing="0">
+                            <tr>
+                              <td style="width: 32px; vertical-align: top; padding-right: 12px;">
+                                <div style="width: 24px; height: 24px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                                  <span style="color: #ffffff; font-weight: 700; font-size: 12px;">✓</span>
+                                </div>
+                              </td>
+                              <td style="vertical-align: top;">
+                                <p style="color: #ffffff; font-size: 14px; line-height: 1.5; margin: 0;">
+                                  Full trip support and flight-following from origin to destination
+                                </p>
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 12px 0;">
+                          <table width="100%" cellpadding="0" cellspacing="0">
+                            <tr>
+                              <td style="width: 32px; vertical-align: top; padding-right: 12px;">
+                                <div style="width: 24px; height: 24px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                                  <span style="color: #ffffff; font-weight: 700; font-size: 12px;">✓</span>
+                                </div>
+                              </td>
+                              <td style="vertical-align: top;">
+                                <p style="color: #ffffff; font-size: 14px; line-height: 1.5; margin: 0;">
+                                  Standardized, repeatable processes ensuring reliability
+                                </p>
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 12px 0;">
+                          <table width="100%" cellpadding="0" cellspacing="0">
+                            <tr>
+                              <td style="width: 32px; vertical-align: top; padding-right: 12px;">
+                                <div style="width: 24px; height: 24px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                                  <span style="color: #ffffff; font-weight: 700; font-size: 12px;">✓</span>
+                                </div>
+                              </td>
+                              <td style="vertical-align: top;">
+                                <p style="color: #ffffff; font-size: 14px; line-height: 1.5; margin: 0;">
+                                  Long track record with BBB A+ and strong industry accreditation
+                                </p>
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 12px 0;">
+                          <table width="100%" cellpadding="0" cellspacing="0">
+                            <tr>
+                              <td style="width: 32px; vertical-align: top; padding-right: 12px;">
+                                <div style="width: 24px; height: 24px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                                  <span style="color: #ffffff; font-weight: 700; font-size: 12px;">✓</span>
+                                </div>
+                              </td>
+                              <td style="vertical-align: top;">
+                                <p style="color: #ffffff; font-size: 14px; line-height: 1.5; margin: 0;">
+                                  White-glove service with dedicated advisors through every leg
+                                </p>
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
           <!-- Closing -->
           <tr>
-            <td style="padding: 0 30px 30px 30px; border-top: 1px solid #e5e7eb;">
+            <td style="padding: 0 30px 30px 30px;">
               <p style="font-size: 15px; line-height: 1.6; color: #555; margin: 20px 0 0 0;">
                 Please review these options and let me know if you have any questions or would like to proceed with booking.
               </p>
