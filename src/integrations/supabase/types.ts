@@ -448,6 +448,7 @@ export type Database = {
           passengers: number | null
           price: number | null
           raw_html: string | null
+          route: string | null
           tail_number: string | null
           updated_at: string
         }
@@ -467,6 +468,7 @@ export type Database = {
           passengers?: number | null
           price?: number | null
           raw_html?: string | null
+          route?: string | null
           tail_number?: string | null
           updated_at?: string
         }
@@ -486,6 +488,7 @@ export type Database = {
           passengers?: number | null
           price?: number | null
           raw_html?: string | null
+          route?: string | null
           tail_number?: string | null
           updated_at?: string
         }
@@ -666,6 +669,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      normalize_route: {
+        Args: { arr: string; dep: string }
+        Returns: string
       }
     }
     Enums: {
