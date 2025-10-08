@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, ArrowRight, User, Phone, Mail, Calendar, Clock, Plane, Users, MapPin, CheckCircle2, XCircle, Settings, ClipboardList, Send, Trophy, Edit2, Save, TrendingUp, Linkedin } from "lucide-react";
+import { ArrowLeft, ArrowRight, User, Phone, Mail, Calendar, Clock, Plane, Users, MapPin, CheckCircle2, XCircle, Settings, ClipboardList, Send, Trophy, Edit2, Save } from "lucide-react";
 import { format } from "date-fns";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -87,16 +87,6 @@ export default function LeadAnalysis() {
   const [loadingEvents, setLoadingEvents] = useState(false);
   const [matchingOpenLegs, setMatchingOpenLegs] = useState<any[]>([]);
   const [loadingOpenLegs, setLoadingOpenLegs] = useState(false);
-  
-  // Skip tracing state
-  const [skipTraceData, setSkipTraceData] = useState<{
-    netWorth: string | null;
-    linkedInProfile: string | null;
-    income: string | null;
-    properties: any[] | null;
-    businesses: any[] | null;
-  } | null>(null);
-  const [loadingSkipTrace, setLoadingSkipTrace] = useState(false);
   
   // Edit mode state
   const [isEditMode, setIsEditMode] = useState(false);
@@ -825,36 +815,6 @@ export default function LeadAnalysis() {
     }
   };
 
-  const fetchSkipTraceData = async (leadData: Lead) => {
-    if (!leadData) return;
-    
-    setLoadingSkipTrace(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('skip-trace-lead', {
-        body: {
-          firstName: leadData.first_name,
-          lastName: leadData.last_name,
-          email: leadData.email,
-          phone: leadData.phone,
-        },
-      });
-
-      if (error) {
-        console.error('Error fetching skip trace data:', error);
-        toast.error('Failed to fetch skip trace data');
-        return;
-      }
-
-      setSkipTraceData(data);
-      console.log('Skip trace data:', data);
-    } catch (error) {
-      console.error('Error fetching skip trace data:', error);
-      toast.error('Failed to fetch skip trace data');
-    } finally {
-      setLoadingSkipTrace(false);
-    }
-  };
-
   const fetchLead = async (leadId: string) => {
     try {
       const { data, error } = await supabase
@@ -886,9 +846,6 @@ export default function LeadAnalysis() {
 
       // Check for matching open legs
       checkMatchingOpenLegs(data as Lead);
-      
-      // Fetch skip trace data
-      fetchSkipTraceData(data as Lead);
 
       // Check for spam on load
       if (data.email_valid === false && data.phone_valid === false) {
@@ -1152,93 +1109,6 @@ export default function LeadAnalysis() {
                     <span>{lead.passengers} Passenger{lead.passengers !== 1 ? 's' : ''}</span>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-
-            {/* Skip Trace Information */}
-            <Card className="bg-gradient-to-br from-green-500/5 to-emerald-500/5 border-green-200">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <User className="h-5 w-5 text-green-600" />
-                  Lead Intelligence
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {loadingSkipTrace ? (
-                  <div className="flex items-center justify-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                  </div>
-                ) : skipTraceData ? (
-                  <div className="space-y-4">
-                    {skipTraceData.netWorth && (
-                      <div className="flex items-center gap-3 p-3 bg-white/50 rounded-lg">
-                        <TrendingUp className="h-5 w-5 text-green-600 flex-shrink-0" />
-                        <div>
-                          <p className="text-xs text-muted-foreground font-medium">Estimated Net Worth</p>
-                          <p className="text-lg font-bold text-green-600">{skipTraceData.netWorth}</p>
-                        </div>
-                      </div>
-                    )}
-                    
-                    {skipTraceData.income && (
-                      <div className="flex items-center gap-3 p-3 bg-white/50 rounded-lg">
-                        <TrendingUp className="h-5 w-5 text-blue-600 flex-shrink-0" />
-                        <div>
-                          <p className="text-xs text-muted-foreground font-medium">Estimated Income</p>
-                          <p className="text-lg font-bold text-blue-600">{skipTraceData.income}</p>
-                        </div>
-                      </div>
-                    )}
-                    
-                    {skipTraceData.linkedInProfile && (
-                      <div className="flex items-center gap-3 p-3 bg-white/50 rounded-lg">
-                        <Linkedin className="h-5 w-5 text-blue-700 flex-shrink-0" />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs text-muted-foreground font-medium mb-1">LinkedIn Profile</p>
-                          <a 
-                            href={skipTraceData.linkedInProfile} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="text-sm text-blue-700 hover:underline font-medium truncate block"
-                          >
-                            View Profile →
-                          </a>
-                        </div>
-                      </div>
-                    )}
-                    
-                    {skipTraceData.properties && skipTraceData.properties.length > 0 && (
-                      <div className="p-3 bg-white/50 rounded-lg">
-                        <p className="text-xs text-muted-foreground font-medium mb-2">Property Records</p>
-                        <p className="text-sm font-semibold">{skipTraceData.properties.length} properties found</p>
-                      </div>
-                    )}
-                    
-                    {skipTraceData.businesses && skipTraceData.businesses.length > 0 && (
-                      <div className="p-3 bg-white/50 rounded-lg">
-                        <p className="text-xs text-muted-foreground font-medium mb-2">Business Affiliations</p>
-                        <p className="text-sm font-semibold">{skipTraceData.businesses.length} businesses found</p>
-                      </div>
-                    )}
-
-                    {!skipTraceData.netWorth && !skipTraceData.linkedInProfile && !skipTraceData.income && (
-                      <div className="text-center py-4">
-                        <p className="text-sm text-muted-foreground">No additional information available</p>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <Button 
-                      onClick={() => lead && fetchSkipTraceData(lead)}
-                      variant="outline"
-                      className="gap-2"
-                    >
-                      <User className="h-4 w-4" />
-                      Fetch Lead Intelligence
-                    </Button>
-                  </div>
-                )}
               </CardContent>
             </Card>
 
