@@ -1,15 +1,14 @@
 import React, { useState } from "react";
-import { X, Send, Wand2, Loader2, FileText, Copy, Eye, Code, Type } from "lucide-react";
+import { Send, Wand2, Loader2, Eye, Code, Type } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import EmailEditor, { EditorRef, EmailEditorProps } from 'react-email-editor';
+import { Editor } from '@tinymce/tinymce-react';
 
 interface EmailComposerProps {
   isOpen: boolean;
@@ -44,7 +43,7 @@ export function EmailComposer({ isOpen, onClose, leadData, webhookUrl }: EmailCo
   const [isSavingTemplate, setIsSavingTemplate] = useState(false);
   const [templateId, setTemplateId] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
-  const emailEditorRef = React.useRef<EditorRef>(null);
+  const editorRef = React.useRef<any>(null);
   const [emailTemplate, setEmailTemplate] = useState(`Hi {{first_name}},
 
 Thank you for your interest in Stratos Jets. In order for me to be the most efficient in providing guidance, please confirm the details below and answer any additional questions.
@@ -290,13 +289,8 @@ Jesse
 
     setIsSending(true);
     
-    // Convert plain text to HTML for Gmail with larger font size
-    const htmlContent = `<div style="font-size: 16px; line-height: 1.5; font-family: Arial, sans-serif;">` + 
-      emailContent
-        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-        .replace(/\n/g, '<br>')
-        .replace(/━{10,}/g, '<hr style="border: none; border-top: 1px solid #ccc; margin: 15px 0;">') +
-      `</div>`;
+    // TinyMCE already outputs HTML, just wrap it with consistent styling
+    const htmlContent = `<div style="font-size: 16px; line-height: 1.5; font-family: Arial, sans-serif;">${emailContent}</div>`;
     
     const webhookData = {
       to: leadData.email,
@@ -568,13 +562,8 @@ Jesse
 
     setIsSending(true);
     
-    // Convert plain text to HTML
-    const htmlContent = `<div style="font-size: 16px; line-height: 1.5; font-family: Arial, sans-serif;">` + 
-      emailContent
-        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-        .replace(/\n/g, '<br>')
-        .replace(/━{10,}/g, '<hr style="border: none; border-top: 1px solid #ccc; margin: 15px 0;">') +
-      `</div>`;
+    // TinyMCE already outputs HTML
+    const htmlContent = `<div style="font-size: 16px; line-height: 1.5; font-family: Arial, sans-serif;">${emailContent}</div>`;
     
     const exportData = {
       subject: subject,
@@ -769,39 +758,16 @@ Jesse
                 </CardHeader>
                 <CardContent>
                   {isHtmlEditor ? (
-                    <div className="border rounded-md overflow-hidden">
-                      <EmailEditor
-                        ref={emailEditorRef}
-                        onReady={() => {
-                          // Load existing template if available
-                          if (emailTemplate) {
-                            emailEditorRef.current?.editor?.loadDesign(JSON.parse(emailTemplate));
-                          }
-                        }}
-                        onLoad={() => console.log('Email editor loaded')}
-                        options={{
-                          displayMode: 'email',
-                          locale: 'en',
-                        }}
-                        minHeight="500px"
-                      />
-                      <div className="p-2 bg-muted flex gap-2">
-                        <Button
-                          size="sm"
-                          onClick={() => {
-                            emailEditorRef.current?.editor?.exportHtml((data) => {
-                              const { design, html } = data;
-                              setEmailTemplate(JSON.stringify(design));
-                              const newContent = populateTemplate(html, leadData);
-                              setEmailContent(newContent);
-                              toast.success("Template saved");
-                            });
-                          }}
-                        >
-                          Save Template
-                        </Button>
-                      </div>
-                    </div>
+                    <Textarea
+                      value={emailTemplate}
+                      onChange={(e) => {
+                        setEmailTemplate(e.target.value);
+                        const newContent = populateTemplate(e.target.value, leadData);
+                        setEmailContent(newContent);
+                      }}
+                      className="min-h-[200px] font-mono text-sm"
+                      placeholder="Raw HTML template..."
+                    />
                   ) : (
                     <Textarea
                       value={emailTemplate}
@@ -878,22 +844,29 @@ Jesse
                     style={{ fontSize: '16px', lineHeight: '1.5', fontFamily: 'Arial, sans-serif' }}
                     dangerouslySetInnerHTML={{
                       __html: emailContent
-                        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                        .replace(/\n/g, '<br>')
-                        .replace(/━{10,}/g, '<hr style="border: none; border-top: 1px solid #ccc; margin: 15px 0;">')
                     }}
                   />
                 ) : (
-                  <Textarea
-                    id="content"
+                  <Editor
+                    apiKey="no-api-key"
+                    onInit={(evt, editor) => editorRef.current = editor}
                     value={emailContent}
-                    onChange={(e) => setEmailContent(e.target.value)}
-                    className="min-h-[400px] font-mono text-lg"
-                    placeholder="Email content will appear here..."
+                    onEditorChange={(content) => setEmailContent(content)}
+                    init={{
+                      height: 400,
+                      menubar: false,
+                      plugins: [
+                        'lists', 'link', 'code'
+                      ],
+                      toolbar: 'undo redo | bold italic underline | bullist numlist | link | code | removeformat',
+                      content_style: 'body { font-family:Arial,sans-serif; font-size:16px; line-height:1.5; }',
+                      branding: false,
+                      statusbar: false,
+                    }}
                   />
                 )}
                 <p className="text-xs text-muted-foreground">
-                  {showPreview ? "Preview of how the email will look in Gmail" : "Plain text format - will be converted to HTML when sent to Gmail"}
+                  {showPreview ? "Preview of how the email will look in Gmail" : "Rich text editor - use the toolbar to format your email"}
                 </p>
               </div>
 
