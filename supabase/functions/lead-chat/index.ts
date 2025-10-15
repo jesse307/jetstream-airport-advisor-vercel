@@ -19,7 +19,7 @@ serve(async (req) => {
     }
 
     // Build system prompt with lead context
-    const systemPrompt = `You are an AI assistant helping a private jet charter broker analyze and manage a lead.
+    const systemPrompt = `You are an AI assistant helping a private jet charter broker analyze and manage a lead. You have access to the internet and can search for current information.
 
 Lead Information:
 - Client: ${leadContext.name}
@@ -45,16 +45,24 @@ Arrival Airport Details:
 - Runway Length: ${leadContext.arrivalAirportInfo?.runwayLength ? leadContext.arrivalAirportInfo.runwayLength + " ft" : "N/A"}
 
 Your role is to:
-1. Answer questions about the route, airports, distance, and logistics
-2. Provide insights about aircraft suitability based on distance and runway requirements
-3. Suggest optimizations or alternative options when asked
-4. Help the broker understand any operational considerations
-5. Detect when the user wants to make changes to the lead details (passengers, airports, dates, etc.)
+1. Answer questions about the route, airports, distance, and logistics using current information
+2. Use the web_search tool to find current information about airports, weather, aviation regulations, or any other relevant topics
+3. When changing airports, ALWAYS use search_airport_details to get complete information including runway lengths
+4. Provide insights about aircraft suitability based on distance and runway requirements
+5. Suggest optimizations or alternative options when asked
+6. Help the broker understand any operational considerations
+7. Detect when the user wants to make changes to the lead details
+
+CRITICAL AIRPORT CODE HANDLING:
+- If user provides a 3-letter airport code and a 4-letter ICAO code is needed, assume it's a US airport and add 'K' prefix (e.g., JFK → KJFK)
+- When replacing an airport, ALWAYS search for its details first to get runway lengths and location info
+- Update ALL instances where the airport is referenced
 
 CRITICAL INSTRUCTIONS FOR UPDATING LEAD DETAILS:
-- ANY TIME the user says they want to change airports, dates, times, passenger count, or trip type - IMMEDIATELY use the update_lead_details tool
+- ANY TIME the user says they want to change airports, dates, times, passenger count, or trip type - IMMEDIATELY use the appropriate tools
+- For airport changes: FIRST use search_airport_details, THEN use update_lead_details with the complete information
 - Examples that should trigger updates:
-  * "Change departure to JFK" → update departureAirport
+  * "Change departure to JFK" → search_airport_details for JFK, then update departureAirport
   * "Make it 5 passengers" → update passengers
   * "They're coming back on the 14th" → update returnDatetime
   * "Actually make it round trip" → update tripType
@@ -62,16 +70,12 @@ CRITICAL INSTRUCTIONS FOR UPDATING LEAD DETAILS:
 - After calling the tool, confirm what was updated
 
 CRITICAL INSTRUCTIONS FOR DATE HANDLING:
-- When the user mentions a specific date (e.g., "the 14th", "January 14th", "1/14"), use EXACTLY that date
+- When the user mentions a specific date, use EXACTLY that date
 - Return timestamps in ISO format (YYYY-MM-DDTHH:MM:SS) for datetime fields
-- The user's timezone is their local timezone - preserve the local date/time they specify
-- If the user says "coming back on the 14th", set returnDatetime to use day 14 in their timezone
-- When converting relative dates like "next Monday" or "3 days from now", calculate from the current departure date
+- Preserve the local date/time the user specifies
 - Double-check your date calculations before calling the update tool
 
-When the user wants to update lead information, ALWAYS use the update_lead_details tool immediately.
-
-Keep responses concise, professional, and focused on helping the broker serve this client better. Use aviation terminology appropriately.`;
+Keep responses concise, professional, and focused on helping the broker serve this client better.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -86,12 +90,49 @@ Keep responses concise, professional, and focused on helping the broker serve th
           ...messages,
         ],
         stream: true,
+        grounding: {
+          googleSearch: {}
+        },
         tools: [
           {
             type: "function",
             function: {
+              name: "web_search",
+              description: "Search the internet for current information about airports, weather, aviation regulations, or any topic. Use this to get up-to-date information.",
+              parameters: {
+                type: "object",
+                properties: {
+                  query: {
+                    type: "string",
+                    description: "The search query to find information on the web"
+                  }
+                },
+                required: ["query"]
+              }
+            }
+          },
+          {
+            type: "function",
+            function: {
+              name: "search_airport_details",
+              description: "Search for detailed airport information including ICAO code, runway lengths, and location. MUST be called before updating any airport in the lead. Automatically handles 3-letter to 4-letter code conversion for US airports.",
+              parameters: {
+                type: "object",
+                properties: {
+                  airportCode: {
+                    type: "string",
+                    description: "Airport code (3-letter IATA or 4-letter ICAO). If 3 letters and US airport, will automatically add K prefix."
+                  }
+                },
+                required: ["airportCode"]
+              }
+            }
+          },
+          {
+            type: "function",
+            function: {
               name: "update_lead_details",
-              description: "MUST be called whenever the user requests ANY changes to trip details. This is not optional - call this immediately when changes are requested.",
+              description: "MUST be called whenever the user requests ANY changes to trip details. For airport changes, call search_airport_details FIRST to get complete info, then call this.",
               parameters: {
                 type: "object",
                 properties: {
@@ -101,23 +142,23 @@ Keep responses concise, professional, and focused on helping the broker serve th
                   },
                   departureAirport: { 
                     type: "string", 
-                    description: "New departure airport code (e.g., 'JFK', 'LAX')" 
+                    description: "New departure airport code with full details from search_airport_details" 
                   },
                   arrivalAirport: { 
                     type: "string", 
-                    description: "New arrival airport code (e.g., 'JFK', 'LAX')" 
+                    description: "New arrival airport code with full details from search_airport_details" 
                   },
                   departureDatetime: { 
                     type: "string", 
-                    description: "New departure date and time in ISO format (YYYY-MM-DDTHH:MM:SS). CRITICAL: Use the EXACT date the user specifies in their local timezone." 
+                    description: "New departure date and time in ISO format (YYYY-MM-DDTHH:MM:SS)" 
                   },
                   returnDatetime: { 
                     type: "string", 
-                    description: "New return date and time in ISO format (YYYY-MM-DDTHH:MM:SS). CRITICAL: Use the EXACT date the user specifies in their local timezone." 
+                    description: "New return date and time in ISO format (YYYY-MM-DDTHH:MM:SS)" 
                   },
                   tripType: { 
                     type: "string", 
-                    description: "Trip type: 'One Way' or 'Round Trip' (exact case-sensitive strings)" 
+                    description: "Trip type: 'one-way' or 'round-trip'" 
                   }
                 }
               }
