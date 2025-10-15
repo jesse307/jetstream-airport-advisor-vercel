@@ -211,7 +211,7 @@ export default function Templates() {
                       Use variables like {`{{first_name}}`}, {`{{last_name}}`}, {`{{departure_airport}}`}, etc.
                     </div>
                     <Editor
-                      apiKey="0l83wk5ruzqhx1vqwg8uqyxr3l18k0liqhvn63g3qxuebqkp"
+                      apiKey="bh5y77uhl5utzv5u5zmjnmj002o26rj877w1i486g5wnexn6"
                       value={newTemplateContent}
                       onEditorChange={(content) => setNewTemplateContent(content)}
                       init={{
@@ -333,7 +333,7 @@ export default function Templates() {
             <div className="space-y-2">
               <Label>Template Content</Label>
               <Editor
-                apiKey="0l83wk5ruzqhx1vqwg8uqyxr3l18k0liqhvn63g3qxuebqkp"
+                apiKey="bh5y77uhl5utzv5u5zmjnmj002o26rj877w1i486g5wnexn6"
                 value={editTemplateContent}
                 onEditorChange={(content) => setEditTemplateContent(content)}
                 init={{
