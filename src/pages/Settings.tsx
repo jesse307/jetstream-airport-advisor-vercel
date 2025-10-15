@@ -216,6 +216,25 @@ export default function Settings() {
     toast.info("Template reset to default. Click Save to apply changes.");
   };
 
+  const handleReplaceWithVariables = () => {
+    let updatedTemplate = emailTemplate;
+    
+    // Common replacements - add the actual values from your template here
+    const replacements = [
+      { search: /Bill/g, replace: '{{first_name}}' },
+      { search: /Smith/g, replace: '{{last_name}}' },
+      { search: /bill@example\.com/gi, replace: '{{email}}' },
+      { search: /\(555\) 123-4567/g, replace: '{{phone}}' },
+    ];
+    
+    replacements.forEach(({ search, replace }) => {
+      updatedTemplate = updatedTemplate.replace(search, replace);
+    });
+    
+    setEmailTemplate(updatedTemplate);
+    toast.success("Replaced hardcoded values with variables. Review and click Save.");
+  };
+
   const populateTemplatePreview = (template: string) => {
     // Sample data for preview
     const sampleData = {
@@ -359,6 +378,12 @@ export default function Settings() {
                             Save Template
                           </>
                         )}
+                      </Button>
+                      <Button 
+                        variant="outline"
+                        onClick={handleReplaceWithVariables}
+                      >
+                        Replace with Variables
                       </Button>
                       <Button 
                         variant="outline"
