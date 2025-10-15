@@ -54,7 +54,9 @@ export function EmailComposer({ isOpen, onClose, leadData }: EmailComposerProps)
         .select('*')
         .is('user_id', null)
         .eq('name', 'Default Lead Response')
-        .single();
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
       console.log('[EmailComposer] Template query result:', { templates, templateError });
 
