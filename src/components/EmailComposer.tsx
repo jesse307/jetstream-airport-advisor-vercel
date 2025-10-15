@@ -780,11 +780,19 @@ Jesse
                       init={{
                         height: 200,
                         menubar: false,
-                        plugins: ['lists', 'link', 'code', 'help', 'wordcount'],
-                        toolbar: 'undo redo | bold italic underline | bullist numlist | link | code | help',
+                        plugins: ['lists', 'link', 'code', 'table', 'image', 'help', 'wordcount'],
+                        toolbar: 'undo redo | bold italic underline | forecolor backcolor | alignleft aligncenter alignright | bullist numlist | link image | table | code | help',
                         content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; font-size: 14px; }',
                         branding: false,
                         promotion: false,
+                        valid_elements: '*[*]',
+                        extended_valid_elements: '*[*]',
+                        valid_children: '+body[style],+body[meta],+body[link]',
+                        verify_html: false,
+                        entity_encoding: 'raw',
+                        forced_root_block: false,
+                        force_br_newlines: false,
+                        force_p_newlines: false,
                       }}
                     />
                   )}
