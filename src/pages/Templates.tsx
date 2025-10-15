@@ -82,7 +82,14 @@ export default function Templates() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
-      const { error } = await supabase
+      console.log('[Templates] Creating template:', {
+        name: newTemplateName,
+        subject: newTemplateSubject,
+        contentLength: newTemplateContent.length,
+        user_id: user.id
+      });
+
+      const { data, error } = await supabase
         .from('email_templates')
         .insert({
           name: newTemplateName,
@@ -90,7 +97,10 @@ export default function Templates() {
           template_content: newTemplateContent,
           is_default: templates.length === 0,
           user_id: user.id
-        });
+        })
+        .select();
+
+      console.log('[Templates] Insert result:', { data, error });
 
       if (error) throw error;
 
@@ -102,7 +112,7 @@ export default function Templates() {
       loadTemplates();
     } catch (error) {
       console.error('Error creating template:', error);
-      toast.error("Failed to create template");
+      toast.error(`Failed to create template: ${error.message}`);
     }
   };
 
@@ -113,7 +123,14 @@ export default function Templates() {
     }
 
     try {
-      const { error } = await supabase
+      console.log('[Templates] Updating template:', {
+        id: selectedTemplate.id,
+        name: editTemplateName,
+        subject: editTemplateSubject,
+        contentLength: editTemplateContent.length
+      });
+
+      const { data, error } = await supabase
         .from('email_templates')
         .update({
           name: editTemplateName,
@@ -121,7 +138,10 @@ export default function Templates() {
           template_content: editTemplateContent,
           updated_at: new Date().toISOString()
         })
-        .eq('id', selectedTemplate.id);
+        .eq('id', selectedTemplate.id)
+        .select();
+
+      console.log('[Templates] Update result:', { data, error });
 
       if (error) throw error;
 
@@ -131,7 +151,7 @@ export default function Templates() {
       loadTemplates();
     } catch (error) {
       console.error('Error updating template:', error);
-      toast.error("Failed to update template");
+      toast.error(`Failed to update template: ${error.message}`);
     }
   };
 
