@@ -123,29 +123,48 @@ export function EmailComposer({ isOpen, onClose, leadData }: EmailComposerProps)
     }
   };
 
-  const copyToClipboard = () => {
-    const html = generatedEmail;
-    
-    const textArea = document.createElement('textarea');
-    textArea.value = html;
-    document.body.appendChild(textArea);
-    textArea.select();
-    
+  const sendToMake = async () => {
     try {
-      const blob = new Blob([html], { type: 'text/html' });
-      const data = [new ClipboardItem({ 'text/html': blob })];
-      navigator.clipboard.write(data).then(() => {
-        toast.success("Email copied! Paste directly into Gmail");
-      }).catch(() => {
-        document.execCommand('copy');
-        toast.success("Email HTML copied!");
+      const webhookUrl = "https://hook.us2.make.com/kylqoo8ozkxhxaqi07n33998rmt2tzl4";
+      
+      const payload = {
+        to: recipientEmail,
+        subject: emailSubject,
+        html: generatedEmail,
+        lead: {
+          first_name: leadData.first_name,
+          last_name: leadData.last_name,
+          email: leadData.email,
+          phone: leadData.phone,
+          departure_airport: leadData.departure_airport,
+          arrival_airport: leadData.arrival_airport,
+          departure_date: leadData.departure_date,
+          passengers: leadData.passengers,
+          trip_type: leadData.trip_type
+        },
+        timestamp: new Date().toISOString()
+      };
+
+      console.log("Sending email data to Make.com webhook:", webhookUrl);
+
+      const response = await fetch(webhookUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
       });
+
+      if (response.ok) {
+        toast.success("Email sent to Make.com successfully!");
+        onClose();
+      } else {
+        throw new Error(`Webhook returned status: ${response.status}`);
+      }
     } catch (error) {
-      document.execCommand('copy');
-      toast.success("Email HTML copied!");
+      console.error('Failed to send to Make.com:', error);
+      toast.error("Failed to send email. Please try again.");
     }
-    
-    document.body.removeChild(textArea);
   };
 
   return (
@@ -193,21 +212,17 @@ export function EmailComposer({ isOpen, onClose, leadData }: EmailComposerProps)
               <Button variant="outline" onClick={onClose}>
                 Cancel
               </Button>
-              <Button onClick={copyToClipboard} className="gap-2">
-                <Copy className="h-4 w-4" />
-                Copy HTML for Gmail
+              <Button onClick={sendToMake} className="gap-2">
+                <Mail className="h-4 w-4" />
+                Send Email
               </Button>
             </div>
 
             <div className="text-xs text-muted-foreground border-t pt-4">
-              <p className="font-semibold mb-2">To use in Gmail:</p>
-              <ol className="list-decimal list-inside space-y-1 ml-2">
-                <li>Click "Copy HTML for Gmail" button above</li>
-                <li>Open Gmail and compose a new email</li>
-                <li>Paste the subject line into the subject field</li>
-                <li>Click in the compose area and press Ctrl+V (or Cmd+V on Mac)</li>
-                <li>The formatted email will appear with all styling intact</li>
-              </ol>
+              <p className="font-semibold mb-2">How it works:</p>
+              <p className="ml-2">
+                Click "Send Email" to deliver this email via your Make.com automation workflow.
+              </p>
             </div>
           </div>
         )}
