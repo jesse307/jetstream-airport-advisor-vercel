@@ -44,9 +44,11 @@ export function EmailComposer({ isOpen, onClose, leadData }: EmailComposerProps)
   }, [isOpen]);
 
   const generateEmail = async () => {
+    console.log('[EmailComposer] Starting email generation...');
     setLoading(true);
     try {
       // Fetch the default template
+      console.log('[EmailComposer] Fetching default template...');
       const { data: templates, error: templateError } = await supabase
         .from('email_templates')
         .select('*')
@@ -54,12 +56,20 @@ export function EmailComposer({ isOpen, onClose, leadData }: EmailComposerProps)
         .eq('name', 'Default Lead Response')
         .single();
 
-      if (templateError) throw templateError;
+      console.log('[EmailComposer] Template query result:', { templates, templateError });
+
+      if (templateError) {
+        console.error('[EmailComposer] Template error:', templateError);
+        throw templateError;
+      }
       if (!templates) {
+        console.error('[EmailComposer] No template found');
         toast.error("No default template found");
+        setLoading(false);
         return;
       }
 
+      console.log('[EmailComposer] Template found, calling generate-email function...');
       // Generate email using the template
       const { data, error } = await supabase.functions.invoke('generate-email', {
         body: {
@@ -83,8 +93,19 @@ export function EmailComposer({ isOpen, onClose, leadData }: EmailComposerProps)
         }
       });
 
-      if (error) throw error;
+      console.log('[EmailComposer] Function response:', { data, error });
 
+      if (error) {
+        console.error('[EmailComposer] Function error:', error);
+        throw error;
+      }
+
+      if (!data || !data.email) {
+        console.error('[EmailComposer] No email in response:', data);
+        throw new Error('No email content returned');
+      }
+
+      console.log('[EmailComposer] Email generated successfully');
       setGeneratedEmail(data.email);
       
       // Replace variables in subject line
@@ -96,8 +117,8 @@ export function EmailComposer({ isOpen, onClose, leadData }: EmailComposerProps)
       setEmailSubject(subject);
       toast.success("Email generated successfully");
     } catch (error) {
-      console.error('Error generating email:', error);
-      toast.error("Failed to generate email");
+      console.error('[EmailComposer] Error generating email:', error);
+      toast.error(`Failed to generate email: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setLoading(false);
     }
