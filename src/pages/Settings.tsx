@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Settings as SettingsIcon, Mail, Save, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Editor } from '@tinymce/tinymce-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -270,12 +271,19 @@ Jesse
                   <>
                     <div className="space-y-2">
                       <Label htmlFor="template">Template Content</Label>
-                      <Textarea
-                        id="template"
+                      <Editor
+                        apiKey="bh5y77uhl5utzv5u5zmjnmj002o26rj877w1i486g5wnexn6"
                         value={emailTemplate}
-                        onChange={(e) => setEmailTemplate(e.target.value)}
-                        className="min-h-[500px] font-mono text-sm"
-                        placeholder="Enter your email template here..."
+                        onEditorChange={(content) => setEmailTemplate(content)}
+                        init={{
+                          height: 500,
+                          menubar: false,
+                          plugins: ['lists', 'link', 'code', 'table', 'help', 'wordcount'],
+                          toolbar: 'undo redo | bold italic underline | bullist numlist | link | code | help',
+                          content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; font-size: 14px; }',
+                          branding: false,
+                          promotion: false,
+                        }}
                       />
                       <p className="text-xs text-muted-foreground">
                         Available variables: {`{{first_name}}`}, {`{{last_name}}`}, {`{{email}}`}, {`{{phone}}`}, 

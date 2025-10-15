@@ -769,14 +769,23 @@ Jesse
                       placeholder="Raw HTML template..."
                     />
                   ) : (
-                    <Textarea
+                    <Editor
+                      apiKey="bh5y77uhl5utzv5u5zmjnmj002o26rj877w1i486g5wnexn6"
                       value={emailTemplate}
-                      onChange={(e) => {
-                        setEmailTemplate(e.target.value);
-                        const newContent = populateTemplate(e.target.value, leadData);
+                      onEditorChange={(content) => {
+                        setEmailTemplate(content);
+                        const newContent = populateTemplate(content, leadData);
                         setEmailContent(newContent);
                       }}
-                      className="min-h-[200px] font-mono text-sm"
+                      init={{
+                        height: 200,
+                        menubar: false,
+                        plugins: ['lists', 'link', 'code', 'help', 'wordcount'],
+                        toolbar: 'undo redo | bold italic underline | bullist numlist | link | code | help',
+                        content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; font-size: 14px; }',
+                        branding: false,
+                        promotion: false,
+                      }}
                     />
                   )}
                 </CardContent>
