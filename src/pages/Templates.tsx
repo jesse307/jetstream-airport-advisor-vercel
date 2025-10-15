@@ -14,6 +14,7 @@ import { Editor } from '@tinymce/tinymce-react';
 interface Template {
   id: string;
   name: string;
+  subject: string;
   template_content: string;
   is_default: boolean;
   created_at: string;
@@ -29,8 +30,10 @@ export default function Templates() {
   const [isPreviewDialogOpen, setIsPreviewDialogOpen] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
   const [newTemplateName, setNewTemplateName] = useState("");
+  const [newTemplateSubject, setNewTemplateSubject] = useState("");
   const [newTemplateContent, setNewTemplateContent] = useState("");
   const [editTemplateName, setEditTemplateName] = useState("");
+  const [editTemplateSubject, setEditTemplateSubject] = useState("");
   const [editTemplateContent, setEditTemplateContent] = useState("");
 
   useEffect(() => {
@@ -63,8 +66,8 @@ export default function Templates() {
   };
 
   const handleCreateTemplate = async () => {
-    if (!newTemplateName.trim() || !newTemplateContent.trim()) {
-      toast.error("Please provide both name and content");
+    if (!newTemplateName.trim() || !newTemplateSubject.trim() || !newTemplateContent.trim()) {
+      toast.error("Please provide name, subject, and content");
       return;
     }
 
@@ -76,6 +79,7 @@ export default function Templates() {
         .from('email_templates')
         .insert({
           name: newTemplateName,
+          subject: newTemplateSubject,
           template_content: newTemplateContent,
           is_default: templates.length === 0,
           user_id: user.id
@@ -85,6 +89,7 @@ export default function Templates() {
 
       toast.success("Template created successfully");
       setNewTemplateName("");
+      setNewTemplateSubject("");
       setNewTemplateContent("");
       setIsCreateDialogOpen(false);
       loadTemplates();
@@ -95,8 +100,8 @@ export default function Templates() {
   };
 
   const handleEditTemplate = async () => {
-    if (!selectedTemplate || !editTemplateName.trim() || !editTemplateContent.trim()) {
-      toast.error("Please provide both name and content");
+    if (!selectedTemplate || !editTemplateName.trim() || !editTemplateSubject.trim() || !editTemplateContent.trim()) {
+      toast.error("Please provide name, subject, and content");
       return;
     }
 
@@ -105,6 +110,7 @@ export default function Templates() {
         .from('email_templates')
         .update({
           name: editTemplateName,
+          subject: editTemplateSubject,
           template_content: editTemplateContent,
           updated_at: new Date().toISOString()
         })
@@ -144,6 +150,7 @@ export default function Templates() {
   const openEditDialog = (template: Template) => {
     setSelectedTemplate(template);
     setEditTemplateName(template.name);
+    setEditTemplateSubject(template.subject);
     setEditTemplateContent(template.template_content);
     setIsEditDialogOpen(true);
   };
@@ -187,6 +194,15 @@ export default function Templates() {
                       value={newTemplateName}
                       onChange={(e) => setNewTemplateName(e.target.value)}
                       placeholder="e.g., Standard Quote Email"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="subject">Email Subject</Label>
+                    <Input
+                      id="subject"
+                      value={newTemplateSubject}
+                      onChange={(e) => setNewTemplateSubject(e.target.value)}
+                      placeholder="e.g., Your Charter Quote - {{departure_airport}} to {{arrival_airport}}"
                     />
                   </div>
                   <div className="space-y-2">
@@ -303,6 +319,15 @@ export default function Templates() {
                 id="edit-name"
                 value={editTemplateName}
                 onChange={(e) => setEditTemplateName(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-subject">Email Subject</Label>
+              <Input
+                id="edit-subject"
+                value={editTemplateSubject}
+                onChange={(e) => setEditTemplateSubject(e.target.value)}
+                placeholder="e.g., Your Charter Quote - {{departure_airport}} to {{arrival_airport}}"
               />
             </div>
             <div className="space-y-2">
