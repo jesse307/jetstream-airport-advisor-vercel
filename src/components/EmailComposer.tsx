@@ -44,31 +44,28 @@ export function EmailComposer({ isOpen, onClose, leadData, webhookUrl }: EmailCo
   const [templateId, setTemplateId] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
   const editorRef = React.useRef<any>(null);
-  const [emailTemplate, setEmailTemplate] = useState(`Hi {{first_name}},
+  const [emailTemplate, setEmailTemplate] = useState(`<p>Hi {{first_name}},</p>
 
-Thank you for your interest in Stratos Jets. In order for me to be the most efficient in providing guidance, please confirm the details below and answer any additional questions.
+<p>Thank you for your interest in Stratos Jets. In order for me to be the most efficient in providing guidance, please confirm the details below and answer any additional questions.</p>
 
 <table width="100%" cellpadding="0" cellspacing="0" style="margin: 30px 0; border-collapse: collapse;">
   <tr>
     <td style="background: linear-gradient(135deg, #1a3a4a 0%, #2d5165 100%); padding: 25px; border-radius: 12px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;">
       
-      <!-- Header -->
       <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 20px;">
         <tr>
           <td style="color: #ffffff; font-size: 18px; font-weight: 600; letter-spacing: 0.5px; padding-bottom: 15px; border-bottom: 2px solid rgba(255,255,255,0.2);">
-            YOUR FLIGHT DETAILS
+            ✈️ YOUR FLIGHT DETAILS
           </td>
         </tr>
       </table>
 
-      <!-- Route Graphic -->
       <table width="100%" cellpadding="0" cellspacing="0" style="margin: 25px 0;">
         <tr>
           <td align="center">
-            <table cellpadding="0" cellspacing="0" style="background: rgba(255,255,255,0.1); border-radius: 8px; padding: 20px; backdrop-filter: blur(10px);">
+            <table cellpadding="0" cellspacing="0" style="background: rgba(255,255,255,0.1); border-radius: 8px; padding: 20px;">
               <tr>
                 <td align="center" style="padding: 0 15px;">
-                  <!-- Departure -->
                   <div style="text-align: center;">
                     <div style="background: #ff6b35; color: #ffffff; font-size: 24px; font-weight: 700; padding: 12px 20px; border-radius: 8px; min-width: 80px; box-shadow: 0 4px 12px rgba(255,107,53,0.3);">
                       {{departure_airport}}
@@ -80,18 +77,16 @@ Thank you for your interest in Stratos Jets. In order for me to be the most effi
                 </td>
                 
                 <td align="center" style="padding: 0 20px;">
-                  <!-- Arrow & Plane -->
                   <div style="text-align: center; min-width: 100px;">
-                    <div style="font-size: 32px; margin-bottom: 5px;">✈️</div>
+                    <div style="font-size: 28px; margin-bottom: 5px;">→</div>
                     <div style="height: 2px; background: linear-gradient(90deg, #ff6b35 0%, rgba(255,255,255,0.4) 50%, #ff6b35 100%); margin: 0 auto; width: 80px;"></div>
-                    <div style="background: rgba(255,255,255,0.95); color: #2d5165; font-size: 14px; font-weight: 700; padding: 6px 12px; border-radius: 20px; margin-top: 10px; display: inline-block; box-shadow: 0 2px 8px rgba(0,0,0,0.2);">
-                      👥 {{passengers}} PAX
+                    <div style="background: rgba(255,255,255,0.95); color: #2d5165; font-size: 13px; font-weight: 700; padding: 6px 12px; border-radius: 20px; margin-top: 10px; display: inline-block; box-shadow: 0 2px 8px rgba(0,0,0,0.2);">
+                      {{passengers}} PAX
                     </div>
                   </div>
                 </td>
                 
                 <td align="center" style="padding: 0 15px;">
-                  <!-- Arrival -->
                   <div style="text-align: center;">
                     <div style="background: #ff6b35; color: #ffffff; font-size: 24px; font-weight: 700; padding: 12px 20px; border-radius: 8px; min-width: 80px; box-shadow: 0 4px 12px rgba(255,107,53,0.3);">
                       {{arrival_airport}}
@@ -107,18 +102,17 @@ Thank you for your interest in Stratos Jets. In order for me to be the most effi
         </tr>
       </table>
 
-      <!-- Trip Details -->
       <table width="100%" cellpadding="0" cellspacing="0" style="margin-top: 20px;">
         <tr>
           <td style="padding: 15px; background: rgba(255,255,255,0.08); border-radius: 8px;">
             <table width="100%" cellpadding="8" cellspacing="0">
               <tr>
-                <td style="color: rgba(255,255,255,0.7); font-size: 13px; font-weight: 500; width: 40%;">Trip Type:</td>
+                <td style="color: rgba(255,255,255,0.7); font-size: 13px; font-weight: 500; width: 40%;">📍 Trip Type:</td>
                 <td style="color: #ffffff; font-size: 14px; font-weight: 600;">{{trip_type}}</td>
               </tr>
               <tr>
-                <td style="color: rgba(255,255,255,0.7); font-size: 13px; font-weight: 500;">Passengers:</td>
-                <td style="color: #ffffff; font-size: 14px; font-weight: 600;">{{passengers}} passenger{{IF passengers_gt_1}}s{{ENDIF}}</td>
+                <td style="color: rgba(255,255,255,0.7); font-size: 13px; font-weight: 500;">👥 Passengers:</td>
+                <td style="color: #ffffff; font-size: 14px; font-weight: 600;">{{passengers}}</td>
               </tr>
             </table>
           </td>
@@ -129,19 +123,16 @@ Thank you for your interest in Stratos Jets. In order for me to be the most effi
   </tr>
 </table>
 
-{{AI: Add flight distance, estimated flight time, and any interesting facts about this specific route}}
+<p>{{AI: Add flight distance, estimated flight time, and any interesting facts about this specific route}}</p>
 
-Do you have a specific aircraft that you've flown this route with before? {{AI: ONLY recommend aircraft from the capableAircraft data that can actually complete this route nonstop. Include specific model names, passenger capacity, flight times, and key features. Be accurate about capabilities. Use language like "For this mission, our clients typically fly on" and "of course if you want more space, we're happy to source something larger"}}
+<p>Do you have a specific aircraft that you've flown this route with before? {{AI: ONLY recommend aircraft from the capableAircraft data that can actually complete this route nonstop. Include specific model names, passenger capacity, flight times, and key features. Be accurate about capabilities. Use language like "For this mission, our clients typically fly on" and "of course if you want more space, we're happy to source something larger"}}</p>
 
-**Why Stratos Jets**
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-{{AI: provide 4 or 5 bullet points about why Stratos Jets is better than other charter brokers}}
+<p><strong>Why Stratos Jets</strong></p>
+<p>{{AI: provide 4 or 5 bullet points about why Stratos Jets is better than other charter brokers}}</p>
 
-Once I have your details, I can provide some additional guidance around which planes could be best and their associated costs. From there, I can obtain hard quotes from our operators and get you booked.
+<p>Once I have your details, I can provide some additional guidance around which planes could be best and their associated costs. From there, I can obtain hard quotes from our operators and get you booked.</p>
 
---
-Best,
-Jesse
+<p>--<br/>Best,<br/>Jesse</p>
 
 <img src="https://300e3d3f-6393-4fa8-9ea2-e17c21482f24.lovableproject.com/images/stratos_logo_email.png" alt="Stratos Jet Charters" style="max-width: 300px; margin-top: 20px;" />`);
   const [makeWebhookUrl] = useState(webhookUrl || "https://hook.us2.make.com/j8qtzo8gui8ieqaye9dxprb2cgxqydlb");
