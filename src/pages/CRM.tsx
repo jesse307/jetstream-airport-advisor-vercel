@@ -89,19 +89,19 @@ const CRM = () => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case "new":
-        return "bg-blue-500";
+        return "bg-primary text-primary-foreground";
       case "contacted":
-        return "bg-yellow-500";
+        return "bg-secondary text-secondary-foreground";
       case "qualified":
-        return "bg-green-500";
+        return "bg-accent text-accent-foreground";
       case "proposal":
-        return "bg-purple-500";
+        return "bg-muted text-muted-foreground";
       case "won":
-        return "bg-emerald-500";
+        return "bg-primary/80 text-primary-foreground";
       case "lost":
-        return "bg-red-500";
+        return "bg-destructive text-destructive-foreground";
       default:
-        return "bg-gray-500";
+        return "bg-muted text-muted-foreground";
     }
   };
 
@@ -148,7 +148,7 @@ const CRM = () => {
                 <SelectTrigger className="w-full md:w-48">
                   <SelectValue placeholder="Filter by status" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-background border z-50">
                   <SelectItem value="all">All Statuses</SelectItem>
                   <SelectItem value="new">New</SelectItem>
                   <SelectItem value="contacted">Contacted</SelectItem>
@@ -269,7 +269,7 @@ const CRM = () => {
                         </TableCell>
                         <TableCell>{lead.passengers}</TableCell>
                         <TableCell>
-                          <Badge className={getStatusColor(lead.status)}>
+                          <Badge className={`${getStatusColor(lead.status)} capitalize`}>
                             {lead.status}
                           </Badge>
                         </TableCell>
