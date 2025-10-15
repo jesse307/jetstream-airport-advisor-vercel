@@ -52,10 +52,7 @@ export function EmailComposer({ isOpen, onClose, leadData }: EmailComposerProps)
       const { data: templates, error: templateError } = await supabase
         .from('email_templates')
         .select('*')
-        .is('user_id', null)
-        .eq('name', 'Default Lead Response')
-        .order('created_at', { ascending: false })
-        .limit(1)
+        .eq('is_default', true)
         .maybeSingle();
 
       console.log('[EmailComposer] Template query result:', { templates, templateError });
