@@ -1107,7 +1107,31 @@ export default function LeadAnalysis() {
                     variant="outline"
                     className="ml-auto"
                     onClick={() => {
-                      const message = `Hi, this is regarding your charter flight inquiry from ${lead.departure_airport || '[departure]'} to ${lead.arrival_airport || '[arrival]'}${lead.departure_date ? ` on ${format(new Date(lead.departure_date), 'MMM d')}` : ''}. I'd love to discuss options for your trip. When would be a good time to connect?`;
+                      const firstName = lead.first_name || 'there';
+                      
+                      // Format date as "today", "tomorrow", or actual date
+                      let dateText = 'your requested date';
+                      if (lead.departure_date) {
+                        const depDate = new Date(lead.departure_date);
+                        const today = new Date();
+                        const tomorrow = new Date(today);
+                        tomorrow.setDate(tomorrow.getDate() + 1);
+                        
+                        // Reset hours for comparison
+                        today.setHours(0, 0, 0, 0);
+                        tomorrow.setHours(0, 0, 0, 0);
+                        depDate.setHours(0, 0, 0, 0);
+                        
+                        if (depDate.getTime() === today.getTime()) {
+                          dateText = 'today';
+                        } else if (depDate.getTime() === tomorrow.getTime()) {
+                          dateText = 'tomorrow';
+                        } else {
+                          dateText = format(depDate, 'MMMM d');
+                        }
+                      }
+                      
+                      const message = `Hi ${firstName}, Jesse from Stratos Jets. Received your request for a flight on ${dateText}. I just sent an email confirming the flight details. Please take a look when able and we'll get rolling.`;
                       window.open(`sms:${lead.phone}?body=${encodeURIComponent(message)}`, '_self');
                     }}
                   >
