@@ -80,11 +80,6 @@ const Index = () => {
                   History
                 </Link>
               </Button>
-              <Button asChild variant="ghost" size="sm">
-                <Link to="/settings">
-                  <Settings className="h-4 w-4" />
-                </Link>
-              </Button>
               <Button 
                 variant="ghost" 
                 size="sm"

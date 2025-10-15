@@ -13,7 +13,6 @@ import ImportHistory from "./pages/ImportHistory";
 import CRM from "./pages/CRM";
 import LeadAnalysis from "./pages/LeadAnalysis";
 import MobileCapture from "./pages/MobileCapture";
-import Settings from "./pages/Settings";
 import AircraftTracking from "./pages/AircraftTracking";
 import Quotes from "./pages/Quotes";
 import Availability from "./pages/Availability";
@@ -40,7 +39,6 @@ const App = () => (
             <Route path="/aircraft-tracking" element={<ProtectedRoute><AircraftTracking /></ProtectedRoute>} />
             <Route path="/quotes" element={<ProtectedRoute><Quotes /></ProtectedRoute>} />
             <Route path="/availability" element={<ProtectedRoute><Availability /></ProtectedRoute>} />
-            <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

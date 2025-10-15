@@ -36,15 +36,11 @@ interface EmailComposerProps {
 export function EmailComposer({ isOpen, onClose, leadData, webhookUrl }: EmailComposerProps) {
   const [subject, setSubject] = useState("Stratos Jets - Confirming Flight Details");
   const [emailContent, setEmailContent] = useState("");
-  const [isShowingTemplate, setIsShowingTemplate] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSending, setIsSending] = useState(false);
-  const [isHtmlEditor, setIsHtmlEditor] = useState(false);
-  const [isSavingTemplate, setIsSavingTemplate] = useState(false);
-  const [templateId, setTemplateId] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
   const editorRef = React.useRef<any>(null);
-  const [emailTemplate, setEmailTemplate] = useState(`<p>Hi {{first_name}},</p>
+  const [emailTemplate] = useState(`<p>Hi {{first_name}},</p>
 
 <p>Thank you for your interest in Stratos Jets. In order for me to be the most efficient in providing guidance, please confirm the details below and answer any additional questions.</p>
 
@@ -492,62 +488,6 @@ export function EmailComposer({ isOpen, onClose, leadData, webhookUrl }: EmailCo
       toast.error("An error occurred while generating the email.");
     } finally {
       setIsGenerating(false);
-    }
-  };
-
-  const handleSaveTemplate = async () => {
-    setIsSavingTemplate(true);
-    try {
-      // Get current user
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        toast.error("You must be logged in to save templates");
-        setIsSavingTemplate(false);
-        return;
-      }
-
-      if (templateId) {
-        // Update existing template
-        const { error } = await supabase
-          .from('email_templates')
-          .update({ template_content: emailTemplate })
-          .eq('id', templateId);
-
-        if (error) {
-          console.error('Error updating template:', error);
-          toast.error("Failed to save template");
-          return;
-        }
-      } else {
-        // Create new template (shouldn't happen normally)
-        const { data, error } = await supabase
-          .from('email_templates')
-          .insert({
-            name: 'Default Lead Email',
-            template_content: emailTemplate,
-            is_default: true,
-            user_id: user.id
-          })
-          .select()
-          .single();
-
-        if (error) {
-          console.error('Error creating template:', error);
-          toast.error("Failed to save template");
-          return;
-        }
-
-        if (data) {
-          setTemplateId(data.id);
-        }
-      }
-
-      toast.success("Template saved successfully!");
-    } catch (error) {
-      console.error('Error saving template:', error);
-      toast.error("An error occurred while saving the template");
-    } finally {
-      setIsSavingTemplate(false);
     }
   };
 

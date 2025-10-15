@@ -1011,11 +1011,6 @@ export default function LeadAnalysis() {
             <span className="text-sm text-muted-foreground">
               Lead #{lead.id.slice(0, 8)}
             </span>
-            <Button asChild variant="ghost" size="sm">
-              <Link to="/settings">
-                <Settings className="h-4 w-4" />
-              </Link>
-            </Button>
           </div>
         </div>
       </header>
