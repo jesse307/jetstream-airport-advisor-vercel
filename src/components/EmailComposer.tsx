@@ -632,28 +632,39 @@ export function EmailComposer({ isOpen, onClose, leadData, webhookUrl }: EmailCo
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6">
+          <div className="space-y-6">
           {/* Recipient Info */}
-          <div className="bg-muted/50 p-4 rounded-lg">
+          <div className="bg-muted/50 p-4 rounded-lg space-y-3">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="font-medium">Sending to:</h3>
+              <h3 className="font-medium">Lead Information Being Used:</h3>
               <span className="text-sm text-muted-foreground">
                 Lead #{leadData.id.slice(0, 8)}
               </span>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
               <div>
-                <span className="font-medium">{leadData.first_name} {leadData.last_name}</span>
-                <br />
-                <span className="text-muted-foreground">{leadData.email}</span>
+                <span className="font-medium">Name:</span> {leadData.first_name} {leadData.last_name}
               </div>
               <div>
-                <span className="text-muted-foreground">
-                  {leadData.departure_airport} → {leadData.arrival_airport}
-                  <br />
-                  {leadData.passengers} passenger{leadData.passengers !== 1 ? 's' : ''} • {leadData.trip_type}
-                </span>
+                <span className="font-medium">Email:</span> {leadData.email}
               </div>
+              <div>
+                <span className="font-medium">Route:</span> {leadData.departure_airport} → {leadData.arrival_airport}
+              </div>
+              <div>
+                <span className="font-medium">Departure:</span> {leadData.departure_date} at {leadData.departure_time}
+              </div>
+              <div>
+                <span className="font-medium">Passengers:</span> {leadData.passengers}
+              </div>
+              <div>
+                <span className="font-medium">Trip Type:</span> {leadData.trip_type}
+              </div>
+              {leadData.trip_type.toLowerCase().includes('round') && leadData.return_date && (
+                <div>
+                  <span className="font-medium">Return:</span> {leadData.return_date} at {leadData.return_time || 'TBD'}
+                </div>
+              )}
             </div>
           </div>
 
@@ -887,9 +898,13 @@ Jesse
                   />
                 ) : (
                   <Editor
-                    key={`email-editor-${isOpen}`}
+                    key={`email-editor-${leadData.id}-${isOpen}`}
                     apiKey="bh5y77uhl5utzv5u5zmjnmj002o26rj877w1i486g5wnexn6"
-                    onInit={(evt, editor) => editorRef.current = editor}
+                    onInit={(evt, editor) => {
+                      editorRef.current = editor;
+                      // Ensure content is set after init
+                      editor.setContent(emailContent);
+                    }}
                     value={emailContent}
                     onEditorChange={(content) => setEmailContent(content)}
                     init={{
