@@ -284,11 +284,28 @@ export default function Settings() {
                           force_p_newlines: false,
                         }}
                       />
-                      <p className="text-xs text-muted-foreground">
-                        Available variables: {`{{first_name}}`}, {`{{last_name}}`}, {`{{email}}`}, {`{{phone}}`}, 
-                        {`{{departure_airport}}`}, {`{{arrival_airport}}`}, {`{{departure_date}}`}, {`{{departure_time}}`}, 
-                        {`{{return_date}}`}, {`{{return_time}}`}, {`{{passengers}}`}, {`{{trip_type}}`}
-                      </p>
+                      <div className="bg-muted p-4 rounded-md space-y-2">
+                        <p className="text-sm font-semibold">Available Variables:</p>
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                          <div className="space-y-1">
+                            <p><code className="bg-background px-2 py-1 rounded">{`{{first_name}}`}</code> - Lead's first name</p>
+                            <p><code className="bg-background px-2 py-1 rounded">{`{{last_name}}`}</code> - Lead's last name</p>
+                            <p><code className="bg-background px-2 py-1 rounded">{`{{email}}`}</code> - Lead's email</p>
+                            <p><code className="bg-background px-2 py-1 rounded">{`{{phone}}`}</code> - Lead's phone</p>
+                            <p><code className="bg-background px-2 py-1 rounded">{`{{passengers}}`}</code> - Number of passengers</p>
+                            <p><code className="bg-background px-2 py-1 rounded">{`{{trip_type}}`}</code> - One-way or Round-trip</p>
+                          </div>
+                          <div className="space-y-1">
+                            <p><code className="bg-background px-2 py-1 rounded">{`{{departure_airport}}`}</code> - Departure airport</p>
+                            <p><code className="bg-background px-2 py-1 rounded">{`{{arrival_airport}}`}</code> - Arrival airport</p>
+                            <p><code className="bg-background px-2 py-1 rounded">{`{{departure_date}}`}</code> - Departure date</p>
+                            <p><code className="bg-background px-2 py-1 rounded">{`{{departure_time}}`}</code> - Departure time</p>
+                            <p><code className="bg-background px-2 py-1 rounded">{`{{return_date}}`}</code> - Return date</p>
+                            <p><code className="bg-background px-2 py-1 rounded">{`{{return_time}}`}</code> - Return time</p>
+                          </div>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-2">Use <code className="bg-background px-2 py-1 rounded">{`{{IF is_roundtrip}}...{{ENDIF}}`}</code> for conditional round-trip content</p>
+                      </div>
                     </div>
 
                     <div className="flex gap-2">
