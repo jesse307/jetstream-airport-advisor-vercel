@@ -54,6 +54,15 @@ serve(async (req) => {
 
     // Function to replace template variables with conditional logic
     const replaceVariables = (text: string) => {
+      // Helper to format time to AM/PM
+      const formatTime = (time: string): string => {
+        if (!time || time.trim() === '') return 'TBD';
+        const [hours, minutes] = time.split(':').map(Number);
+        const period = hours >= 12 ? 'PM' : 'AM';
+        const displayHours = hours % 12 || 12;
+        return `${displayHours}:${minutes.toString().padStart(2, '0')} ${period}`;
+      };
+
       let processedText = text
         .replace(/\{\{first_name\}\}/g, leadData.first_name)
         .replace(/\{\{last_name\}\}/g, leadData.last_name)
@@ -65,9 +74,9 @@ serve(async (req) => {
         .replace(/\{\{arrival_airport\}\}/g, leadData.arrival_airport)
         .replace(/\{\{route\}\}/g, `${leadData.departure_airport} → ${leadData.arrival_airport}`)
         .replace(/\{\{departure_date\}\}/g, new Date(leadData.departure_date).toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' }))
-        .replace(/\{\{departure_time\}\}/g, leadData.departure_time || 'TBD')
-        .replace(/\{\{return_date\}\}/g, leadData.return_date ? new Date(leadData.return_date).toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' }) : 'N/A')
-        .replace(/\{\{return_time\}\}/g, leadData.return_time || 'N/A')
+        .replace(/\{\{departure_time\}\}/g, formatTime(leadData.departure_time))
+        .replace(/\{\{return_date\}\}/g, leadData.return_date ? new Date(leadData.return_date).toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' }) : 'TBD')
+        .replace(/\{\{return_time\}\}/g, formatTime(leadData.return_time || ''))
         .replace(/\{\{passengers\}\}/g, leadData.passengers.toString())
         .replace(/\{\{notes\}\}/g, leadData.notes || 'No special notes');
 
