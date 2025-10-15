@@ -41,7 +41,6 @@ export function LeadChatbot({ lead, departureAirport, arrivalAirport, distance, 
     setIsLoading(true);
 
     let assistantContent = "";
-    let detectedUpdates: any = null;
     let toolCallArgs = "";
 
     const upsertAssistant = (chunk: string) => {
@@ -67,6 +66,7 @@ export function LeadChatbot({ lead, departureAirport, arrivalAirport, distance, 
         },
         body: JSON.stringify({ 
           messages: [...messages, userMessage],
+          leadId: lead.id,
           leadContext: {
             name: `${lead.first_name} ${lead.last_name}`,
             email: lead.email,
@@ -140,32 +140,30 @@ export function LeadChatbot({ lead, departureAirport, arrivalAirport, distance, 
             const content = parsed.choices?.[0]?.delta?.content as string | undefined;
             const toolCalls = parsed.choices?.[0]?.delta?.tool_calls;
             
-            if (content) upsertAssistant(content);
-            
-            // Check for tool calls - accumulate arguments
-            if (toolCalls && toolCalls.length > 0) {
-              const toolCall = toolCalls[0];
-              if (toolCall.function?.name === "update_lead_details") {
-                console.log("Tool call detected: update_lead_details");
-                // Accumulate function arguments as they stream in
-                if (toolCall.function?.arguments) {
-                  toolCallArgs += toolCall.function.arguments;
+            if (content) {
+              upsertAssistant(content);
+              
+              // Check if backend confirmed successful update
+              if (content.includes("✅ Updated successfully!")) {
+                // Trigger a refresh by passing a special flag
+                if (onUpdateLead) {
+                  setTimeout(() => {
+                    // Pass a refresh-only flag
+                    onUpdateLead({ _refreshOnly: true });
+                    toast.success("Lead updated! Refreshing...");
+                  }, 500);
                 }
               }
             }
             
-            // Check for finish reason to parse complete tool call
-            const finishReason = parsed.choices?.[0]?.finish_reason;
-            if (finishReason === "tool_calls" && toolCallArgs) {
-              try {
-                const updates = JSON.parse(toolCallArgs);
-                detectedUpdates = updates;
-                console.log("Parsed tool call arguments:", updates);
-                // Show immediate feedback
-                upsertAssistant("\n\n✓ Updating lead details...");
-              } catch (e) {
-                console.error("Failed to parse complete tool arguments:", e);
-                upsertAssistant("\n\n✗ Failed to parse update request");
+            // Track tool calls for debugging
+            if (toolCalls && toolCalls.length > 0) {
+              const toolCall = toolCalls[0];
+              if (toolCall.function?.name === "update_lead_details") {
+                console.log("Tool call detected: update_lead_details");
+                if (toolCall.function?.arguments) {
+                  toolCallArgs += toolCall.function.arguments;
+                }
               }
             }
           } catch {
@@ -191,12 +189,6 @@ export function LeadChatbot({ lead, departureAirport, arrivalAirport, distance, 
         }
       }
 
-      // Apply updates if detected
-      if (detectedUpdates && onUpdateLead) {
-        console.log("Applying updates:", detectedUpdates);
-        onUpdateLead(detectedUpdates);
-        toast.success("Lead details updated!");
-      }
     } catch (error) {
       console.error("Chat error:", error);
       toast.error("Failed to send message");

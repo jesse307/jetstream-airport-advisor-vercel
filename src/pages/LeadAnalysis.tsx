@@ -264,6 +264,47 @@ export default function LeadAnalysis() {
   const handleUpdateItinerary = async (updatedData: any) => {
     if (!lead) return;
     
+    // Check if this is just a refresh request (from AI chatbot after backend update)
+    if (updatedData._refreshOnly) {
+      // Just refetch the lead data
+      const { data: updatedLead } = await supabase
+        .from('leads')
+        .select('*')
+        .eq('id', lead.id)
+        .single();
+      
+      if (updatedLead) {
+        setLead(updatedLead as Lead);
+        
+        // Refetch airport data in case it changed
+        const [depAirport, arrAirport] = await Promise.all([
+          updatedLead.departure_airport ? fetchAirportData(updatedLead.departure_airport) : Promise.resolve(null),
+          updatedLead.arrival_airport ? fetchAirportData(updatedLead.arrival_airport) : Promise.resolve(null)
+        ]);
+
+        if (depAirport) setDepartureAirportData(depAirport);
+        if (arrAirport) setArrivalAirportData(arrAirport);
+
+        // Recalculate distance if we have both airports with coordinates
+        if (depAirport && arrAirport && 
+            depAirport.latitude && depAirport.longitude &&
+            arrAirport.latitude && arrAirport.longitude) {
+          const R = 3440.065; // Earth's radius in nautical miles
+          const dLat = (arrAirport.latitude - depAirport.latitude) * Math.PI / 180;
+          const dLon = (arrAirport.longitude - depAirport.longitude) * Math.PI / 180;
+          
+          const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                    Math.cos(depAirport.latitude * Math.PI / 180) * Math.cos(arrAirport.latitude * Math.PI / 180) *
+                    Math.sin(dLon/2) * Math.sin(dLon/2);
+          
+          const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+          const newDistance = R * c;
+          setDistance(newDistance);
+        }
+      }
+      return;
+    }
+    
     const leadUpdates: any = {};
     const airportsChanged = 
       (updatedData.departureAirport && updatedData.departureAirport !== lead.departure_airport) ||

@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -11,12 +12,16 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, leadContext } = await req.json();
+    const { messages, leadContext, leadId } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
+
+    const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
 
     // Build system prompt with lead context
     const systemPrompt = `You are an AI assistant helping a private jet charter broker analyze and manage a lead. You have access to the internet and can search for current information.
@@ -199,7 +204,110 @@ Keep responses concise, professional, and focused on helping the broker serve th
       );
     }
 
-    return new Response(response.body, {
+    // Check if we need to handle tool calls
+    const reader = response.body!.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    let fullResponse = "";
+    const encoder = new TextEncoder();
+    
+    const stream = new ReadableStream({
+      async start(controller) {
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split("\n");
+            buffer = lines.pop() || "";
+            
+            for (const line of lines) {
+              if (!line.trim() || line.startsWith(":")) continue;
+              if (!line.startsWith("data: ")) continue;
+              
+              const data = line.slice(6);
+              if (data === "[DONE]") {
+                controller.enqueue(encoder.encode(`data: [DONE]\n\n`));
+                continue;
+              }
+              
+              try {
+                const parsed = JSON.parse(data);
+                const choice = parsed.choices?.[0];
+                
+                // Check for tool calls
+                if (choice?.delta?.tool_calls) {
+                  const toolCall = choice.delta.tool_calls[0];
+                  console.log("Tool call detected:", toolCall);
+                  
+                  if (toolCall.function?.name === "update_lead_details") {
+                    const args = JSON.parse(toolCall.function.arguments);
+                    console.log("Updating lead with:", args);
+                    
+                    // Build update object
+                    const updates: any = {};
+                    if (args.passengers !== undefined) updates.passengers = args.passengers;
+                    if (args.departureAirport) updates.departure_airport = args.departureAirport;
+                    if (args.arrivalAirport) updates.arrival_airport = args.arrivalAirport;
+                    if (args.departureDatetime) {
+                      updates.departure_datetime = args.departureDatetime;
+                      updates.departure_date = args.departureDatetime.split('T')[0];
+                      updates.departure_time = args.departureDatetime.split('T')[1];
+                    }
+                    if (args.returnDatetime) {
+                      updates.return_datetime = args.returnDatetime;
+                      updates.return_date = args.returnDatetime.split('T')[0];
+                      updates.return_time = args.returnDatetime.split('T')[1];
+                    }
+                    if (args.tripType) updates.trip_type = args.tripType;
+                    
+                    // Update the lead in database
+                    const { error: updateError } = await supabase
+                      .from('leads')
+                      .update(updates)
+                      .eq('id', leadId);
+                    
+                    if (updateError) {
+                      console.error("Error updating lead:", updateError);
+                      controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+                        choices: [{
+                          delta: {
+                            content: `\n\n❌ Failed to update lead: ${updateError.message}`
+                          }
+                        }]
+                      })}\n\n`));
+                    } else {
+                      console.log("Lead updated successfully");
+                      controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+                        choices: [{
+                          delta: {
+                            content: `\n\n✅ Updated successfully!`
+                          }
+                        }]
+                      })}\n\n`));
+                    }
+                  }
+                }
+                
+                // Forward the original chunk
+                controller.enqueue(encoder.encode(`data: ${data}\n\n`));
+                
+              } catch (e) {
+                console.error("Error parsing SSE:", e);
+              }
+            }
+          }
+          
+          controller.close();
+        } catch (error) {
+          console.error("Stream error:", error);
+          controller.error(error);
+        }
+      }
+    });
+
+    return new Response(stream, {
       headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
     });
   } catch (error) {
