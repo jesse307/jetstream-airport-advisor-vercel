@@ -204,7 +204,7 @@ export function EmailComposer({ isOpen, onClose, leadData }: EmailComposerProps)
             <div className="space-y-2">
               <Label>Email Content</Label>
               <Editor
-                apiKey="no-api-key"
+                apiKey="bh5y77uhl5utzv5u5zmjnmj002o26rj877w1i486g5wnexn6"
                 value={generatedEmail}
                 onEditorChange={(content) => setGeneratedEmail(content)}
                 init={{
