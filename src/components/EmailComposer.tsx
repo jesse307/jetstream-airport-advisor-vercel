@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Editor } from '@tinymce/tinymce-react';
+import EmailEditor, { EditorRef, EmailEditorProps } from 'react-email-editor';
 
 interface EmailComposerProps {
   isOpen: boolean;
@@ -44,6 +44,7 @@ export function EmailComposer({ isOpen, onClose, leadData, webhookUrl }: EmailCo
   const [isSavingTemplate, setIsSavingTemplate] = useState(false);
   const [templateId, setTemplateId] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
+  const emailEditorRef = React.useRef<EditorRef>(null);
   const [emailTemplate, setEmailTemplate] = useState(`Hi {{first_name}},
 
 Thank you for your interest in Stratos Jets. In order for me to be the most efficient in providing guidance, please confirm the details below and answer any additional questions.
@@ -768,24 +769,39 @@ Jesse
                 </CardHeader>
                 <CardContent>
                   {isHtmlEditor ? (
-                    <Editor
-                      apiKey="no-api-key"
-                      value={emailTemplate}
-                      onEditorChange={(value) => {
-                        setEmailTemplate(value);
-                        const newContent = populateTemplate(value, leadData);
-                        setEmailContent(newContent);
-                      }}
-                      init={{
-                        height: 400,
-                        menubar: false,
-                        plugins: [
-                          'lists', 'link', 'code', 'table', 'textcolor'
-                        ],
-                        toolbar: 'undo redo | formatselect | bold italic underline | forecolor backcolor | alignleft aligncenter alignright | bullist numlist | link | code',
-                        content_style: 'body { font-family: Arial, sans-serif; font-size: 14px; }'
-                      }}
-                    />
+                    <div className="border rounded-md overflow-hidden">
+                      <EmailEditor
+                        ref={emailEditorRef}
+                        onReady={() => {
+                          // Load existing template if available
+                          if (emailTemplate) {
+                            emailEditorRef.current?.editor?.loadDesign(JSON.parse(emailTemplate));
+                          }
+                        }}
+                        onLoad={() => console.log('Email editor loaded')}
+                        options={{
+                          displayMode: 'email',
+                          locale: 'en',
+                        }}
+                        minHeight="500px"
+                      />
+                      <div className="p-2 bg-muted flex gap-2">
+                        <Button
+                          size="sm"
+                          onClick={() => {
+                            emailEditorRef.current?.editor?.exportHtml((data) => {
+                              const { design, html } = data;
+                              setEmailTemplate(JSON.stringify(design));
+                              const newContent = populateTemplate(html, leadData);
+                              setEmailContent(newContent);
+                              toast.success("Template saved");
+                            });
+                          }}
+                        >
+                          Save Template
+                        </Button>
+                      </div>
+                    </div>
                   ) : (
                     <Textarea
                       value={emailTemplate}
