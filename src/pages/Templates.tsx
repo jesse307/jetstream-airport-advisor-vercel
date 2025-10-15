@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ArrowLeft, Plus, Pencil, Trash2, Eye } from "lucide-react";
@@ -220,22 +221,49 @@ export default function Templates() {
                     <div className="text-xs text-muted-foreground mb-2">
                       Use variables like {`{{first_name}}`}, {`{{last_name}}`}, {`{{departure_airport}}`}, etc.
                     </div>
-                    <Editor
-                      apiKey="bh5y77uhl5utzv5u5zmjnmj002o26rj877w1i486g5wnexn6"
-                      value={newTemplateContent}
-                      onEditorChange={(content) => setNewTemplateContent(content)}
-                      init={{
-                        height: 500,
-                        menubar: true,
-                        plugins: [
-                          'advlist', 'autolink', 'lists', 'link', 'image', 'charmap',
-                          'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
-                          'insertdatetime', 'media', 'table', 'preview', 'help', 'wordcount'
-                        ],
-                        toolbar: 'undo redo | blocks | bold italic forecolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat | help | code',
-                        content_style: 'body { font-family:Arial,sans-serif; font-size:14px }'
-                      }}
-                    />
+                    <Tabs defaultValue="visual" className="w-full">
+                      <TabsList className="grid w-full grid-cols-2">
+                        <TabsTrigger value="visual">Visual Editor</TabsTrigger>
+                        <TabsTrigger value="html">HTML Input</TabsTrigger>
+                      </TabsList>
+                      <TabsContent value="visual" className="space-y-4">
+                        <Editor
+                          apiKey="bh5y77uhl5utzv5u5zmjnmj002o26rj877w1i486g5wnexn6"
+                          value={newTemplateContent}
+                          onEditorChange={(content) => setNewTemplateContent(content)}
+                          init={{
+                            height: 500,
+                            menubar: true,
+                            plugins: [
+                              'advlist', 'autolink', 'lists', 'link', 'image', 'charmap',
+                              'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
+                              'insertdatetime', 'media', 'table', 'preview', 'help', 'wordcount'
+                            ],
+                            toolbar: 'undo redo | blocks | bold italic forecolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat | help | code',
+                            content_style: 'body { font-family:Arial,sans-serif; font-size:14px }'
+                          }}
+                        />
+                      </TabsContent>
+                      <TabsContent value="html" className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="html-input">Paste HTML</Label>
+                          <Textarea
+                            id="html-input"
+                            value={newTemplateContent}
+                            onChange={(e) => setNewTemplateContent(e.target.value)}
+                            placeholder="Paste your HTML code here..."
+                            className="min-h-[200px] font-mono text-sm"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Preview</Label>
+                          <div 
+                            className="border rounded-md p-4 bg-background min-h-[200px] max-h-[400px] overflow-auto"
+                            dangerouslySetInnerHTML={{ __html: newTemplateContent }}
+                          />
+                        </div>
+                      </TabsContent>
+                    </Tabs>
                   </div>
                   <div className="flex justify-end gap-2">
                     <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
