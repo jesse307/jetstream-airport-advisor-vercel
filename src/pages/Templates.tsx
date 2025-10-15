@@ -17,6 +17,7 @@ interface Template {
   subject: string;
   template_content: string;
   is_default: boolean;
+  user_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -273,14 +274,29 @@ export default function Templates() {
               <Card key={template.id}>
                 <CardHeader>
                   <div className="flex items-start justify-between">
-                    <div>
+                    <div className="flex-1">
                       <CardTitle className="text-lg">{template.name}</CardTitle>
-                      <CardDescription>
-                        {template.is_default && (
-                          <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">
-                            Default
-                          </span>
-                        )}
+                      <CardDescription className="mt-2">
+                        <div className="flex flex-wrap gap-2 mb-2">
+                          {template.is_default && (
+                            <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">
+                              Default
+                            </span>
+                          )}
+                          {!template.user_id && (
+                            <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
+                              System Template
+                            </span>
+                          )}
+                          {template.user_id && (
+                            <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
+                              Your Template
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          <strong>Subject:</strong> {template.subject}
+                        </p>
                       </CardDescription>
                     </div>
                   </div>
@@ -305,6 +321,7 @@ export default function Templates() {
                       variant="outline"
                       size="sm"
                       onClick={() => handleDeleteTemplate(template.id)}
+                      disabled={!template.user_id}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
