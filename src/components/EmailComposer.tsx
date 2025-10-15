@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Copy, Mail, Loader2 } from "lucide-react";
+import { Mail, Loader2 } from "lucide-react";
+import { Editor } from '@tinymce/tinymce-react';
 
 interface EmailComposerProps {
   isOpen: boolean;
@@ -201,10 +202,24 @@ export function EmailComposer({ isOpen, onClose, leadData }: EmailComposerProps)
             </div>
 
             <div className="space-y-2">
-              <Label>Email Preview</Label>
-              <div 
-                className="border rounded-lg p-4 bg-white min-h-[400px]"
-                dangerouslySetInnerHTML={{ __html: generatedEmail }}
+              <Label>Email Content</Label>
+              <Editor
+                apiKey="no-api-key"
+                value={generatedEmail}
+                onEditorChange={(content) => setGeneratedEmail(content)}
+                init={{
+                  height: 500,
+                  menubar: false,
+                  plugins: [
+                    'lists', 'link', 'image', 'charmap', 'preview',
+                    'searchreplace', 'code', 'fullscreen',
+                    'insertdatetime', 'table', 'code', 'help', 'wordcount'
+                  ],
+                  toolbar: 'undo redo | formatselect | bold italic | \
+                  alignleft aligncenter alignright alignjustify | \
+                  bullist numlist outdent indent | removeformat | help',
+                  content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; font-size: 14px }'
+                }}
               />
             </div>
 
