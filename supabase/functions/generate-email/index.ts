@@ -59,17 +59,15 @@ serve(async (req) => {
         .replace(/\{\{last_name\}\}/g, leadData.last_name)
         .replace(/\{\{full_name\}\}/g, `${leadData.first_name} ${leadData.last_name}`)
         .replace(/\{\{email\}\}/g, leadData.email)
-        .replace(/\{\{phone\}\}/g, leadData.phone)
-        // Keep trip_type placeholder intact for frontend capitalization
-        // .replace(/\{\{trip_type\}\}/g, leadData.trip_type)
+        .replace(/\{\{phone\}\}/g, leadData.phone || 'Not provided')
+        .replace(/\{\{trip_type\}\}/g, leadData.trip_type === 'round-trip' ? 'Round-Trip' : 'One-Way')
         .replace(/\{\{departure_airport\}\}/g, leadData.departure_airport)
         .replace(/\{\{arrival_airport\}\}/g, leadData.arrival_airport)
         .replace(/\{\{route\}\}/g, `${leadData.departure_airport} → ${leadData.arrival_airport}`)
-        // Keep date/time placeholders intact for frontend formatting
-        // .replace(/\{\{departure_date\}\}/g, leadData.departure_date)
-        // .replace(/\{\{departure_time\}\}/g, leadData.departure_time)
-        // .replace(/\{\{return_date\}\}/g, leadData.return_date || 'N/A')
-        // .replace(/\{\{return_time\}\}/g, leadData.return_time || 'N/A')
+        .replace(/\{\{departure_date\}\}/g, new Date(leadData.departure_date).toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' }))
+        .replace(/\{\{departure_time\}\}/g, leadData.departure_time || 'TBD')
+        .replace(/\{\{return_date\}\}/g, leadData.return_date ? new Date(leadData.return_date).toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' }) : 'N/A')
+        .replace(/\{\{return_time\}\}/g, leadData.return_time || 'N/A')
         .replace(/\{\{passengers\}\}/g, leadData.passengers.toString())
         .replace(/\{\{notes\}\}/g, leadData.notes || 'No special notes');
 
