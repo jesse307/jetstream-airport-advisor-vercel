@@ -103,6 +103,10 @@ export default function Templates() {
       console.log('[Templates] Insert result:', { data, error });
 
       if (error) throw error;
+      
+      if (!data || data.length === 0) {
+        throw new Error("Template creation failed - check your permissions");
+      }
 
       toast.success("Template created successfully");
       setNewTemplateName("");
@@ -144,6 +148,10 @@ export default function Templates() {
       console.log('[Templates] Update result:', { data, error });
 
       if (error) throw error;
+      
+      if (!data || data.length === 0) {
+        throw new Error("Update failed - you may not have permission to edit this template");
+      }
 
       toast.success("Template updated successfully");
       setIsEditDialogOpen(false);
@@ -175,6 +183,10 @@ export default function Templates() {
   };
 
   const openEditDialog = (template: Template) => {
+    if (!template.user_id) {
+      toast.error("System templates cannot be edited. Please create a new template instead.");
+      return;
+    }
     setSelectedTemplate(template);
     setEditTemplateName(template.name);
     setEditTemplateSubject(template.subject);
@@ -362,6 +374,8 @@ export default function Templates() {
                       variant="outline"
                       size="sm"
                       onClick={() => openEditDialog(template)}
+                      disabled={!template.user_id}
+                      title={!template.user_id ? "System templates cannot be edited" : "Edit template"}
                     >
                       <Pencil className="h-4 w-4" />
                     </Button>
