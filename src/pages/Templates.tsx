@@ -49,11 +49,11 @@ export default function Templates() {
         return;
       }
 
-      const { data, error } = await supabase
-        .from('email_templates')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
+    const { data, error } = await supabase
+      .from('email_templates')
+      .select('*')
+      .or(`user_id.eq.${user.id},user_id.is.null`)
+      .order('created_at', { ascending: false });
 
       if (error) throw error;
       setTemplates(data || []);
