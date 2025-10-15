@@ -41,6 +41,7 @@ export default function Templates() {
   }, []);
 
   const loadTemplates = async () => {
+    setIsLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
@@ -49,14 +50,18 @@ export default function Templates() {
         return;
       }
 
-    const { data, error } = await supabase
-      .from('email_templates')
-      .select('*')
-      .or(`user_id.eq.${user.id},user_id.is.null`)
-      .order('created_at', { ascending: false });
+      console.log('[Templates] Loading templates for user:', user.id);
+      const { data, error } = await supabase
+        .from('email_templates')
+        .select('*')
+        .or(`user_id.eq.${user.id},user_id.is.null`)
+        .order('created_at', { ascending: false });
+
+      console.log('[Templates] Query result:', { data, error });
 
       if (error) throw error;
       setTemplates(data || []);
+      console.log('[Templates] Set templates:', data?.length || 0);
     } catch (error) {
       console.error('Error loading templates:', error);
       toast.error("Failed to load templates");
@@ -175,13 +180,17 @@ export default function Templates() {
               </div>
             </div>
 
-            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus className="h-4 w-4 mr-2" />
-                  New Template
-                </Button>
-              </DialogTrigger>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => loadTemplates()}>
+                Refresh
+              </Button>
+              <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button>
+                    <Plus className="h-4 w-4 mr-2" />
+                    New Template
+                  </Button>
+                </DialogTrigger>
               <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>Create New Template</DialogTitle>
@@ -238,6 +247,7 @@ export default function Templates() {
                 </div>
               </DialogContent>
             </Dialog>
+            </div>
           </div>
         </div>
       </header>
