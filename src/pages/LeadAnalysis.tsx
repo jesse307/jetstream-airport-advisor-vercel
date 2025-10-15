@@ -1106,7 +1106,10 @@ export default function LeadAnalysis() {
                     size="sm"
                     variant="outline"
                     className="ml-auto"
-                    onClick={() => window.open(`sms:${lead.phone}`, '_self')}
+                    onClick={() => {
+                      const message = `Hi, this is regarding your charter flight inquiry from ${lead.departure_airport || '[departure]'} to ${lead.arrival_airport || '[arrival]'}${lead.departure_date ? ` on ${format(new Date(lead.departure_date), 'MMM d')}` : ''}. I'd love to discuss options for your trip. When would be a good time to connect?`;
+                      window.open(`sms:${lead.phone}?body=${encodeURIComponent(message)}`, '_self');
+                    }}
                   >
                     <MessageSquare className="h-4 w-4 mr-2" />
                     Text
