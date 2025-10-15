@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, ArrowRight, User, Phone, Mail, Calendar, Clock, Plane, Users, MapPin, CheckCircle2, XCircle, Settings, ClipboardList, Send, Trophy, Edit2, Save } from "lucide-react";
+import { ArrowLeft, ArrowRight, User, Phone, Mail, Calendar, Clock, Plane, Users, MapPin, CheckCircle2, XCircle, Settings, ClipboardList, Send, Trophy, Edit2, Save, MessageSquare } from "lucide-react";
 import { format } from "date-fns";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -1102,6 +1102,15 @@ export default function LeadAnalysis() {
                   ) : phoneValidation.isValid === false ? (
                     <XCircle className="h-4 w-4 text-red-600" />
                   ) : null}
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="ml-auto"
+                    onClick={() => window.open(`sms:${lead.phone}`, '_self')}
+                  >
+                    <MessageSquare className="h-4 w-4 mr-2" />
+                    Text
+                  </Button>
                 </div>
                 
                 <Separator />
