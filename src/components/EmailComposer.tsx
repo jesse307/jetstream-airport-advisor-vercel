@@ -176,12 +176,16 @@ export function EmailComposer({ isOpen, onClose, leadData, webhookUrl }: EmailCo
   // Reset email content when dialog opens
   React.useEffect(() => {
     if (isOpen) {
+      console.log('Dialog opened, populating template with lead data:', leadData);
+      console.log('Using template:', emailTemplate.substring(0, 200));
       const populatedTemplate = populateTemplate(emailTemplate, leadData);
+      console.log('Populated content:', populatedTemplate.substring(0, 200));
       setEmailContent(populatedTemplate);
     }
-  }, [isOpen, emailTemplate]); // Reset content every time dialog opens
+  }, [isOpen, emailTemplate, leadData]); // Reset content every time dialog opens or leadData changes
 
   const populateTemplate = (template: string, data: any) => {
+    console.log('populateTemplate called with data:', data);
     let populated = template;
     
     // Format date to US format (MM/DD/YYYY) without timezone conversion
@@ -227,10 +231,14 @@ export function EmailComposer({ isOpen, onClose, leadData, webhookUrl }: EmailCo
     };
     
     // Replace basic variables
-    populated = populated.replace(/\{\{first_name\}\}/g, data.first_name);
-    populated = populated.replace(/\{\{last_name\}\}/g, data.last_name);
-    populated = populated.replace(/\{\{departure_airport\}\}/g, data.departure_airport);
-    populated = populated.replace(/\{\{arrival_airport\}\}/g, data.arrival_airport);
+    populated = populated.replace(/\{\{first_name\}\}/g, data.first_name || '');
+    populated = populated.replace(/\{\{last_name\}\}/g, data.last_name || '');
+    populated = populated.replace(/\{\{email\}\}/g, data.email || '');
+    populated = populated.replace(/\{\{phone\}\}/g, data.phone || '');
+    populated = populated.replace(/\{\{departure_airport\}\}/g, data.departure_airport || '');
+    populated = populated.replace(/\{\{arrival_airport\}\}/g, data.arrival_airport || '');
+    
+    console.log('After replacing basic vars, first_name check:', populated.includes(data.first_name));
     
     // Capitalize trip type (One-way, Round-trip)
     const capitalizedTripType = data.trip_type.split('-').map(word => 
@@ -879,6 +887,7 @@ Jesse
                   />
                 ) : (
                   <Editor
+                    key={`email-editor-${isOpen}`}
                     apiKey="bh5y77uhl5utzv5u5zmjnmj002o26rj877w1i486g5wnexn6"
                     onInit={(evt, editor) => editorRef.current = editor}
                     value={emailContent}
