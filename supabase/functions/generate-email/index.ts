@@ -90,20 +90,20 @@ serve(async (req) => {
     const processConditionals = (text: string) => {
       let processedText = text;
 
-      // Handle {{IF condition}} ... {{ENDIF}} blocks
-      const conditionalRegex = /\{\{IF\s+([^}]+)\}\}([\s\S]*?)\{\{ENDIF\}\}/g;
-      
-      processedText = processedText.replace(conditionalRegex, (match, condition, content) => {
-        const shouldInclude = evaluateCondition(condition.trim());
-        return shouldInclude ? content : '';
-      });
-
-      // Handle {{IF condition}} ... {{ELSE}} ... {{ENDIF}} blocks
+      // Handle {{IF condition}} ... {{ELSE}} ... {{ENDIF}} blocks FIRST (more complex pattern)
       const conditionalElseRegex = /\{\{IF\s+([^}]+)\}\}([\s\S]*?)\{\{ELSE\}\}([\s\S]*?)\{\{ENDIF\}\}/g;
       
       processedText = processedText.replace(conditionalElseRegex, (match, condition, ifContent, elseContent) => {
         const shouldInclude = evaluateCondition(condition.trim());
         return shouldInclude ? ifContent : elseContent;
+      });
+
+      // Handle {{IF condition}} ... {{ENDIF}} blocks SECOND (simpler pattern)
+      const conditionalRegex = /\{\{IF\s+([^}]+)\}\}([\s\S]*?)\{\{ENDIF\}\}/g;
+      
+      processedText = processedText.replace(conditionalRegex, (match, condition, content) => {
+        const shouldInclude = evaluateCondition(condition.trim());
+        return shouldInclude ? content : '';
       });
 
       return processedText;
