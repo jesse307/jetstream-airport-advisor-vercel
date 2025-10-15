@@ -1,6 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Mail, Eye } from "lucide-react";
 
 interface EmailPreviewProps {
   subject: string;
@@ -32,37 +30,34 @@ export function EmailPreview({ subject, content, isTemplate = false }: EmailPrev
       .replace(/\{\{notes\}\}/g, "Business travel");
   };
 
-  // Convert basic formatting to HTML-like display
+  // Convert basic formatting to Gmail-like display
   const formatContent = (text: string) => {
     return text
       .split('\n')
       .map((line, index) => {
-        // Headers with emojis or special formatting
-        if (line.includes('━━━')) return null; // Skip separator lines
-        if (line.match(/^[🎯✈️📅👥🛫🛬💰🏆⏰🧳📶💼📞⚡]/)) {
-          return (
-            <div key={index} className="flex items-start gap-2 mb-2">
-              <span className="text-lg">{line.charAt(0)}</span>
-              <span className="font-medium text-foreground">{line.slice(1).trim()}</span>
-            </div>
-          );
-        }
-        if (line.includes('**') && line.includes('**')) {
+        // Skip separator lines
+        if (line.includes('━━━')) return null;
+        
+        // Handle bold text with ** markers
+        if (line.includes('**')) {
           const parts = line.split('**');
           return (
-            <div key={index} className="mb-3">
+            <div key={index} className="mb-1">
               {parts.map((part, i) => 
                 i % 2 === 1 ? 
-                  <span key={i} className="font-heading font-semibold text-lg text-primary">{part}</span> : 
+                  <strong key={i}>{part}</strong> : 
                   <span key={i}>{part}</span>
               )}
             </div>
           );
         }
-        if (line.trim() === '') return <div key={index} className="mb-2" />;
         
+        // Empty lines for spacing
+        if (line.trim() === '') return <br key={index} />;
+        
+        // Regular text lines
         return (
-          <div key={index} className="mb-1 leading-relaxed">
+          <div key={index}>
             {line}
           </div>
         );
@@ -73,62 +68,36 @@ export function EmailPreview({ subject, content, isTemplate = false }: EmailPrev
   const processedContent = processContent(content);
 
   return (
-    <Card className="max-w-4xl mx-auto shadow-aviation">
-      <CardHeader className="bg-gradient-horizon">
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2 font-heading">
-            <Eye className="h-5 w-5 text-primary" />
-            Email Preview
-          </CardTitle>
-          {isTemplate && (
-            <Badge variant="secondary" className="font-display">
-              Template Preview
-            </Badge>
-          )}
+    <div className="max-w-3xl mx-auto">
+      {isTemplate && (
+        <div className="mb-4 flex items-center gap-2">
+          <Badge variant="secondary" className="font-display">
+            Template Preview
+          </Badge>
         </div>
-      </CardHeader>
-      <CardContent className="space-y-6 pt-6">
-        {/* Email Header */}
-        <div className="bg-card border rounded-lg p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <Mail className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm font-medium text-muted-foreground">Subject:</span>
-          </div>
-          <h2 className="font-heading font-semibold text-xl text-primary">
+      )}
+      
+      {/* Gmail-style email display */}
+      <div className="bg-white border rounded-lg overflow-hidden">
+        {/* Subject line - Gmail style */}
+        <div className="px-6 py-4 border-b">
+          <h2 className="text-xl font-normal text-gray-900">
             {processContent(subject)}
           </h2>
         </div>
 
-        {/* Email Body Preview */}
+        {/* Email Body - Gmail style */}
         <div 
-          className="email-preview bg-white border rounded-lg p-6 max-h-96 overflow-y-auto"
+          className="px-6 py-6 text-gray-900"
           style={{ 
-            fontFamily: "'Inter', ui-sans-serif, system-ui, sans-serif",
-            lineHeight: '1.6'
+            fontFamily: "Arial, sans-serif",
+            fontSize: "14px",
+            lineHeight: '1.5'
           }}
         >
           {formatContent(processedContent)}
         </div>
-
-        {/* Font Information */}
-        <div className="bg-muted/30 rounded-lg p-4">
-          <h4 className="font-heading font-medium mb-2">Typography</h4>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-            <div>
-              <span className="font-medium">Headers:</span>
-              <div className="font-heading text-lg">Playfair Display</div>
-            </div>
-            <div>
-              <span className="font-medium">Body Text:</span>
-              <div className="font-body">Inter</div>
-            </div>
-            <div>
-              <span className="font-medium">Buttons/UI:</span>
-              <div className="font-display">Montserrat</div>
-            </div>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
