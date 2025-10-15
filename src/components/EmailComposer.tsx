@@ -154,7 +154,7 @@ export function EmailComposer({ isOpen, onClose, leadData, webhookUrl }: EmailCo
           .select('*')
           .eq('is_default', true)
           .eq('user_id', user.id)
-          .single();
+          .maybeSingle();
 
         if (error) {
           console.error('Error loading template:', error);
@@ -162,8 +162,11 @@ export function EmailComposer({ isOpen, onClose, leadData, webhookUrl }: EmailCo
         }
 
         if (data) {
+          console.log('Loaded template from database');
           setEmailTemplate(data.template_content);
           setTemplateId(data.id);
+        } else {
+          console.log('No saved template found, using default');
         }
       } catch (error) {
         console.error('Error loading template:', error);
