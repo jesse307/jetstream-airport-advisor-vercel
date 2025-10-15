@@ -9,8 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import ReactQuill from "react-quill";
-import "react-quill/dist/quill.snow.css";
+import { Editor } from '@tinymce/tinymce-react';
 
 interface EmailComposerProps {
   isOpen: boolean;
@@ -769,33 +768,24 @@ Jesse
                 </CardHeader>
                 <CardContent>
                   {isHtmlEditor ? (
-                    <div className="border rounded-md">
-                      <ReactQuill
-                        value={emailTemplate}
-                        onChange={(value) => {
-                          setEmailTemplate(value);
-                          const newContent = populateTemplate(value, leadData);
-                          setEmailContent(newContent);
-                        }}
-                        theme="snow"
-                        style={{ minHeight: "200px" }}
-                        modules={{
-                          toolbar: [
-                            [{ 'header': [1, 2, 3, false] }],
-                            ['bold', 'italic', 'underline', 'strike'],
-                            [{ 'color': [] }, { 'background': [] }],
-                            [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                            [{ 'align': [] }],
-                            ['link'],
-                            ['clean']
-                          ],
-                        }}
-                        formats={[
-                          'header', 'bold', 'italic', 'underline', 'strike',
-                          'color', 'background', 'list', 'bullet', 'align', 'link'
-                        ]}
-                      />
-                    </div>
+                    <Editor
+                      apiKey="no-api-key"
+                      value={emailTemplate}
+                      onEditorChange={(value) => {
+                        setEmailTemplate(value);
+                        const newContent = populateTemplate(value, leadData);
+                        setEmailContent(newContent);
+                      }}
+                      init={{
+                        height: 400,
+                        menubar: false,
+                        plugins: [
+                          'lists', 'link', 'code', 'table', 'textcolor'
+                        ],
+                        toolbar: 'undo redo | formatselect | bold italic underline | forecolor backcolor | alignleft aligncenter alignright | bullist numlist | link | code',
+                        content_style: 'body { font-family: Arial, sans-serif; font-size: 14px; }'
+                      }}
+                    />
                   ) : (
                     <Textarea
                       value={emailTemplate}
