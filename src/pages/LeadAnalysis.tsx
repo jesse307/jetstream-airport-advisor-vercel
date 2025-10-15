@@ -1131,7 +1131,7 @@ export default function LeadAnalysis() {
                         }
                       }
                       
-                      const message = `Hi ${firstName}, Jesse from Stratos Jets. Received your request for a flight on ${dateText}. I just sent an email confirming the flight details. Please take a look when able and we'll get rolling.`;
+                      const message = `Hi ${firstName} - Jesse from Stratos Jets. Received your request for a flight on ${dateText}. I just sent an email confirming the flight details. Please take a look when able and we'll get rolling.`;
                       window.open(`sms:${lead.phone}?body=${encodeURIComponent(message)}`, '_self');
                     }}
                   >
