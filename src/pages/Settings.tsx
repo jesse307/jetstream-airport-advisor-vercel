@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Settings as SettingsIcon, Mail, Save, Loader2 } from "lucide-react";
+import { Settings as SettingsIcon, Mail, Save, Loader2, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Editor } from '@tinymce/tinymce-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -216,6 +216,40 @@ export default function Settings() {
     toast.info("Template reset to default. Click Save to apply changes.");
   };
 
+  const populateTemplatePreview = (template: string) => {
+    // Sample data for preview
+    const sampleData = {
+      first_name: "John",
+      last_name: "Smith",
+      email: "john.smith@example.com",
+      phone: "(555) 123-4567",
+      departure_airport: "TEB",
+      arrival_airport: "VNY",
+      departure_date: "12/15/2025",
+      departure_time: "9:00 AM",
+      return_date: "12/20/2025",
+      return_time: "5:00 PM",
+      passengers: "6",
+      trip_type: "Round-trip"
+    };
+
+    let populated = template;
+    
+    // Replace all variables
+    Object.entries(sampleData).forEach(([key, value]) => {
+      const regex = new RegExp(`\\{\\{${key}\\}\\}`, 'g');
+      populated = populated.replace(regex, value);
+    });
+    
+    // Handle round-trip conditional
+    populated = populated.replace(/\{\{IF is_roundtrip\}\}([\s\S]*?)\{\{ENDIF\}\}/g, '$1');
+    
+    // Remove AI placeholders for preview
+    populated = populated.replace(/\{\{AI:.*?\}\}/g, '<em style="color: #666;">[AI-generated content will appear here]</em>');
+    
+    return populated;
+  };
+
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-6xl mx-auto space-y-6">
@@ -332,6 +366,23 @@ export default function Settings() {
                       >
                         Reset to Default
                       </Button>
+                    </div>
+
+                    {/* Preview Section */}
+                    <div className="border-t pt-6 mt-6">
+                      <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
+                        <Eye className="h-5 w-5" />
+                        Preview with Sample Data
+                      </h3>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        This shows how your template will look when populated with lead data
+                      </p>
+                      <div 
+                        className="border rounded-md p-6 bg-background"
+                        dangerouslySetInnerHTML={{ 
+                          __html: populateTemplatePreview(emailTemplate) 
+                        }}
+                      />
                     </div>
                   </>
                 )}
