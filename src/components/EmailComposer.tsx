@@ -744,10 +744,30 @@ Jesse
                     </div>
                   </CardTitle>
                   <CardDescription className="text-xs">
-                    Modify the template and the compose area will update automatically
+                    Modify the template and the compose area will update automatically. Variables in the template will be replaced with actual lead data below.
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="space-y-4">
+                  {/* Show detected variables */}
+                  <div className="bg-muted p-3 rounded-md">
+                    <p className="text-xs font-semibold mb-2">Variables detected in template:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {(() => {
+                        const variables = emailTemplate.match(/\{\{[^}]+\}\}/g) || [];
+                        const uniqueVars = [...new Set(variables)].filter(v => !v.includes('AI:') && !v.includes('IF') && !v.includes('ENDIF'));
+                        return uniqueVars.length > 0 ? (
+                          uniqueVars.map((variable, index) => (
+                            <code key={index} className="text-xs bg-background px-2 py-1 rounded border">
+                              {variable}
+                            </code>
+                          ))
+                        ) : (
+                          <span className="text-xs text-muted-foreground">No variables found</span>
+                        );
+                      })()}
+                    </div>
+                  </div>
+
                   {isHtmlEditor ? (
                     <Textarea
                       value={emailTemplate}
@@ -822,7 +842,10 @@ Jesse
               {/* Email Content */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="content">Email Content</Label>
+                  <Label htmlFor="content">
+                    Email Content - Merged Data
+                    <span className="text-xs text-muted-foreground ml-2">(Template variables replaced with actual lead data)</span>
+                  </Label>
                   <div className="flex gap-2">
                     <Button
                       type="button"
