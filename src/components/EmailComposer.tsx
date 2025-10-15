@@ -848,7 +848,7 @@ Jesse
                   />
                 ) : (
                   <Editor
-                    apiKey="no-api-key"
+                    apiKey="bh5y77uhl5utzv5u5zmjnmj002o26rj877w1i486g5wnexn6"
                     onInit={(evt, editor) => editorRef.current = editor}
                     value={emailContent}
                     onEditorChange={(content) => setEmailContent(content)}
