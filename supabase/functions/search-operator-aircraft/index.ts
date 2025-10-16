@@ -104,17 +104,48 @@ serve(async (req) => {
     const aircraftData = await aircraftResponse.json();
     console.log('Aircraft search results:', JSON.stringify(aircraftData, null, 2));
 
-    // Transform the aircraft data
-    const aircraft = (aircraftData.results || []).map((ac: any) => ({
-      tailNumber: ac.registration || ac.tail_number || 'Unknown',
-      aircraftType: ac.aircraft_type || ac.type || ac.model || 'Unknown',
-      homeAirportIcao: ac.home_airport_icao || ac.homebase_icao || null,
-      homeAirportIata: ac.home_airport_iata || ac.homebase_iata || null,
-      homeAirportName: ac.home_airport_name || ac.homebase_name || null,
-      countryCode: ac.country_code || ac.country || null,
-      year: ac.year || ac.year_built || null,
-      serialNumber: ac.serial_number || null
-    }));
+    // Log first aircraft to see field structure
+    if (aircraftData.results && aircraftData.results.length > 0) {
+      console.log('Sample aircraft data:', JSON.stringify(aircraftData.results[0], null, 2));
+    }
+
+    // Transform the aircraft data - try multiple field name variations
+    const aircraft = (aircraftData.results || []).map((ac: any) => {
+      console.log('Processing aircraft:', ac.registration || ac.tail_number);
+      
+      // Try various field names for aircraft type
+      const aircraftType = ac.aircraft_type || ac.type || ac.model || 
+                          ac.aircraftType || ac.ac_type || ac.make_model ||
+                          (ac.make && ac.model ? `${ac.make} ${ac.model}` : null);
+      
+      // Try various field names for homebase
+      const homeIcao = ac.home_airport_icao || ac.homebase_icao || 
+                       ac.home_base_icao || ac.base_icao || 
+                       ac.home_airport?.icao || ac.homebase?.icao;
+      
+      const homeIata = ac.home_airport_iata || ac.homebase_iata || 
+                       ac.home_base_iata || ac.base_iata ||
+                       ac.home_airport?.iata || ac.homebase?.iata;
+      
+      const homeName = ac.home_airport_name || ac.homebase_name || 
+                       ac.home_base_name || ac.base_name ||
+                       ac.home_airport?.name || ac.homebase?.name || 
+                       ac.home_airport || ac.homebase;
+      
+      console.log(`  Aircraft type: ${aircraftType || 'NOT FOUND'}`);
+      console.log(`  Homebase: ${homeIcao || homeIata || homeName || 'NOT FOUND'}`);
+      
+      return {
+        tailNumber: ac.registration || ac.tail_number || 'Unknown',
+        aircraftType: aircraftType || 'Unknown',
+        homeAirportIcao: homeIcao || null,
+        homeAirportIata: homeIata || null,
+        homeAirportName: homeName || null,
+        countryCode: ac.country_code || ac.country || null,
+        year: ac.year || ac.year_built || ac.year_manufactured || null,
+        serialNumber: ac.serial_number || ac.serial || ac.msn || null
+      };
+    });
 
     console.log(`Found ${aircraft.length} aircraft for operator ${operator.name}`);
 
