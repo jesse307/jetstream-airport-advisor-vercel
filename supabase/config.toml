@@ -1,9 +1,9 @@
 project_id = "hwemookrxvflpinfpkrj"
 
-[functions.update-trusted-operators]
+[functions.search-operator-aircraft]
 verify_jwt = false
 
-[functions.search-operator-aircraft]
+[functions.update-trusted-operators]
 verify_jwt = false
 
 [functions.lead-chat]
