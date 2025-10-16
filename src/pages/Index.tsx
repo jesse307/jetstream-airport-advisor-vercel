@@ -68,6 +68,12 @@ const Index = () => {
                   Templates
                 </Link>
               </Button>
+              <Button asChild size="sm" variant="secondary">
+                <Link to="/trusted-operators">
+                  <Plane className="h-4 w-4 mr-1" />
+                  Operators
+                </Link>
+              </Button>
               <Button asChild size="sm">
                 <Link to="/leads/new">
                   <UserPlus className="h-4 w-4 mr-1" />

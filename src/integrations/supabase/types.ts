@@ -163,35 +163,44 @@ export type Database = {
       }
       aircraft_locations: {
         Row: {
+          aircraft_type: string | null
           country_code: string | null
           created_at: string
           home_airport_iata: string | null
           home_airport_icao: string | null
           home_airport_name: string | null
           id: string
+          is_trusted: boolean | null
           last_updated: string
+          notes: string | null
           operator_name: string | null
           tail_number: string
         }
         Insert: {
+          aircraft_type?: string | null
           country_code?: string | null
           created_at?: string
           home_airport_iata?: string | null
           home_airport_icao?: string | null
           home_airport_name?: string | null
           id?: string
+          is_trusted?: boolean | null
           last_updated?: string
+          notes?: string | null
           operator_name?: string | null
           tail_number: string
         }
         Update: {
+          aircraft_type?: string | null
           country_code?: string | null
           created_at?: string
           home_airport_iata?: string | null
           home_airport_icao?: string | null
           home_airport_name?: string | null
           id?: string
+          is_trusted?: boolean | null
           last_updated?: string
+          notes?: string | null
           operator_name?: string | null
           tail_number?: string
         }
