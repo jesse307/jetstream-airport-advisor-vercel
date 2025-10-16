@@ -168,6 +168,84 @@ export function EmailComposer({ isOpen, onClose, leadData }: EmailComposerProps)
     }
   };
 
+  const sendEmailAndText = async () => {
+    try {
+      // Send email first
+      const webhookUrl = "https://hook.us2.make.com/kylqoo8ozkxhxaqi07n33998rmt2tzl4";
+      
+      const payload = {
+        to: recipientEmail,
+        subject: emailSubject,
+        html: generatedEmail,
+        lead: {
+          first_name: leadData.first_name,
+          last_name: leadData.last_name,
+          email: leadData.email,
+          phone: leadData.phone,
+          departure_airport: leadData.departure_airport,
+          arrival_airport: leadData.arrival_airport,
+          departure_date: leadData.departure_date,
+          passengers: leadData.passengers,
+          trip_type: leadData.trip_type
+        },
+        timestamp: new Date().toISOString()
+      };
+
+      console.log("Sending email data to Make.com webhook:", webhookUrl);
+
+      const response = await fetch(webhookUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Webhook returned status: ${response.status}`);
+      }
+
+      toast.success("Email sent to Make.com successfully!");
+
+      // Then trigger text message
+      const firstName = leadData.first_name || 'there';
+      
+      // Format date as "today", "tomorrow", or actual date
+      let dateText = 'your requested date';
+      if (leadData.departure_date) {
+        // Parse date in local time to avoid timezone issues
+        const [year, month, day] = leadData.departure_date.split('-').map(Number);
+        const depDate = new Date(year, month - 1, day);
+        
+        const today = new Date();
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        
+        // Reset hours for comparison
+        today.setHours(0, 0, 0, 0);
+        tomorrow.setHours(0, 0, 0, 0);
+        
+        if (depDate.getTime() === today.getTime()) {
+          dateText = 'today';
+        } else if (depDate.getTime() === tomorrow.getTime()) {
+          dateText = 'tomorrow';
+        } else {
+          const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                             'July', 'August', 'September', 'October', 'November', 'December'];
+          dateText = `${monthNames[depDate.getMonth()]} ${depDate.getDate()}`;
+        }
+      }
+      
+      const message = `Hi ${firstName} - Jesse from Stratos Jets. Received your request for a flight on ${dateText}. I just sent an email confirming the flight details. Please take a look when able and we'll get rolling.`;
+      window.open(`sms:${leadData.phone}?body=${encodeURIComponent(message)}`, '_self');
+      
+      onClose();
+    } catch (error) {
+      console.error('Failed to send to Make.com:', error);
+      toast.error("Failed to send email. Please try again.");
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -227,9 +305,13 @@ export function EmailComposer({ isOpen, onClose, leadData }: EmailComposerProps)
               <Button variant="outline" onClick={onClose}>
                 Cancel
               </Button>
-              <Button onClick={sendToMake} className="gap-2">
+              <Button onClick={sendToMake} className="gap-2" variant="outline">
                 <Mail className="h-4 w-4" />
-                Send Email
+                Send to Gmail
+              </Button>
+              <Button onClick={sendEmailAndText} className="gap-2">
+                <Mail className="h-4 w-4" />
+                Send + Text
               </Button>
             </div>
 
