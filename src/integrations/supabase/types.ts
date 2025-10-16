@@ -340,6 +340,7 @@ export type Database = {
           return_datetime: string | null
           return_time: string | null
           source: string | null
+          source_url: string | null
           status: string
           trip_type: string
           updated_at: string
@@ -367,6 +368,7 @@ export type Database = {
           return_datetime?: string | null
           return_time?: string | null
           source?: string | null
+          source_url?: string | null
           status?: string
           trip_type: string
           updated_at?: string
@@ -394,6 +396,7 @@ export type Database = {
           return_datetime?: string | null
           return_time?: string | null
           source?: string | null
+          source_url?: string | null
           status?: string
           trip_type?: string
           updated_at?: string

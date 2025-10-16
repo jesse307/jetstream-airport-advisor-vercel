@@ -38,6 +38,14 @@ serve(async (req) => {
     console.log('Received userId:', userId);
     console.log('Received rawData length:', rawData?.length);
     
+    // Extract URL from rawData (format: "Page: <title>\nURL: <url>\n\n...")
+    let sourceUrl: string | null = null;
+    const urlMatch = rawData?.match(/URL:\s*(.+)/);
+    if (urlMatch && urlMatch[1]) {
+      sourceUrl = urlMatch[1].trim();
+      console.log('Extracted source URL:', sourceUrl);
+    }
+    
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
@@ -127,6 +135,7 @@ serve(async (req) => {
         user_id: user_id,
         status: 'new',
         source: 'chrome_extension_auto',
+        source_url: sourceUrl,
       })
       .select()
       .single();
