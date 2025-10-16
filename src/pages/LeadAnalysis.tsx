@@ -1112,7 +1112,10 @@ export default function LeadAnalysis() {
                       // Format date as "today", "tomorrow", or actual date
                       let dateText = 'your requested date';
                       if (lead.departure_date) {
-                        const depDate = new Date(lead.departure_date);
+                        // Parse date in local time to avoid timezone issues
+                        const [year, month, day] = lead.departure_date.split('-').map(Number);
+                        const depDate = new Date(year, month - 1, day);
+                        
                         const today = new Date();
                         const tomorrow = new Date(today);
                         tomorrow.setDate(tomorrow.getDate() + 1);
@@ -1120,7 +1123,6 @@ export default function LeadAnalysis() {
                         // Reset hours for comparison
                         today.setHours(0, 0, 0, 0);
                         tomorrow.setHours(0, 0, 0, 0);
-                        depDate.setHours(0, 0, 0, 0);
                         
                         if (depDate.getTime() === today.getTime()) {
                           dateText = 'today';
