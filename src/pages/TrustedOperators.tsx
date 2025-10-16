@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Plus, RefreshCw, Trash2, Plane, MapPin } from "lucide-react";
+import { ArrowLeft, Plus, RefreshCw, Trash2, Plane, MapPin, Search, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -23,12 +24,29 @@ interface TrustedOperator {
   notes: string | null;
 }
 
+interface OperatorAircraft {
+  tailNumber: string;
+  aircraftType: string;
+  homeAirportIcao: string | null;
+  homeAirportIata: string | null;
+  homeAirportName: string | null;
+  countryCode: string | null;
+  year: number | null;
+  serialNumber: string | null;
+}
+
 export default function TrustedOperators() {
   const [operators, setOperators] = useState<TrustedOperator[]>([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [tailNumbers, setTailNumbers] = useState("");
   const [showAddForm, setShowAddForm] = useState(false);
+  const [showOperatorSearch, setShowOperatorSearch] = useState(false);
+  const [operatorSearchName, setOperatorSearchName] = useState("");
+  const [searching, setSearching] = useState(false);
+  const [searchResults, setSearchResults] = useState<OperatorAircraft[]>([]);
+  const [selectedAircraft, setSelectedAircraft] = useState<Set<string>>(new Set());
+  const [foundOperator, setFoundOperator] = useState<any>(null);
 
   useEffect(() => {
     loadOperators();
@@ -158,6 +176,100 @@ export default function TrustedOperators() {
     }
   };
 
+  const handleSearchOperator = async () => {
+    if (!operatorSearchName.trim()) {
+      toast.error("Please enter an operator name");
+      return;
+    }
+
+    setSearching(true);
+    setSearchResults([]);
+    setSelectedAircraft(new Set());
+    setFoundOperator(null);
+
+    try {
+      console.log("Searching for operator:", operatorSearchName);
+
+      const { data, error } = await supabase.functions.invoke("search-operator-aircraft", {
+        body: { operatorName: operatorSearchName }
+      });
+
+      if (error) throw error;
+
+      console.log("Search results:", data);
+
+      if (!data.success) {
+        toast.error(data.message || "Search failed");
+        return;
+      }
+
+      if (data.aircraft.length === 0) {
+        toast.info(`No aircraft found for "${operatorSearchName}"`);
+        return;
+      }
+
+      setFoundOperator(data.operator);
+      setSearchResults(data.aircraft);
+      toast.success(`Found ${data.aircraft.length} aircraft for ${data.operator.name}`);
+    } catch (error) {
+      console.error("Error searching operator:", error);
+      toast.error("Failed to search operator");
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const toggleAircraftSelection = (tailNumber: string) => {
+    const newSelection = new Set(selectedAircraft);
+    if (newSelection.has(tailNumber)) {
+      newSelection.delete(tailNumber);
+    } else {
+      newSelection.add(tailNumber);
+    }
+    setSelectedAircraft(newSelection);
+  };
+
+  const handleAddSelectedAircraft = async () => {
+    if (selectedAircraft.size === 0) {
+      toast.error("Please select at least one aircraft");
+      return;
+    }
+
+    setUpdating(true);
+    try {
+      const selectedTailNumbers = Array.from(selectedAircraft);
+      
+      console.log("Adding selected aircraft:", selectedTailNumbers);
+
+      // Call the update function to fetch and store homebase data
+      const { data, error } = await supabase.functions.invoke("update-trusted-operators", {
+        body: { tailNumbers: selectedTailNumbers }
+      });
+
+      if (error) throw error;
+
+      const summary = data.summary;
+      toast.success(
+        `Added ${summary.successful} aircraft. ${summary.failed > 0 ? `${summary.failed} failed.` : ""}`
+      );
+
+      // Clear selections and results
+      setSelectedAircraft(new Set());
+      setSearchResults([]);
+      setFoundOperator(null);
+      setOperatorSearchName("");
+      setShowOperatorSearch(false);
+
+      // Reload operators list
+      await loadOperators();
+    } catch (error) {
+      console.error("Error adding aircraft:", error);
+      toast.error("Failed to add selected aircraft");
+    } finally {
+      setUpdating(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -218,7 +330,17 @@ export default function TrustedOperators() {
 
           {/* Actions */}
           <div className="flex gap-2">
-            <Button onClick={() => setShowAddForm(!showAddForm)} className="gap-2">
+            <Button onClick={() => {
+              setShowOperatorSearch(!showOperatorSearch);
+              setShowAddForm(false);
+            }} className="gap-2">
+              <Building2 className="h-4 w-4" />
+              Add by Operator
+            </Button>
+            <Button onClick={() => {
+              setShowAddForm(!showAddForm);
+              setShowOperatorSearch(false);
+            }} variant="outline" className="gap-2">
               <Plus className="h-4 w-4" />
               Add Tail Numbers
             </Button>
@@ -232,6 +354,115 @@ export default function TrustedOperators() {
               Refresh All
             </Button>
           </div>
+
+          {/* Operator Search Form */}
+          {showOperatorSearch && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Search Operator Aircraft</CardTitle>
+                <CardDescription>
+                  Search for an operator to see all their aircraft in Aviapages
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex gap-2">
+                  <Input
+                    value={operatorSearchName}
+                    onChange={(e) => setOperatorSearchName(e.target.value)}
+                    placeholder="e.g., NetJets, VistaJet, Flexjet"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleSearchOperator();
+                      }
+                    }}
+                  />
+                  <Button onClick={handleSearchOperator} disabled={searching} className="gap-2">
+                    <Search className="h-4 w-4" />
+                    {searching ? "Searching..." : "Search"}
+                  </Button>
+                  <Button onClick={() => {
+                    setShowOperatorSearch(false);
+                    setSearchResults([]);
+                    setSelectedAircraft(new Set());
+                    setFoundOperator(null);
+                  }} variant="outline">
+                    Cancel
+                  </Button>
+                </div>
+
+                {/* Search Results */}
+                {foundOperator && searchResults.length > 0 && (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between p-4 bg-primary/5 rounded-lg">
+                      <div>
+                        <h3 className="font-semibold text-lg">{foundOperator.name}</h3>
+                        <p className="text-sm text-muted-foreground">
+                          {searchResults.length} aircraft found
+                        </p>
+                      </div>
+                      <Button 
+                        onClick={handleAddSelectedAircraft}
+                        disabled={selectedAircraft.size === 0 || updating}
+                      >
+                        Add Selected ({selectedAircraft.size})
+                      </Button>
+                    </div>
+
+                    <div className="border rounded-lg max-h-96 overflow-y-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="w-12">Select</TableHead>
+                            <TableHead>Tail Number</TableHead>
+                            <TableHead>Aircraft Type</TableHead>
+                            <TableHead>Homebase</TableHead>
+                            <TableHead>Year</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {searchResults.map((aircraft) => (
+                            <TableRow key={aircraft.tailNumber}>
+                              <TableCell>
+                                <Checkbox
+                                  checked={selectedAircraft.has(aircraft.tailNumber)}
+                                  onCheckedChange={() => toggleAircraftSelection(aircraft.tailNumber)}
+                                />
+                              </TableCell>
+                              <TableCell className="font-mono font-semibold">
+                                {aircraft.tailNumber}
+                              </TableCell>
+                              <TableCell>{aircraft.aircraftType}</TableCell>
+                              <TableCell>
+                                {aircraft.homeAirportIcao ? (
+                                  <div className="text-sm">
+                                    <div className="font-semibold">
+                                      {aircraft.homeAirportIcao}
+                                      {aircraft.homeAirportIata && ` (${aircraft.homeAirportIata})`}
+                                    </div>
+                                    {aircraft.homeAirportName && (
+                                      <div className="text-muted-foreground">
+                                        {aircraft.homeAirportName}
+                                      </div>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <span className="text-muted-foreground italic">Unknown</span>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                {aircraft.year || <span className="text-muted-foreground">-</span>}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
           {/* Add Form */}
           {showAddForm && (
