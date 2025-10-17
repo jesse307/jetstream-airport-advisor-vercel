@@ -109,8 +109,16 @@ serve(async (req) => {
       console.log('Sample aircraft data:', JSON.stringify(aircraftData.results[0], null, 2));
     }
 
+    // Filter aircraft to only those that actually belong to this operator
+    // The API returns all aircraft regardless of operator param, so we filter by company_id
+    const operatorAircraft = (aircraftData.results || []).filter((ac: any) => 
+      ac.company_id === operatorId
+    );
+
+    console.log(`Filtered to ${operatorAircraft.length} aircraft actually owned by operator ${operatorId}`);
+
     // Transform the aircraft data using correct Aviapages field names
-    const aircraft = (aircraftData.results || []).map((ac: any) => {
+    const aircraft = operatorAircraft.map((ac: any) => {
       console.log('Processing aircraft:', ac.tail_number);
       
       // Aviapages uses aircraft_type_name for the aircraft type
