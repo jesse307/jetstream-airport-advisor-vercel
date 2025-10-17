@@ -256,7 +256,7 @@ serve(async (req) => {
       try {
         const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
         const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY')!;
-        const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2.38.4');
+        const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2.39.3');
         const supabase = createClient(supabaseUrl, supabaseKey);
         
         const { data: fallbackData, error } = await supabase
@@ -290,7 +290,7 @@ serve(async (req) => {
       if (airports.length === 0 && query.length >= 3 && query.length <= 4 && /^[A-Za-z]+$/.test(query)) {
         console.log(`No results found, trying AirNav for: ${query}`);
         try {
-          const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2.38.4');
+          const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2.39.3');
           const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
           const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
           const supabase = createClient(supabaseUrl, supabaseKey);
