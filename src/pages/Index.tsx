@@ -1,10 +1,16 @@
 import { useState } from "react";
-import { Plane, MapPin, Navigation, Settings, TestTube, UserPlus, Upload, History, Users, Radio, FileText, Calendar, Mail } from "lucide-react";
+import { Plane, MapPin, Navigation, Settings, TestTube, UserPlus, Upload, History, Users, Radio, FileText, Calendar, Mail, Wrench, ChevronDown } from "lucide-react";
 import { Link } from "react-router-dom";
 import { AirportSearch } from "@/components/AirportSearch";
 import { FlightCalculator } from "@/components/FlightCalculator";
 import { ApiTest } from "@/components/ApiTest";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const Index = () => {
   const [departure, setDeparture] = useState<string>("");
@@ -44,36 +50,47 @@ const Index = () => {
                   CRM
                 </Link>
               </Button>
-              <Button asChild size="sm" variant="secondary">
-                <Link to="/aircraft-tracking">
-                  <Radio className="h-4 w-4 mr-1" />
-                  Live Tracking
-                </Link>
-              </Button>
-              <Button asChild size="sm" variant="secondary">
-                <Link to="/quotes">
-                  <FileText className="h-4 w-4 mr-1" />
-                  Quotes
-                </Link>
-              </Button>
-              <Button asChild size="sm" variant="secondary">
-                <Link to="/availability">
-                  <Calendar className="h-4 w-4 mr-1" />
-                  Availability
-                </Link>
-              </Button>
-              <Button asChild size="sm" variant="secondary">
-                <Link to="/templates">
-                  <Mail className="h-4 w-4 mr-1" />
-                  Templates
-                </Link>
-              </Button>
-              <Button asChild size="sm" variant="secondary">
-                <Link to="/trusted-operators">
-                  <Plane className="h-4 w-4 mr-1" />
-                  Operators
-                </Link>
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button size="sm" variant="secondary">
+                    <Wrench className="h-4 w-4 mr-1" />
+                    Tools
+                    <ChevronDown className="h-3 w-3 ml-1" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48 bg-card z-50">
+                  <DropdownMenuItem asChild>
+                    <Link to="/templates" className="flex items-center cursor-pointer">
+                      <Mail className="h-4 w-4 mr-2" />
+                      Templates
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/availability" className="flex items-center cursor-pointer">
+                      <Calendar className="h-4 w-4 mr-2" />
+                      Availability
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/quotes" className="flex items-center cursor-pointer">
+                      <FileText className="h-4 w-4 mr-2" />
+                      Quotes
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/trusted-operators" className="flex items-center cursor-pointer">
+                      <Plane className="h-4 w-4 mr-2" />
+                      Operators
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/aircraft-tracking" className="flex items-center cursor-pointer">
+                      <Radio className="h-4 w-4 mr-2" />
+                      Live Tracking
+                    </Link>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
               <Button asChild size="sm">
                 <Link to="/leads/new">
                   <UserPlus className="h-4 w-4 mr-1" />
