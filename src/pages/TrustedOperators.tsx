@@ -165,6 +165,7 @@ export default function TrustedOperators() {
 
   const handleOperatorSearchInput = async (value: string) => {
     setOperatorSearchName(value);
+    console.log('Search input changed:', value);
     
     if (value.trim().length < 2) {
       setOperatorSuggestions([]);
@@ -172,15 +173,20 @@ export default function TrustedOperators() {
     }
 
     setSearchingOperators(true);
+    console.log('Calling edge function for suggestions...');
     try {
       const { data, error } = await supabase.functions.invoke('search-operator-aircraft', {
         body: { operatorName: value, searchOnly: true }
       });
 
+      console.log('Edge function response:', data, error);
+
       if (error) throw error;
 
       if (data.success && data.operators) {
+        console.log('Got operators:', data.operators.length);
         setOperatorSuggestions(data.operators);
+        if (!open) setOpen(true); // Auto-open if not already open
       }
     } catch (error: any) {
       console.error("Error fetching operator suggestions:", error);
