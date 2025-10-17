@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft, Plus, RefreshCw, Trash2, Plane, MapPin, Search, Building2, Check, ChevronsUpDown } from "lucide-react";
+import { debounce } from "lodash";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -163,36 +164,46 @@ export default function TrustedOperators() {
     loadOperators();
   }, []);
 
-  const handleOperatorSearchInput = async (value: string) => {
+  // Debounced search to avoid rate limiting the API
+  const debouncedOperatorSearch = useCallback(
+    debounce(async (value: string) => {
+      if (value.trim().length < 2) {
+        setOperatorSuggestions([]);
+        return;
+      }
+
+      setSearchingOperators(true);
+      console.log('Calling edge function for suggestions...');
+      try {
+        const { data, error } = await supabase.functions.invoke('search-operator-aircraft', {
+          body: { operatorName: value, searchOnly: true }
+        });
+
+        console.log('Edge function response:', data, error);
+
+        if (error) throw error;
+
+        if (data.success && data.operators) {
+          console.log('Got operators:', data.operators.length);
+          setOperatorSuggestions(data.operators);
+          if (!open) setOpen(true);
+        }
+      } catch (error: any) {
+        console.error("Error fetching operator suggestions:", error);
+        if (error.message?.includes('rate_limit') || error.message?.includes('429')) {
+          toast.error("API rate limit exceeded. Please wait a moment before searching again.");
+        }
+      } finally {
+        setSearchingOperators(false);
+      }
+    }, 800), // Wait 800ms after user stops typing
+    [open]
+  );
+
+  const handleOperatorSearchInput = (value: string) => {
     setOperatorSearchName(value);
     console.log('Search input changed:', value);
-    
-    if (value.trim().length < 2) {
-      setOperatorSuggestions([]);
-      return;
-    }
-
-    setSearchingOperators(true);
-    console.log('Calling edge function for suggestions...');
-    try {
-      const { data, error } = await supabase.functions.invoke('search-operator-aircraft', {
-        body: { operatorName: value, searchOnly: true }
-      });
-
-      console.log('Edge function response:', data, error);
-
-      if (error) throw error;
-
-      if (data.success && data.operators) {
-        console.log('Got operators:', data.operators.length);
-        setOperatorSuggestions(data.operators);
-        if (!open) setOpen(true); // Auto-open if not already open
-      }
-    } catch (error: any) {
-      console.error("Error fetching operator suggestions:", error);
-    } finally {
-      setSearchingOperators(false);
-    }
+    debouncedOperatorSearch(value);
   };
 
   const handleSearchOperator = async () => {
