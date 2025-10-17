@@ -190,8 +190,20 @@ export default function TrustedOperators() {
         }
       } catch (error: any) {
         console.error("Error fetching operator suggestions:", error);
-        if (error.message?.includes('rate_limit') || error.message?.includes('429')) {
-          toast.error("API rate limit exceeded. Please wait a moment before searching again.");
+        
+        // Handle rate limiting
+        const errorMsg = error?.context?.body?.error || error?.message || '';
+        if (errorMsg.includes('rate_limit') || errorMsg.includes('429')) {
+          toast.error("Rate limit exceeded. Please wait 2-3 minutes before searching again.", {
+            duration: 5000
+          });
+          setOperatorSuggestions([{ 
+            company_id: 'rate-limit', 
+            name: '⚠️ Rate limit - please wait 2-3 minutes',
+            country_name: ''
+          }]);
+        } else {
+          toast.error("Failed to search operators");
         }
       } finally {
         setSearchingOperators(false);
