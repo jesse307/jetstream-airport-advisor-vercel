@@ -77,7 +77,7 @@ serve(async (req) => {
 
     // Get the first matching operator
     const operator = operatorData.results[0];
-    const operatorId = operator.id;
+    const operatorId = operator.company_id;
     
     console.log(`Found operator: ${operator.name} (ID: ${operatorId})`);
 
@@ -140,9 +140,9 @@ serve(async (req) => {
       JSON.stringify({ 
         success: true,
         operator: {
-          id: operator.id,
+          id: operator.company_id,
           name: operator.name,
-          country: operator.country,
+          country: operator.country_name,
           website: operator.website
         },
         aircraft,
