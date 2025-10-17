@@ -30,7 +30,7 @@ serve(async (req) => {
       );
     }
 
-    console.log(`Searching Aviapages for operator: ${operatorName}`);
+    console.log(`[v2] Searching Aviapages for operator: ${operatorName}`);
 
     // Search for the operator first
     const operatorSearchUrl = `https://dir.aviapages.com/api/companies/?search=${encodeURIComponent(operatorName)}`;
