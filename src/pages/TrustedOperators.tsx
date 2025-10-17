@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, RefreshCw, Trash2, Plane, MapPin, Building2, Loader2 } from "lucide-react";
+import { ArrowLeft, RefreshCw, Trash2, Plane, MapPin, Building2, Loader2, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
+import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -40,6 +41,8 @@ export default function TrustedOperators() {
   const [adding, setAdding] = useState(false);
   const [updating, setUpdating] = useState(false);
   const [showCarriers, setShowCarriers] = useState(false);
+  const [manualOperatorName, setManualOperatorName] = useState("");
+  const [searchingOperator, setSearchingOperator] = useState(false);
 
   const loadOperators = async () => {
     try {
@@ -214,6 +217,59 @@ export default function TrustedOperators() {
     }
   };
 
+  const handleManualSearch = async () => {
+    const trimmedName = manualOperatorName.trim();
+    if (!trimmedName) {
+      toast.error("Please enter an operator name");
+      return;
+    }
+
+    if (trimmedName.length > 100) {
+      toast.error("Operator name too long (max 100 characters)");
+      return;
+    }
+
+    setSearchingOperator(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('search-operator-aircraft', {
+        body: { operatorName: trimmedName }
+      });
+
+      if (error) throw error;
+
+      if (data.success && data.aircraft && data.aircraft.length > 0) {
+        const tailNumbers = data.aircraft.map((ac: any) => ac.tailNumber);
+        
+        const { data: updateData, error: updateError } = await supabase.functions.invoke('update-trusted-operators', {
+          body: { tailNumbers }
+        });
+
+        if (updateError) throw updateError;
+
+        const successCount = updateData.results?.filter((r: any) => r.success).length || 0;
+        
+        if (successCount > 0) {
+          toast.success(`Added ${successCount} aircraft from ${data.operator.name}`);
+          await loadOperators();
+          setManualOperatorName("");
+        } else {
+          toast.error("Failed to add any aircraft");
+        }
+      } else {
+        toast.error(`No aircraft found for operator: ${trimmedName}`);
+      }
+    } catch (error: any) {
+      console.error("Error searching operator:", error);
+      if (error.message?.includes('rate_limit') || error.message?.includes('429')) {
+        toast.error("Rate limit exceeded. Please wait a few minutes and try again.");
+      } else {
+        toast.error(error.message || "Failed to search operator");
+      }
+    } finally {
+      setSearchingOperator(false);
+    }
+  };
+
   useEffect(() => {
     loadOperators();
   }, []);
@@ -277,6 +333,39 @@ export default function TrustedOperators() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Manual Search Form */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Add Operator Manually</CardTitle>
+            <CardDescription>
+              Search for a specific operator by name and add all their aircraft
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex gap-2">
+              <Input
+                placeholder="Enter operator name (e.g., NetJets)"
+                value={manualOperatorName}
+                onChange={(e) => setManualOperatorName(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleManualSearch()}
+                maxLength={100}
+              />
+              <Button 
+                onClick={handleManualSearch} 
+                disabled={searchingOperator}
+                className="gap-2"
+              >
+                {searchingOperator ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Search className="h-4 w-4" />
+                )}
+                Search & Add
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Action Buttons */}
         <div className="flex gap-2">
