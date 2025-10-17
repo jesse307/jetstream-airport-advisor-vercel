@@ -1,19 +1,14 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Plus, RefreshCw, Trash2, Plane, MapPin, Search, Building2, Check, ChevronsUpDown } from "lucide-react";
-import { debounce } from "lodash";
+import { ArrowLeft, RefreshCw, Trash2, Plane, MapPin, Building2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
 
 interface TrustedOperator {
   id: string;
@@ -26,35 +21,25 @@ interface TrustedOperator {
   country_code: string | null;
   last_updated: string;
   notes: string | null;
+  floating_fleet: boolean;
 }
 
-interface OperatorAircraft {
-  tailNumber: string;
-  aircraftType: string;
-  homeAirportIcao: string | null;
-  homeAirportIata: string | null;
-  homeAirportName: string | null;
-  countryCode: string | null;
-  year: number | null;
-  serialNumber: string | null;
+interface USCarrier {
+  company_id: string;
+  name: string;
+  country_name: string;
+  website: string | null;
 }
 
 export default function TrustedOperators() {
   const [operators, setOperators] = useState<TrustedOperator[]>([]);
   const [loading, setLoading] = useState(true);
+  const [usCarriers, setUSCarriers] = useState<USCarrier[]>([]);
+  const [loadingCarriers, setLoadingCarriers] = useState(false);
+  const [selectedCarriers, setSelectedCarriers] = useState<Set<string>>(new Set());
+  const [adding, setAdding] = useState(false);
   const [updating, setUpdating] = useState(false);
-  const [tailNumbers, setTailNumbers] = useState("");
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [showOperatorSearch, setShowOperatorSearch] = useState(false);
-  const [operatorSearchName, setOperatorSearchName] = useState("");
-  const [operatorSuggestions, setOperatorSuggestions] = useState<any[]>([]);
-  const [selectedOperator, setSelectedOperator] = useState<any>(null);
-  const [open, setOpen] = useState(false);
-  const [searchingOperators, setSearchingOperators] = useState(false);
-  const [searching, setSearching] = useState(false);
-  const [searchResults, setSearchResults] = useState<OperatorAircraft[]>([]);
-  const [selectedAircraft, setSelectedAircraft] = useState<Set<string>>(new Set());
-  const [foundOperator, setFoundOperator] = useState<any>(null);
+  const [showCarriers, setShowCarriers] = useState(false);
 
   const loadOperators = async () => {
     try {
@@ -62,7 +47,7 @@ export default function TrustedOperators() {
         .from('aircraft_locations')
         .select('*')
         .eq('is_trusted', true)
-        .order('last_updated', { ascending: false });
+        .order('operator_name', { ascending: true });
 
       if (error) throw error;
       setOperators(data || []);
@@ -74,43 +59,112 @@ export default function TrustedOperators() {
     }
   };
 
-  const handleAddTailNumbers = async () => {
-    if (!tailNumbers.trim()) {
-      toast.error("Please enter at least one tail number");
-      return;
-    }
-
-    setUpdating(true);
+  const loadUSCarriers = async () => {
+    setLoadingCarriers(true);
     try {
-      const tailNumberArray = tailNumbers
-        .split(/[\n,]+/)
-        .map(t => t.trim())
-        .filter(t => t);
-
-      const { data, error } = await supabase.functions.invoke('update-trusted-operators', {
-        body: { tailNumbers: tailNumberArray }
+      const { data, error } = await supabase.functions.invoke('search-operator-aircraft', {
+        body: { listUSCarriers: true }
       });
 
       if (error) throw error;
 
-      if (data) {
-        const successCount = data.results?.filter((r: any) => r.success).length || 0;
-        const failCount = data.results?.filter((r: any) => !r.success).length || 0;
-
-        if (successCount > 0) {
-          toast.success(`Added ${successCount} aircraft${failCount > 0 ? `, ${failCount} failed` : ''}`);
-          await loadOperators();
-          setTailNumbers("");
-          setShowAddForm(false);
-        } else {
-          toast.error("Failed to add any aircraft");
-        }
+      if (data.success && data.operators) {
+        setUSCarriers(data.operators);
+        toast.success(`Loaded ${data.operators.length} US charter operators`);
       }
     } catch (error: any) {
-      console.error("Error adding tail numbers:", error);
-      toast.error(error.message || "Failed to add aircraft");
+      console.error("Error loading US carriers:", error);
+      if (error.message?.includes('rate_limit') || error.message?.includes('429')) {
+        toast.error("Rate limit exceeded. Please wait a few minutes and try again.");
+      } else {
+        toast.error("Failed to load US carriers");
+      }
     } finally {
-      setUpdating(false);
+      setLoadingCarriers(false);
+    }
+  };
+
+  const handleToggleCarrier = (carrierId: string) => {
+    const newSelection = new Set(selectedCarriers);
+    if (newSelection.has(carrierId)) {
+      newSelection.delete(carrierId);
+    } else {
+      newSelection.add(carrierId);
+    }
+    setSelectedCarriers(newSelection);
+  };
+
+  const handleAddSelectedCarriers = async () => {
+    if (selectedCarriers.size === 0) {
+      toast.error("Please select at least one carrier");
+      return;
+    }
+
+    setAdding(true);
+    try {
+      const selectedCarrierNames = usCarriers
+        .filter(c => selectedCarriers.has(c.company_id))
+        .map(c => c.name);
+
+      let totalAdded = 0;
+
+      for (const carrierName of selectedCarrierNames) {
+        try {
+          // Fetch aircraft for this carrier
+          const { data, error } = await supabase.functions.invoke('search-operator-aircraft', {
+            body: { operatorName: carrierName }
+          });
+
+          if (error) throw error;
+
+          if (data.success && data.aircraft && data.aircraft.length > 0) {
+            // Add all aircraft for this operator
+            const tailNumbers = data.aircraft.map((ac: any) => ac.tailNumber);
+            
+            const { data: updateData, error: updateError } = await supabase.functions.invoke('update-trusted-operators', {
+              body: { tailNumbers }
+            });
+
+            if (updateError) throw updateError;
+
+            const successCount = updateData.results?.filter((r: any) => r.success).length || 0;
+            totalAdded += successCount;
+          }
+        } catch (err: any) {
+          console.error(`Error adding ${carrierName}:`, err);
+        }
+      }
+
+      if (totalAdded > 0) {
+        toast.success(`Added ${totalAdded} aircraft from ${selectedCarriers.size} operators`);
+        await loadOperators();
+        setSelectedCarriers(new Set());
+        setShowCarriers(false);
+      } else {
+        toast.error("Failed to add any aircraft");
+      }
+    } catch (error: any) {
+      console.error("Error adding carriers:", error);
+      toast.error(error.message || "Failed to add carriers");
+    } finally {
+      setAdding(false);
+    }
+  };
+
+  const handleToggleFloatingFleet = async (operatorId: string, currentValue: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('aircraft_locations')
+        .update({ floating_fleet: !currentValue })
+        .eq('id', operatorId);
+
+      if (error) throw error;
+
+      toast.success(`Updated floating fleet status`);
+      await loadOperators();
+    } catch (error: any) {
+      console.error("Error updating floating fleet:", error);
+      toast.error("Failed to update floating fleet");
     }
   };
 
@@ -164,145 +218,9 @@ export default function TrustedOperators() {
     loadOperators();
   }, []);
 
-  // Debounced search to avoid rate limiting the API
-  const debouncedOperatorSearch = useCallback(
-    debounce(async (value: string) => {
-      if (value.trim().length < 2) {
-        setOperatorSuggestions([]);
-        return;
-      }
-
-      setSearchingOperators(true);
-      console.log('Calling edge function for suggestions...');
-      try {
-        const { data, error } = await supabase.functions.invoke('search-operator-aircraft', {
-          body: { operatorName: value, searchOnly: true }
-        });
-
-        console.log('Edge function response:', data, error);
-
-        if (error) throw error;
-
-        if (data.success && data.operators) {
-          console.log('Got operators:', data.operators.length);
-          setOperatorSuggestions(data.operators);
-          if (!open) setOpen(true);
-        }
-      } catch (error: any) {
-        console.error("Error fetching operator suggestions:", error);
-        
-        // Handle rate limiting
-        const errorMsg = error?.context?.body?.error || error?.message || '';
-        if (errorMsg.includes('rate_limit') || errorMsg.includes('429')) {
-          toast.error("Rate limit exceeded. Please wait 2-3 minutes before searching again.", {
-            duration: 5000
-          });
-          setOperatorSuggestions([{ 
-            company_id: 'rate-limit', 
-            name: '⚠️ Rate limit - please wait 2-3 minutes',
-            country_name: ''
-          }]);
-        } else {
-          toast.error("Failed to search operators");
-        }
-      } finally {
-        setSearchingOperators(false);
-      }
-    }, 800), // Wait 800ms after user stops typing
-    [open]
-  );
-
-  const handleOperatorSearchInput = (value: string) => {
-    setOperatorSearchName(value);
-    console.log('Search input changed:', value);
-    debouncedOperatorSearch(value);
-  };
-
-  const handleSearchOperator = async () => {
-    if (!selectedOperator) {
-      toast.error("Please select an operator from the dropdown");
-      return;
-    }
-
-    setSearching(true);
-    setSearchResults([]);
-    setSelectedAircraft(new Set());
-
-    try {
-      console.log(`Searching for operator: ${selectedOperator.name}`);
-      const { data, error } = await supabase.functions.invoke('search-operator-aircraft', {
-        body: { operatorName: selectedOperator.name }
-      });
-
-      if (error) throw error;
-
-      console.log("Search results:", data);
-
-      if (data.success && data.aircraft && data.aircraft.length > 0) {
-        setSearchResults(data.aircraft);
-        setFoundOperator(data.operator);
-        toast.success(`Found ${data.aircraft.length} aircraft for ${data.operator.name}`);
-      } else {
-        toast.info(data.message || "No aircraft found for this operator");
-        setFoundOperator(null);
-      }
-    } catch (error: any) {
-      console.error("Error searching operator:", error);
-      toast.error(error.message || "Failed to search operator");
-    } finally {
-      setSearching(false);
-    }
-  };
-
-  const toggleAircraftSelection = (tailNumber: string) => {
-    const newSelection = new Set(selectedAircraft);
-    if (newSelection.has(tailNumber)) {
-      newSelection.delete(tailNumber);
-    } else {
-      newSelection.add(tailNumber);
-    }
-    setSelectedAircraft(newSelection);
-  };
-
-  const handleAddSelectedAircraft = async () => {
-    if (selectedAircraft.size === 0) {
-      toast.error("Please select at least one aircraft");
-      return;
-    }
-
-    setUpdating(true);
-    try {
-      const tailNumberArray = Array.from(selectedAircraft);
-
-      const { data, error } = await supabase.functions.invoke('update-trusted-operators', {
-        body: { tailNumbers: tailNumberArray }
-      });
-
-      if (error) throw error;
-
-      if (data) {
-        const successCount = data.results?.filter((r: any) => r.success).length || 0;
-        toast.success(`Added ${successCount} aircraft`);
-        await loadOperators();
-        setShowOperatorSearch(false);
-        setSearchResults([]);
-        setSelectedAircraft(new Set());
-        setFoundOperator(null);
-        setSelectedOperator(null);
-        setOperatorSearchName("");
-        setOperatorSuggestions([]);
-      }
-    } catch (error: any) {
-      console.error("Error adding selected aircraft:", error);
-      toast.error(error.message || "Failed to add aircraft");
-    } finally {
-      setUpdating(false);
-    }
-  };
-
   const totalAircraft = operators.length;
   const uniqueOperators = new Set(operators.map(op => op.operator_name).filter(Boolean)).size;
-  const uniqueCountries = new Set(operators.map(op => op.country_code).filter(Boolean)).size;
+  const floatingFleets = operators.filter(op => op.floating_fleet).length;
 
   return (
     <div className="min-h-screen bg-background">
@@ -319,7 +237,7 @@ export default function TrustedOperators() {
               <div>
                 <h1 className="text-2xl font-bold">Trusted Operators</h1>
                 <p className="text-sm text-muted-foreground">
-                  Manage aircraft tail numbers and homebase information
+                  Manage aircraft operators and their fleets
                 </p>
               </div>
             </div>
@@ -351,300 +269,223 @@ export default function TrustedOperators() {
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Countries</CardTitle>
+              <CardTitle className="text-sm font-medium">Floating Fleets</CardTitle>
               <MapPin className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{uniqueCountries}</div>
+              <div className="text-2xl font-bold">{floatingFleets}</div>
             </CardContent>
           </Card>
         </div>
 
         {/* Action Buttons */}
         <div className="flex gap-2">
-          <Button onClick={() => {
-            setShowAddForm(true);
-            setShowOperatorSearch(false);
-          }} className="gap-2">
-            <Plus className="h-4 w-4" />
-            Add Tail Numbers
-          </Button>
-          <Button onClick={() => {
-            setShowOperatorSearch(true);
-            setShowAddForm(false);
-          }} variant="outline" className="gap-2">
-            <Search className="h-4 w-4" />
-            Add by Operator
-          </Button>
+          {!showCarriers ? (
+            <Button 
+              onClick={() => {
+                setShowCarriers(true);
+                if (usCarriers.length === 0) {
+                  loadUSCarriers();
+                }
+              }} 
+              className="gap-2"
+            >
+              <Building2 className="h-4 w-4" />
+              Add US Operators
+            </Button>
+          ) : (
+            <Button onClick={() => setShowCarriers(false)} variant="outline" className="gap-2">
+              Hide Operators List
+            </Button>
+          )}
           <Button onClick={handleRefreshAll} variant="outline" disabled={updating} className="gap-2">
             <RefreshCw className={`h-4 w-4 ${updating ? 'animate-spin' : ''}`} />
             Refresh All
           </Button>
         </div>
 
-        {/* Operator Search Form */}
-        {showOperatorSearch && (
+        {/* US Carriers List */}
+        {showCarriers && (
           <Card>
             <CardHeader>
-              <CardTitle>Search Operator</CardTitle>
+              <CardTitle>US Charter Operators</CardTitle>
               <CardDescription>
-                Search for an operator and select their aircraft to add to your trusted list
+                Select operators to add all their aircraft to your trusted list
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex gap-2">
-                <Popover open={open} onOpenChange={setOpen}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      role="combobox"
-                      aria-expanded={open}
-                      className="w-full justify-between"
-                    >
-                      {selectedOperator ? selectedOperator.name : "Select operator..."}
-                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-muted-foreground">
+                  {selectedCarriers.size} of {usCarriers.length} selected
+                </p>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={handleAddSelectedCarriers}
+                    disabled={selectedCarriers.size === 0 || adding}
+                    className="gap-2"
+                  >
+                    {adding ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                    Add Selected ({selectedCarriers.size})
+                  </Button>
+                  {loadingCarriers && (
+                    <Button disabled variant="outline" className="gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Loading...
                     </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-[600px] p-0" align="start">
-                    <Command shouldFilter={false}>
-                      <CommandInput 
-                        placeholder="Search operators..." 
-                        value={operatorSearchName}
-                        onValueChange={handleOperatorSearchInput}
-                      />
-                      <CommandList>
-                        <CommandEmpty>
-                          {searchingOperators ? "Searching..." : operatorSearchName.length < 2 ? "Type at least 2 characters to search..." : "No operators found."}
-                        </CommandEmpty>
-                        <CommandGroup>
-                          {operatorSuggestions.map((operator) => (
-                            <CommandItem
-                              key={operator.company_id}
-                              value={operator.name}
-                              onSelect={() => {
-                                setSelectedOperator(operator);
-                                setOpen(false);
-                              }}
-                            >
-                              <Check
-                                className={cn(
-                                  "mr-2 h-4 w-4",
-                                  selectedOperator?.company_id === operator.company_id ? "opacity-100" : "opacity-0"
-                                )}
-                              />
-                              <div className="flex flex-col">
-                                <span>{operator.name}</span>
-                                {operator.country_name && (
-                                  <span className="text-xs text-muted-foreground">{operator.country_name}</span>
-                                )}
-                              </div>
-                            </CommandItem>
-                          ))}
-                        </CommandGroup>
-                      </CommandList>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
-                <Button onClick={handleSearchOperator} disabled={searching || !selectedOperator} className="gap-2">
-                  <Search className="h-4 w-4" />
-                  {searching ? "Searching..." : "Search"}
-                </Button>
-                <Button onClick={() => {
-                  setShowOperatorSearch(false);
-                  setSearchResults([]);
-                  setSelectedAircraft(new Set());
-                  setFoundOperator(null);
-                  setSelectedOperator(null);
-                  setOperatorSearchName("");
-                  setOperatorSuggestions([]);
-                }} variant="outline">
-                  Cancel
-                </Button>
-              </div>
-
-              {/* Search Results */}
-              {foundOperator && searchResults.length > 0 && (
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between p-4 bg-primary/5 rounded-lg">
-                    <div>
-                      <h3 className="font-semibold text-lg">{foundOperator.name}</h3>
-                      <p className="text-sm text-muted-foreground">
-                        {searchResults.length} aircraft found
-                      </p>
-                    </div>
-                    <Button 
-                      onClick={handleAddSelectedAircraft}
-                      disabled={selectedAircraft.size === 0 || updating}
-                    >
-                      Add Selected ({selectedAircraft.size})
-                    </Button>
-                  </div>
-
-                  <div className="rounded-md border">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className="w-12">Select</TableHead>
-                          <TableHead>Tail Number</TableHead>
-                          <TableHead>Aircraft Type</TableHead>
-                          <TableHead>Homebase</TableHead>
-                          <TableHead>Year</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {searchResults.map((aircraft) => (
-                          <TableRow key={aircraft.tailNumber}>
-                            <TableCell>
-                              <Checkbox
-                                checked={selectedAircraft.has(aircraft.tailNumber)}
-                                onCheckedChange={() => toggleAircraftSelection(aircraft.tailNumber)}
-                              />
-                            </TableCell>
-                            <TableCell className="font-mono font-semibold">
-                              {aircraft.tailNumber}
-                            </TableCell>
-                            <TableCell>
-                              {aircraft.aircraftType !== 'Unknown' ? (
-                                aircraft.aircraftType
-                              ) : (
-                                <span className="text-muted-foreground italic">Unknown</span>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              {aircraft.homeAirportIcao ? (
-                                <Badge variant="secondary">{aircraft.homeAirportIcao}</Badge>
-                              ) : (
-                                <span className="text-muted-foreground italic">Unknown</span>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              {aircraft.year || <span className="text-muted-foreground">-</span>}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
+                  )}
                 </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Add Form */}
-        {showAddForm && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Add Tail Numbers</CardTitle>
-              <CardDescription>
-                Enter tail numbers (comma or line separated). System will fetch homebase from Aviapages.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Textarea
-                value={tailNumbers}
-                onChange={(e) => setTailNumbers(e.target.value)}
-                placeholder="N12345, N67890&#10;N11111&#10;N22222"
-                rows={6}
-                className="font-mono"
-              />
-              <div className="flex gap-2">
-                <Button onClick={handleAddTailNumbers} disabled={updating}>
-                  {updating ? "Fetching..." : "Add & Fetch Homebase"}
-                </Button>
-                <Button onClick={() => setShowAddForm(false)} variant="outline">
-                  Cancel
-                </Button>
               </div>
-            </CardContent>
-          </Card>
-        )}
 
-        {/* Operators Table */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Aircraft List</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="text-center py-8 text-muted-foreground">Loading...</div>
-            ) : operators.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                No trusted operators yet. Add tail numbers to get started.
-              </div>
-            ) : (
               <div className="rounded-md border">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Tail Number</TableHead>
-                      <TableHead>Operator</TableHead>
-                      <TableHead>Aircraft Type</TableHead>
-                      <TableHead>Homebase</TableHead>
-                      <TableHead>Country</TableHead>
-                      <TableHead>Last Updated</TableHead>
-                      <TableHead></TableHead>
+                      <TableHead className="w-12">Select</TableHead>
+                      <TableHead>Operator Name</TableHead>
+                      <TableHead>Website</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {operators.map((operator) => (
-                      <TableRow key={operator.id}>
-                        <TableCell className="font-mono font-semibold">
-                          {operator.tail_number}
+                    {loadingCarriers ? (
+                      <TableRow>
+                        <TableCell colSpan={3} className="text-center py-8">
+                          <Loader2 className="h-6 w-6 animate-spin mx-auto" />
                         </TableCell>
-                        <TableCell>
-                          {operator.operator_name || (
-                            <span className="text-muted-foreground italic">Unknown</span>
-                          )}
+                      </TableRow>
+                    ) : usCarriers.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
+                          No US carriers loaded
                         </TableCell>
+                      </TableRow>
+                    ) : (
+                      usCarriers.map((carrier) => (
+                        <TableRow key={carrier.company_id}>
+                          <TableCell>
+                            <Checkbox
+                              checked={selectedCarriers.has(carrier.company_id)}
+                              onCheckedChange={() => handleToggleCarrier(carrier.company_id)}
+                            />
+                          </TableCell>
+                          <TableCell className="font-medium">{carrier.name}</TableCell>
+                          <TableCell>
+                            {carrier.website ? (
+                              <a 
+                                href={carrier.website} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="text-primary hover:underline text-sm"
+                              >
+                                {carrier.website}
+                              </a>
+                            ) : (
+                              <span className="text-muted-foreground text-sm">-</span>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Current Operators Table */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Current Trusted Operators</CardTitle>
+            <CardDescription>
+              Aircraft currently in your trusted operators list
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Tail Number</TableHead>
+                    <TableHead>Operator</TableHead>
+                    <TableHead>Aircraft Type</TableHead>
+                    <TableHead>Homebase</TableHead>
+                    <TableHead>Floating Fleet</TableHead>
+                    <TableHead>Last Updated</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {loading ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-8">
+                        <Loader2 className="h-6 w-6 animate-spin mx-auto" />
+                      </TableCell>
+                    </TableRow>
+                  ) : operators.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                        No trusted operators yet. Add some to get started.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    operators.map((op) => (
+                      <TableRow key={op.id}>
+                        <TableCell className="font-mono">{op.tail_number}</TableCell>
                         <TableCell>
-                          {operator.aircraft_type || (
-                            <span className="text-muted-foreground italic">Unknown</span>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {operator.home_airport_icao ? (
-                            <div className="space-y-1">
-                              <div className="font-semibold">
-                                {operator.home_airport_icao}
-                                {operator.home_airport_iata && ` (${operator.home_airport_iata})`}
-                              </div>
-                              {operator.home_airport_name && (
-                                <div className="text-sm text-muted-foreground">
-                                  {operator.home_airport_name}
-                                </div>
+                          {op.operator_name ? (
+                            <div className="flex items-center gap-2">
+                              <span>{op.operator_name}</span>
+                              {op.country_code && (
+                                <Badge variant="outline" className="text-xs">
+                                  {op.country_code}
+                                </Badge>
                               )}
                             </div>
                           ) : (
-                            <span className="text-muted-foreground italic">Unknown</span>
+                            <span className="text-muted-foreground">Unknown</span>
                           )}
                         </TableCell>
+                        <TableCell>{op.aircraft_type || "-"}</TableCell>
                         <TableCell>
-                          {operator.country_code ? (
-                            <Badge variant="outline">{operator.country_code}</Badge>
+                          {op.home_airport_icao || op.home_airport_iata ? (
+                            <div className="flex flex-col">
+                              <span className="font-mono text-sm">
+                                {op.home_airport_icao || op.home_airport_iata}
+                              </span>
+                              {op.home_airport_name && (
+                                <span className="text-xs text-muted-foreground">
+                                  {op.home_airport_name}
+                                </span>
+                              )}
+                            </div>
                           ) : (
                             <span className="text-muted-foreground">-</span>
                           )}
                         </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {new Date(operator.last_updated).toLocaleDateString()}
-                        </TableCell>
                         <TableCell>
+                          <Switch
+                            checked={op.floating_fleet}
+                            onCheckedChange={() => handleToggleFloatingFleet(op.id, op.floating_fleet)}
+                          />
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {new Date(op.last_updated).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell className="text-right">
                           <Button
                             variant="ghost"
-                            size="sm"
-                            onClick={() => handleDelete(operator.id)}
-                            className="text-destructive hover:text-destructive"
+                            size="icon"
+                            onClick={() => handleDelete(op.id)}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </TableCell>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
         </Card>
       </main>

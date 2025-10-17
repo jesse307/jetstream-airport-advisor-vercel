@@ -166,6 +166,7 @@ export type Database = {
           aircraft_type: string | null
           country_code: string | null
           created_at: string
+          floating_fleet: boolean
           home_airport_iata: string | null
           home_airport_icao: string | null
           home_airport_name: string | null
@@ -180,6 +181,7 @@ export type Database = {
           aircraft_type?: string | null
           country_code?: string | null
           created_at?: string
+          floating_fleet?: boolean
           home_airport_iata?: string | null
           home_airport_icao?: string | null
           home_airport_name?: string | null
@@ -194,6 +196,7 @@ export type Database = {
           aircraft_type?: string | null
           country_code?: string | null
           created_at?: string
+          floating_fleet?: boolean
           home_airport_iata?: string | null
           home_airport_icao?: string | null
           home_airport_name?: string | null

@@ -12,8 +12,51 @@ serve(async (req) => {
   }
 
   try {
-    const { operatorName, searchOnly } = await req.json();
+    const { operatorName, searchOnly, listUSCarriers } = await req.json();
     
+    // If listing US carriers, use a different endpoint
+    if (listUSCarriers) {
+      console.log('[list-us-carriers] Fetching US charter operators from Aviapages');
+      
+      const usCarriersUrl = 'https://dir.aviapages.com/api/companies/?country=US&charter=true&limit=100';
+      console.log('US Carriers URL:', usCarriersUrl);
+
+      const carriersResponse = await fetch(usCarriersUrl, {
+        headers: {
+          'Authorization': `Token ${aviapagesToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (carriersResponse.status === 429) {
+        return new Response(
+          JSON.stringify({ error: 'rate_limit_exceeded', message: 'API rate limit exceeded. Please try again later.' }),
+          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      if (!carriersResponse.ok) {
+        const errorText = await carriersResponse.text();
+        console.error(`Aviapages error: ${carriersResponse.status} - ${errorText}`);
+        return new Response(
+          JSON.stringify({ error: `api_error_${carriersResponse.status}`, details: errorText }),
+          { status: carriersResponse.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const carriersData = await carriersResponse.json();
+      console.log(`Found ${carriersData.results?.length || 0} US charter operators`);
+
+      return new Response(
+        JSON.stringify({ 
+          success: true,
+          operators: carriersData.results || [],
+          totalCount: carriersData.count || 0
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     if (!operatorName || !operatorName.trim()) {
       return new Response(
         JSON.stringify({ error: 'operatorName is required' }),
