@@ -2,8 +2,8 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { format } from "date-fns";
-import { CalendarIcon, UserPlus, ArrowLeft, Sparkles } from "lucide-react";
+import { format, parse } from "date-fns";
+import { CalendarIcon, UserPlus, ArrowLeft, Sparkles, Brain } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { cn } from "@/lib/utils";
 import { AirportSearch } from "@/components/AirportSearch";
@@ -45,8 +46,9 @@ type LeadFormData = z.infer<typeof leadSchema>;
 
 export default function LeadIntake() {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [airportText, setAirportText] = useState("");
-  const [isExtractingAirports, setIsExtractingAirports] = useState(false);
+  const [showNotesDialog, setShowNotesDialog] = useState(false);
+  const [callNotes, setCallNotes] = useState("");
+  const [isProcessingNotes, setIsProcessingNotes] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
   
@@ -61,21 +63,21 @@ export default function LeadIntake() {
 
   const watchTripType = form.watch("tripType");
 
-  const handleExtractAirports = async () => {
-    if (!airportText.trim()) {
-      toast.error("Please enter airport information");
+  const handleProcessNotes = async () => {
+    if (!callNotes.trim()) {
+      toast.error("Please enter some notes");
       return;
     }
 
-    setIsExtractingAirports(true);
+    setIsProcessingNotes(true);
     try {
-      const { data, error } = await supabase.functions.invoke('extract-airports', {
-        body: { text: airportText }
+      const { data, error } = await supabase.functions.invoke('parse-call-notes', {
+        body: { notes: callNotes }
       });
 
       if (error) {
-        console.error('Extract airports error:', error);
-        toast.error('Failed to extract airports. Please try again.');
+        console.error('Parse notes error:', error);
+        toast.error('Failed to process notes. Please try again.');
         return;
       }
 
@@ -84,17 +86,56 @@ export default function LeadIntake() {
         return;
       }
 
-      if (data.success && data.departure && data.arrival) {
-        // Set the extracted airport codes
-        form.setValue('departureAirport', data.departure);
-        form.setValue('arrivalAirport', data.arrival);
-        toast.success(`Extracted: ${data.departure} → ${data.arrival}`);
+      if (data.success && data.data) {
+        const extracted = data.data;
+        
+        // Auto-populate all available fields
+        if (extracted.firstName) form.setValue('firstName', extracted.firstName);
+        if (extracted.lastName) form.setValue('lastName', extracted.lastName);
+        if (extracted.email) form.setValue('email', extracted.email);
+        if (extracted.phone) form.setValue('phone', extracted.phone);
+        if (extracted.tripType) form.setValue('tripType', extracted.tripType);
+        if (extracted.departureAirport) form.setValue('departureAirport', extracted.departureAirport.toUpperCase());
+        if (extracted.arrivalAirport) form.setValue('arrivalAirport', extracted.arrivalAirport.toUpperCase());
+        if (extracted.passengers) form.setValue('passengers', extracted.passengers);
+        if (extracted.notes) form.setValue('notes', extracted.notes);
+        
+        // Handle dates
+        if (extracted.departureDate) {
+          try {
+            const depDate = parse(extracted.departureDate, 'yyyy-MM-dd', new Date());
+            form.setValue('departureDate', depDate);
+          } catch (e) {
+            console.error('Error parsing departure date:', e);
+          }
+        }
+        
+        if (extracted.departureTime) {
+          form.setValue('departureTime', extracted.departureTime);
+        }
+        
+        if (extracted.returnDate && extracted.tripType === 'Round Trip') {
+          try {
+            const retDate = parse(extracted.returnDate, 'yyyy-MM-dd', new Date());
+            form.setValue('returnDate', retDate);
+          } catch (e) {
+            console.error('Error parsing return date:', e);
+          }
+        }
+        
+        if (extracted.returnTime) {
+          form.setValue('returnTime', extracted.returnTime);
+        }
+
+        toast.success('Lead information extracted! Please review and fill in any missing fields.');
+        setShowNotesDialog(false);
+        setCallNotes('');
       }
     } catch (error) {
       console.error('Error:', error);
-      toast.error('An error occurred while extracting airports');
+      toast.error('An error occurred while processing notes');
     } finally {
-      setIsExtractingAirports(false);
+      setIsProcessingNotes(false);
     }
   };
 
@@ -314,7 +355,19 @@ export default function LeadIntake() {
 
                   {/* Flight Information */}
                   <div className="space-y-4">
-                    <h3 className="text-lg font-medium">Flight Information</h3>
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-medium">Flight Information</h3>
+                      <Button
+                        type="button"
+                        onClick={() => setShowNotesDialog(true)}
+                        variant="default"
+                        size="sm"
+                        className="gap-2"
+                      >
+                        <Brain className="h-4 w-4" />
+                        USE AI
+                      </Button>
+                    </div>
                     
                     {/* Trip Type */}
                     <FormField
@@ -343,39 +396,6 @@ export default function LeadIntake() {
                         </FormItem>
                       )}
                     />
-
-                    {/* AI Airport Extraction */}
-                    <div className="space-y-3 p-4 border border-primary/20 rounded-lg bg-primary/5">
-                      <Label className="flex items-center gap-2 text-sm font-medium">
-                        <Sparkles className="h-4 w-4 text-primary" />
-                        Quick Airport Input (AI-Powered)
-                      </Label>
-                      <p className="text-xs text-muted-foreground">
-                        Type something like "from New York to Los Angeles" or "JFK to LAX"
-                      </p>
-                      <div className="flex gap-2">
-                        <Input
-                          value={airportText}
-                          onChange={(e) => setAirportText(e.target.value)}
-                          placeholder="e.g., from Seattle to Miami"
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              e.preventDefault();
-                              handleExtractAirports();
-                            }
-                          }}
-                        />
-                        <Button
-                          type="button"
-                          onClick={handleExtractAirports}
-                          disabled={isExtractingAirports || !airportText.trim()}
-                          className="gap-2"
-                        >
-                          <Sparkles className="h-4 w-4" />
-                          {isExtractingAirports ? 'Extracting...' : 'Extract'}
-                        </Button>
-                      </div>
-                    </div>
 
                     {/* Airports */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -584,6 +604,72 @@ export default function LeadIntake() {
             </CardContent>
           </Card>
         </div>
+
+        {/* AI Call Notes Dialog */}
+        <Dialog open={showNotesDialog} onOpenChange={setShowNotesDialog}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Brain className="h-5 w-5 text-primary" />
+                AI-Powered Call Notes
+              </DialogTitle>
+              <DialogDescription>
+                Take notes while on a call, and AI will automatically extract all lead information
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="call-notes">Call Notes</Label>
+                <Textarea
+                  id="call-notes"
+                  placeholder="Example: Called John Smith at john@example.com, phone +1-555-123-4567. Needs to fly from New York JFK to Los Angeles LAX on December 25th at 2pm. Round trip, returning December 28th at 5pm. Party of 6 passengers. Client mentioned they prefer window seats and will need catering."
+                  className="min-h-[300px]"
+                  value={callNotes}
+                  onChange={(e) => setCallNotes(e.target.value)}
+                />
+              </div>
+              
+              <div className="text-xs text-muted-foreground space-y-1">
+                <p>💡 Tips for best results:</p>
+                <ul className="list-disc list-inside space-y-1 ml-2">
+                  <li>Include contact info (name, email, phone)</li>
+                  <li>Mention airports or cities</li>
+                  <li>State dates and times</li>
+                  <li>Specify number of passengers</li>
+                  <li>Note if it's one-way or round-trip</li>
+                </ul>
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowNotesDialog(false);
+                  setCallNotes('');
+                }}
+                disabled={isProcessingNotes}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleProcessNotes}
+                disabled={isProcessingNotes || !callNotes.trim()}
+                className="gap-2"
+              >
+                {isProcessingNotes ? (
+                  <>Processing...</>
+                ) : (
+                  <>
+                    <Sparkles className="h-4 w-4" />
+                    Extract & Fill Form
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </main>
     </div>
   );

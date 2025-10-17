@@ -83,3 +83,6 @@ verify_jwt = false
 
 [functions.skip-trace-lead]
 verify_jwt = false
+
+[functions.parse-call-notes]
+verify_jwt = false
