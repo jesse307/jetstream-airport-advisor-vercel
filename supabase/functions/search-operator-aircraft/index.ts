@@ -14,6 +14,15 @@ serve(async (req) => {
   try {
     const { operatorName, searchOnly, listUSCarriers } = await req.json();
     
+    const aviapagesToken = Deno.env.get('AVIAPAGES_API_TOKEN');
+    if (!aviapagesToken) {
+      console.error('AVIAPAGES_API_TOKEN not configured');
+      return new Response(
+        JSON.stringify({ error: 'Aviapages API token not configured' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
     // If listing US carriers, use a different endpoint
     if (listUSCarriers) {
       console.log('[list-us-carriers] Fetching US charter operators from Aviapages');
@@ -61,15 +70,6 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ error: 'operatorName is required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    const aviapagesToken = Deno.env.get('AVIAPAGES_API_TOKEN');
-    if (!aviapagesToken) {
-      console.error('AVIAPAGES_API_TOKEN not configured');
-      return new Response(
-        JSON.stringify({ error: 'Aviapages API token not configured' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
