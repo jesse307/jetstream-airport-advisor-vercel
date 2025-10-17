@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { operatorName } = await req.json();
+    const { operatorName, searchOnly } = await req.json();
     
     if (!operatorName || !operatorName.trim()) {
       return new Response(
@@ -69,7 +69,19 @@ serve(async (req) => {
           success: true,
           operator: null,
           aircraft: [],
+          operators: [],
           message: 'No operators found with that name'
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // If searchOnly mode, return the list of operators for autocomplete
+    if (searchOnly) {
+      return new Response(
+        JSON.stringify({ 
+          success: true,
+          operators: operatorData.results
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
