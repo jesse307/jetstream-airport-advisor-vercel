@@ -89,24 +89,24 @@ const Index = () => {
                       Live Tracking
                     </Link>
                   </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/leads/import" className="flex items-center cursor-pointer">
+                      <Upload className="h-4 w-4 mr-2" />
+                      Import
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/leads/import-history" className="flex items-center cursor-pointer">
+                      <History className="h-4 w-4 mr-2" />
+                      History
+                    </Link>
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
               <Button asChild size="sm">
                 <Link to="/leads/new">
                   <UserPlus className="h-4 w-4 mr-1" />
                   New Lead
-                </Link>
-              </Button>
-              <Button asChild variant="outline" size="sm">
-                <Link to="/leads/import">
-                  <Upload className="h-4 w-4 mr-1" />
-                  Import
-                </Link>
-              </Button>
-              <Button asChild variant="outline" size="sm">
-                <Link to="/leads/import-history">
-                  <History className="h-4 w-4 mr-1" />
-                  History
                 </Link>
               </Button>
               <Button 
