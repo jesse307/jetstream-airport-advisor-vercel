@@ -97,11 +97,19 @@ export function EmailComposer({ isOpen, onClose, leadData }: EmailComposerProps)
 
       if (error) {
         console.error('[EmailComposer] Function error:', error);
+        toast.error(`Function error: ${error.message || JSON.stringify(error)}`);
         throw error;
       }
 
-      if (!data || !data.email) {
+      if (!data) {
+        console.error('[EmailComposer] No data in response');
+        toast.error('No response from email generation function');
+        throw new Error('No data returned from function');
+      }
+
+      if (!data.email) {
         console.error('[EmailComposer] No email in response:', data);
+        toast.error(`Invalid response: ${JSON.stringify(data)}`);
         throw new Error('No email content returned');
       }
 
