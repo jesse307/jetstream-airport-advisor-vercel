@@ -1,7 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
+const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -42,15 +42,21 @@ interface EmailGenerationRequest {
 }
 
 serve(async (req) => {
+  console.log('[generate-email] Function invoked, method:', req.method);
+  
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
+    console.log('[generate-email] Handling OPTIONS request');
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    console.log('[generate-email] Parsing request body...');
     const { leadData, template, flightAnalysis }: EmailGenerationRequest = await req.json();
     
     console.log('Generating email for lead:', leadData.first_name, leadData.last_name);
+    console.log('Template provided:', !!template);
+    console.log('Flight analysis provided:', !!flightAnalysis);
 
     // Function to replace template variables with conditional logic
     const replaceVariables = (text: string) => {
@@ -191,8 +197,10 @@ serve(async (req) => {
     };
 
     if (template) {
+      console.log('Starting template processing...');
       // Process the template and find AI sections to enhance
       let processedTemplate = replaceVariables(template);
+      console.log('Template variables replaced');
       
       // Find all {{AI: ...}} blocks
       const aiBlockRegex = /\{\{AI:\s*(.*?)\}\}/g;
@@ -207,8 +215,11 @@ serve(async (req) => {
         });
       }
       
+      console.log('AI blocks found:', aiBlocks.length);
+      
       if (aiBlocks.length === 0) {
         // No AI blocks found, return the processed template as-is
+        console.log('No AI blocks, returning processed template');
         return new Response(JSON.stringify({ 
           email: processedTemplate,
           subject: "Stratos Jets - Confirming Flight Details",
@@ -242,10 +253,10 @@ Context: This is for a ${leadData.trip_type} flight from ${leadData.departure_ai
         
         try {
           console.log('Processing AI block:', block.instruction);
-          console.log('OpenAI API Key available:', !!openAIApiKey);
+          console.log('Lovable API Key available:', !!lovableApiKey);
           
           const requestBody = {
-            model: 'gpt-4o-mini',
+            model: 'google/gemini-2.5-flash',
             messages: [
               { role: 'system', content: systemPrompt },
               { role: 'user', content: userPrompt }
@@ -253,32 +264,42 @@ Context: This is for a ${leadData.trip_type} flight from ${leadData.departure_ai
             max_tokens: 300,
           };
           
-          console.log('Making OpenAI API request with:', JSON.stringify(requestBody));
+          console.log('Making Lovable AI API request');
           
-          const response = await fetch('https://api.openai.com/v1/chat/completions', {
+          const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
             method: 'POST',
             headers: {
-              'Authorization': `Bearer ${openAIApiKey}`,
+              'Authorization': `Bearer ${lovableApiKey}`,
               'Content-Type': 'application/json',
             },
             body: JSON.stringify(requestBody),
           });
 
-          console.log('OpenAI response status:', response.status);
+          console.log('Lovable AI response status:', response.status);
 
           if (!response.ok) {
             const errorText = await response.text();
-            console.error('OpenAI API error:', response.status, errorText);
+            console.error('Lovable AI API error:', response.status, errorText);
+            
+            if (response.status === 429) {
+              processedTemplate = processedTemplate.replace(block.fullMatch, `[Rate limit exceeded - please try again later]`);
+              continue;
+            }
+            if (response.status === 402) {
+              processedTemplate = processedTemplate.replace(block.fullMatch, `[Payment required - please add credits to your workspace]`);
+              continue;
+            }
+            
             // Replace with placeholder if API fails
             processedTemplate = processedTemplate.replace(block.fullMatch, `[AI content failed for: ${block.instruction}]`);
             continue;
           }
 
           const data = await response.json();
-          console.log('OpenAI response data:', JSON.stringify(data));
+          console.log('Lovable AI response received');
           
           const aiContent = data.choices?.[0]?.message?.content?.trim();
-          console.log('AI Content generated:', aiContent);
+          console.log('AI Content generated:', aiContent ? 'yes' : 'no');
           
           if (!aiContent) {
             console.error('No content in OpenAI response');
@@ -305,6 +326,7 @@ Context: This is for a ${leadData.trip_type} flight from ${leadData.departure_ai
       });
     } else {
       // Fallback: No template provided, return error
+      console.error('[generate-email] No template provided in request');
       return new Response(JSON.stringify({ 
         error: 'No template provided',
         success: false 
@@ -316,8 +338,9 @@ Context: This is for a ${leadData.trip_type} flight from ${leadData.departure_ai
 
   } catch (error) {
     console.error('Error in generate-email function:', error);
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
     return new Response(JSON.stringify({ 
-      error: String(error),
+      error: error instanceof Error ? error.message : String(error),
       success: false 
     }), {
       status: 500,
