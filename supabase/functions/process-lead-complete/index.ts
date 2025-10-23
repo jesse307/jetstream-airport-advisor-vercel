@@ -24,6 +24,7 @@ interface LeadData {
   notes?: string;
 }
 
+// Process lead from Chrome extension
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
