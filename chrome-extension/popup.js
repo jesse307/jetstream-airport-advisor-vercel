@@ -11,7 +11,7 @@ async function checkAuth() {
   
   // Try to get the session from the Lovable app
   try {
-    const response = await chrome.tabs.query({ url: "https://id-preview--300e3d3f-6393-4fa8-9ea2-e17c21482f24.lovable.app/*" });
+    const response = await chrome.tabs.query({ url: "https://300e3d3f-6393-4fa8-9ea2-e17c21482f24.lovableproject.com/*" });
     
     if (response.length === 0) {
       status.className = 'status error';
@@ -22,7 +22,7 @@ async function checkAuth() {
       document.getElementById('captureBtn').textContent = 'Open Charter Pro';
       document.getElementById('captureBtn').onclick = () => {
         chrome.tabs.create({
-          url: 'https://id-preview--300e3d3f-6393-4fa8-9ea2-e17c21482f24.lovable.app/'
+          url: 'https://300e3d3f-6393-4fa8-9ea2-e17c21482f24.lovableproject.com/'
         });
       };
     }
@@ -55,7 +55,7 @@ async function handleCapture() {
     
     // Get Charter Pro app tabs
     const appTabs = await chrome.tabs.query({ 
-      url: "https://id-preview--300e3d3f-6393-4fa8-9ea2-e17c21482f24.lovable.app/*" 
+      url: "https://300e3d3f-6393-4fa8-9ea2-e17c21482f24.lovableproject.com/*" 
     });
     
     // Get user ID directly from Charter Pro localStorage
@@ -138,7 +138,7 @@ async function handleCapture() {
       
       setTimeout(() => {
         chrome.tabs.create({
-          url: 'https://id-preview--300e3d3f-6393-4fa8-9ea2-e17c21482f24.lovable.app/auth'
+          url: 'https://300e3d3f-6393-4fa8-9ea2-e17c21482f24.lovableproject.com/auth'
         });
       }, 1500);
       return;
@@ -171,7 +171,7 @@ async function handleCapture() {
       // Open the Lead Analysis page for this specific lead
       setTimeout(() => {
         chrome.tabs.create({
-          url: `https://id-preview--300e3d3f-6393-4fa8-9ea2-e17c21482f24.lovable.app/leads/${result.leadId}`
+          url: `https://300e3d3f-6393-4fa8-9ea2-e17c21482f24.lovableproject.com/leads/${result.leadId}`
         });
       }, 500);
     } else {

@@ -11,7 +11,7 @@
     "https://*.salesforce.com/*",
     "https://*.force.com/*",
     "https://hwemookrxvflpinfpkrj.supabase.co/*",
-    "https://id-preview--300e3d3f-6393-4fa8-9ea2-e17c21482f24.lovable.app/*",
+    "https://300e3d3f-6393-4fa8-9ea2-e17c21482f24.lovableproject.com/*",
     "https://*.lovableproject.com/*"
   ],
   "action": {
@@ -32,7 +32,7 @@
       "matches": [
         "https://*.salesforce.com/*",
         "https://*.force.com/*",
-        "https://id-preview--300e3d3f-6393-4fa8-9ea2-e17c21482f24.lovable.app/*",
+        "https://300e3d3f-6393-4fa8-9ea2-e17c21482f24.lovableproject.com/*",
         "https://*.lovableproject.com/*"
       ],
       "js": ["content.js"]
