@@ -190,7 +190,7 @@ async function handleCapture() {
         chrome.tabs.create({
           url: `${baseUrl}/leads/${result.leadId}`
         });
-      }, 500);
+      }, 1500);
     } else {
       console.error('Error response:', result);
       throw new Error(result.error || `Failed to create lead (Status: ${response.status})`);
