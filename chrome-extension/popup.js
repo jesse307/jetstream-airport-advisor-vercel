@@ -11,7 +11,13 @@ async function checkAuth() {
   
   // Try to get the session from the Lovable app
   try {
-    const response = await chrome.tabs.query({ url: "https://300e3d3f-6393-4fa8-9ea2-e17c21482f24.lovableproject.com/*" });
+    // Check both preview and production URLs
+    let response = await chrome.tabs.query({ url: "https://300e3d3f-6393-4fa8-9ea2-e17c21482f24.lovableproject.com/*" });
+    
+    if (response.length === 0) {
+      // Try preview URL
+      response = await chrome.tabs.query({ url: "https://id-preview--300e3d3f-6393-4fa8-9ea2-e17c21482f24.lovable.app/*" });
+    }
     
     if (response.length === 0) {
       status.className = 'status error';
@@ -53,10 +59,16 @@ async function handleCapture() {
 
     const pageData = results[0].result;
     
-    // Get Charter Pro app tabs
-    const appTabs = await chrome.tabs.query({ 
+    // Get Charter Pro app tabs - check both preview and production
+    let appTabs = await chrome.tabs.query({ 
       url: "https://300e3d3f-6393-4fa8-9ea2-e17c21482f24.lovableproject.com/*" 
     });
+    
+    if (appTabs.length === 0) {
+      appTabs = await chrome.tabs.query({ 
+        url: "https://id-preview--300e3d3f-6393-4fa8-9ea2-e17c21482f24.lovable.app/*" 
+      });
+    }
     
     // Get user ID directly from Charter Pro localStorage
     let userId = null;
@@ -169,9 +181,14 @@ async function handleCapture() {
       status.style.display = 'block';
       
       // Open the Lead Analysis page for this specific lead
+      // Use the same URL pattern as the app tab we found
+      const baseUrl = appTabs[0].url.includes('lovable.app') 
+        ? 'https://id-preview--300e3d3f-6393-4fa8-9ea2-e17c21482f24.lovable.app'
+        : 'https://300e3d3f-6393-4fa8-9ea2-e17c21482f24.lovableproject.com';
+      
       setTimeout(() => {
         chrome.tabs.create({
-          url: `https://300e3d3f-6393-4fa8-9ea2-e17c21482f24.lovableproject.com/leads/${result.leadId}`
+          url: `${baseUrl}/leads/${result.leadId}`
         });
       }, 500);
     } else {

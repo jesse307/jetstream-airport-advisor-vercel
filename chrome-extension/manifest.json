@@ -12,7 +12,9 @@
     "https://*.force.com/*",
     "https://hwemookrxvflpinfpkrj.supabase.co/*",
     "https://300e3d3f-6393-4fa8-9ea2-e17c21482f24.lovableproject.com/*",
-    "https://*.lovableproject.com/*"
+    "https://*.lovableproject.com/*",
+    "https://id-preview--300e3d3f-6393-4fa8-9ea2-e17c21482f24.lovable.app/*",
+    "https://*.lovable.app/*"
   ],
   "action": {
     "default_popup": "popup.html",
@@ -33,7 +35,9 @@
         "https://*.salesforce.com/*",
         "https://*.force.com/*",
         "https://300e3d3f-6393-4fa8-9ea2-e17c21482f24.lovableproject.com/*",
-        "https://*.lovableproject.com/*"
+        "https://*.lovableproject.com/*",
+        "https://id-preview--300e3d3f-6393-4fa8-9ea2-e17c21482f24.lovable.app/*",
+        "https://*.lovable.app/*"
       ],
       "js": ["content.js"]
     }
