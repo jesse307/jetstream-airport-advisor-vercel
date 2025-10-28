@@ -80,21 +80,37 @@ serve(async (req) => {
     const data = JSON.parse(responseText);
     console.log('Successfully fetched aircraft data');
 
-    // If webhook URL provided, send data to n8n
+    // If webhook URL provided, send data to webhook
     if (webhookUrl) {
       try {
         console.log('Sending data to webhook:', webhookUrl);
+        
+        // Extract the aircraft data from results array
+        const aircraftData = data.results && data.results.length > 0 ? data.results[0] : null;
+        
+        const webhookPayload = {
+          tailNumber: tailNumber,
+          found: !!aircraftData,
+          aircraft: aircraftData,
+          searchCount: data.count || 0
+        };
+        
+        console.log('Webhook payload:', JSON.stringify(webhookPayload, null, 2));
+        
         const webhookResponse = await fetch(webhookUrl, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify(data)
+          body: JSON.stringify(webhookPayload)
         });
 
+        const webhookResponseText = await webhookResponse.text();
         console.log('Webhook response status:', webhookResponse.status);
+        console.log('Webhook response body:', webhookResponseText);
+        
         if (!webhookResponse.ok) {
-          console.error('Webhook error:', await webhookResponse.text());
+          console.error('Webhook error:', webhookResponseText);
         }
       } catch (webhookError) {
         console.error('Webhook error:', webhookError);
