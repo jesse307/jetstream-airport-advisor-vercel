@@ -133,7 +133,7 @@ export default function AircraftData() {
     }
     .hero { 
       position: relative; 
-      height: 400px; 
+      height: 320px; 
       background: linear-gradient(to bottom, rgba(0,0,0,0.3), rgba(0,0,0,0.7)); 
       overflow: hidden;
     }
@@ -248,7 +248,7 @@ export default function AircraftData() {
     @media print {
       @page { size: letter; margin: 0.5in; }
       body { padding: 0; background: white; }
-      .hero { height: 300px; page-break-after: avoid; }
+      .hero { height: 260px; page-break-after: avoid; }
       .hero-bg { object-position: center center; }
       .hero h1 { font-size: 36px; }
       .content { padding: 24px; }
@@ -459,7 +459,7 @@ export default function AircraftData() {
           <div id="aircraft-display" className="max-w-6xl mx-auto mt-8 bg-background rounded-2xl overflow-hidden shadow-2xl">
             {/* Hero Image */}
             {aircraftData.images?.[0] && (
-              <div className="relative h-[500px] overflow-hidden">
+              <div className="relative h-80 overflow-hidden">
                 <img 
                   src={aircraftData.images[0].media.path} 
                   alt="Aircraft exterior"
