@@ -92,9 +92,9 @@ export default function AircraftData() {
   };
 
   const handlePushToWeb = () => {
-    // Generate a standalone HTML version
-    const htmlContent = document.getElementById('aircraft-display')?.innerHTML || '';
+    // Generate a standalone HTML version  
     const aircraft = aircraftData;
+    const logoUrl = `${window.location.origin}/images/stratos_logo.png`;
     
     const fullHtml = `
 <!DOCTYPE html>
@@ -122,14 +122,30 @@ export default function AircraftData() {
       position: relative; 
       height: 400px; 
       background: linear-gradient(to bottom, rgba(0,0,0,0.3), rgba(0,0,0,0.7)); 
+      overflow: hidden;
     }
-    .hero img { width: 100%; height: 100%; object-fit: cover; position: absolute; z-index: -1; }
-    .logo { position: absolute; top: 30px; left: 30px; height: 60px; }
+    .hero-bg { 
+      width: 100%; 
+      height: 100%; 
+      object-fit: cover; 
+      position: absolute; 
+      top: 0; 
+      left: 0; 
+      z-index: 0; 
+    }
+    .logo { 
+      position: absolute; 
+      top: 30px; 
+      left: 30px; 
+      height: 60px; 
+      z-index: 2;
+    }
     .hero-text { 
       position: absolute; 
       bottom: 40px; 
       left: 40px; 
       color: white; 
+      z-index: 2;
     }
     .hero h1 { font-size: 48px; font-weight: 300; letter-spacing: 2px; margin-bottom: 8px; }
     .hero p { font-size: 18px; opacity: 0.9; text-transform: uppercase; letter-spacing: 1px; }
@@ -204,6 +220,7 @@ export default function AircraftData() {
       height: 8px; 
       border-radius: 50%; 
       background: #3b82f6;
+      flex-shrink: 0;
     }
     .amenity-text { font-size: 16px; font-weight: 300; letter-spacing: 0.5px; }
     .footer { 
@@ -236,8 +253,8 @@ export default function AircraftData() {
 <body>
   <div class="container">
     <div class="hero">
-      ${aircraft.images?.[0] ? `<img src="${aircraft.images[0].media.path}" alt="Aircraft">` : ''}
-      <img src="/images/stratos_logo.png" alt="Stratos Jets" class="logo">
+      ${aircraft.images?.[0] ? `<img src="${aircraft.images[0].media.path}" alt="Aircraft" class="hero-bg">` : ''}
+      <img src="${logoUrl}" alt="Stratos Jets" class="logo">
       <div class="hero-text">
         <h1>${aircraft.aircraft_type?.name || 'Luxury Aircraft'}</h1>
         ${aircraft.aircraft_type?.aircraft_class?.name ? `<p>${aircraft.aircraft_type.aircraft_class.name} Jet</p>` : ''}
