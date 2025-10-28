@@ -141,6 +141,7 @@ export default function AircraftData() {
       width: 100%; 
       height: 100%; 
       object-fit: cover; 
+      object-position: center center;
       position: absolute; 
       top: 0; 
       left: 0; 
@@ -248,6 +249,7 @@ export default function AircraftData() {
       @page { size: letter; margin: 0.5in; }
       body { padding: 0; background: white; }
       .hero { height: 300px; page-break-after: avoid; }
+      .hero-bg { object-position: center center; }
       .hero h1 { font-size: 36px; }
       .content { padding: 24px; }
       .stats { gap: 12px; margin-bottom: 24px; }
