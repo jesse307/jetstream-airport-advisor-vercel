@@ -129,14 +129,14 @@ export default function AircraftData() {
       justify-content: space-between;
     }
     .logo { 
-      height: 35px;
+      height: 45px;
     }
     .title-section {
       text-align: right;
     }
     .title-section h1 { 
       font-size: 24px; 
-      font-weight: 300; 
+      font-weight: 600; 
       letter-spacing: 1.5px; 
       margin: 0;
       color: #111827;
@@ -306,7 +306,7 @@ export default function AircraftData() {
         </div>` : ''}
       
       <div class="footer">
-        Report generated on ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+        STRATOS JET CHARTERS
       </div>
     </div>
   </div>
@@ -569,7 +569,7 @@ export default function AircraftData() {
         </div>` : ''}
       
       <div class="footer">
-        Report generated on ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+        STRATOS JET CHARTERS
       </div>
     </div>
   </div>
@@ -755,10 +755,10 @@ export default function AircraftData() {
                 <img 
                   src="/images/stratos_logo.png" 
                   alt="Stratos Jets"
-                  className="h-12 w-auto"
+                  className="h-16 w-auto"
                 />
                 <div className="text-right">
-                  <h1 className="text-4xl font-light tracking-wider text-foreground">{aircraftData.aircraft_type?.name || 'Luxury Aircraft'}</h1>
+                  <h1 className="text-4xl font-semibold tracking-wider text-foreground">{aircraftData.aircraft_type?.name || 'Luxury Aircraft'}</h1>
                   {aircraftData.aircraft_type?.aircraft_class?.name && (
                     <p className="text-sm font-light text-muted-foreground tracking-widest uppercase mt-1">{aircraftData.aircraft_type.aircraft_class.name} Jet</p>
                   )}
@@ -937,14 +937,8 @@ export default function AircraftData() {
 
               {/* Footer */}
               <div className="pt-8 border-t text-center">
-                <p className="text-sm text-muted-foreground font-light tracking-wide">
-                  Report generated on {new Date().toLocaleDateString('en-US', { 
-                    year: 'numeric', 
-                    month: 'long', 
-                    day: 'numeric', 
-                    hour: '2-digit', 
-                    minute: '2-digit' 
-                  })}
+                <p className="text-sm text-muted-foreground font-light tracking-widest uppercase">
+                  Stratos Jet Charters
                 </p>
               </div>
             </div>
