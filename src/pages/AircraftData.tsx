@@ -15,6 +15,7 @@ export default function AircraftData() {
   const [loading, setLoading] = useState(false);
   const [aircraftData, setAircraftData] = useState<any>(null);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [imagePosition, setImagePosition] = useState({ x: 50, y: 50 }); // Center by default
   const { toast } = useToast();
 
   const handleFetch = async () => {
@@ -120,38 +121,44 @@ export default function AircraftData() {
       margin: 0 auto; 
       background: white; 
     }
+    .header {
+      padding: 16px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .logo { 
+      height: 40px;
+      margin-bottom: 12px;
+    }
+    .title-section {
+      display: flex;
+      align-items: flex-end;
+      gap: 12px;
+    }
+    .title-section h1 { 
+      font-size: 28px; 
+      font-weight: 300; 
+      letter-spacing: 2px; 
+      margin: 0;
+      color: #111827;
+    }
+    .title-section p { 
+      font-size: 12px; 
+      text-transform: uppercase; 
+      letter-spacing: 1px;
+      color: #6b7280;
+      margin: 0;
+    }
     .hero { 
       position: relative; 
       height: 180px; 
-      background: linear-gradient(to bottom, rgba(0,0,0,0.3), rgba(0,0,0,0.7)); 
       overflow: hidden;
     }
     .hero-bg { 
       width: 100%; 
       height: 100%; 
       object-fit: cover; 
-      object-position: center center;
-      position: absolute; 
-      top: 0; 
-      left: 0; 
-      z-index: 0; 
+      object-position: ${imagePosition.x}% ${imagePosition.y}%;
     }
-    .logo { 
-      position: absolute; 
-      top: 15px; 
-      left: 15px; 
-      height: 40px; 
-      z-index: 2;
-    }
-    .hero-text { 
-      position: absolute; 
-      bottom: 20px; 
-      left: 20px; 
-      color: white; 
-      z-index: 2;
-    }
-    .hero h1 { font-size: 28px; font-weight: 300; letter-spacing: 2px; margin-bottom: 4px; }
-    .hero p { font-size: 12px; opacity: 0.9; text-transform: uppercase; letter-spacing: 1px; }
     .content { padding: 16px; }
     .stats { 
       display: grid; 
@@ -238,13 +245,15 @@ export default function AircraftData() {
 </head>
 <body>
   <div class="container">
-    <div class="hero">
-      ${aircraft.images?.[0] ? `<img src="${aircraft.images[0].media.path}" alt="Aircraft" class="hero-bg">` : ''}
+    <div class="header">
       ${logoBase64 ? `<img src="${logoBase64}" alt="Stratos Jets" class="logo">` : ''}
-      <div class="hero-text">
+      <div class="title-section">
         <h1>${aircraft.aircraft_type?.name || 'Luxury Aircraft'}</h1>
         ${aircraft.aircraft_type?.aircraft_class?.name ? `<p>${aircraft.aircraft_type.aircraft_class.name} Jet</p>` : ''}
       </div>
+    </div>
+    <div class="hero">
+      ${aircraft.images?.[0] ? `<img src="${aircraft.images[0].media.path}" alt="Aircraft" class="hero-bg">` : ''}
     </div>
     
     <div class="content">
@@ -739,33 +748,73 @@ export default function AircraftData() {
 
         {aircraftData && (
           <div id="aircraft-display" className="max-w-6xl mx-auto mt-8 bg-background rounded-2xl overflow-hidden shadow-2xl">
-            {/* Hero Image */}
-            {aircraftData.images?.[0] && (
-              <div className="relative h-80 overflow-hidden">
+            {/* Header with Logo and Aircraft Name */}
+            <div className="bg-background p-8 pb-4 border-b">
+              <div className="flex items-center justify-between mb-4">
                 <img 
-                  src={aircraftData.images[0].media.path} 
-                  alt="Aircraft exterior"
-                  className="w-full h-full object-cover"
+                  src="/images/stratos_logo.png" 
+                  alt="Stratos Jets"
+                  className="h-14 w-auto"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
-                
-                {/* Stratos Jets Logo */}
-                <div className="absolute top-8 left-8">
-                  <img 
-                    src="/images/stratos_logo.png" 
-                    alt="Stratos Jets"
-                    className="h-16 w-auto"
-                  />
-                </div>
-
-                <div className="absolute bottom-0 left-0 right-0 p-12">
-                  <div className="flex items-end gap-4 mb-3">
-                    <Plane className="h-12 w-12 text-white" />
-                    <h1 className="text-6xl font-light tracking-wider text-white">{aircraftData.aircraft_type?.name || 'Luxury Aircraft'}</h1>
-                  </div>
+              </div>
+              <div className="flex items-end gap-4">
+                <Plane className="h-10 w-10 text-foreground" />
+                <div>
+                  <h1 className="text-5xl font-light tracking-wider text-foreground">{aircraftData.aircraft_type?.name || 'Luxury Aircraft'}</h1>
                   {aircraftData.aircraft_type?.aircraft_class?.name && (
-                    <p className="text-xl font-light text-white/80 tracking-wide uppercase">{aircraftData.aircraft_type.aircraft_class.name} Jet</p>
+                    <p className="text-lg font-light text-muted-foreground tracking-wide uppercase mt-1">{aircraftData.aircraft_type.aircraft_class.name} Jet</p>
                   )}
+                </div>
+              </div>
+            </div>
+
+            {/* Hero Image with Position Controls */}
+            {aircraftData.images?.[0] && (
+              <div className="relative">
+                <div className="no-print absolute top-4 right-4 z-10 flex gap-2 bg-background/90 p-3 rounded-lg shadow-lg">
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => setImagePosition(prev => ({ ...prev, y: Math.max(0, prev.y - 5) }))}
+                  >
+                    ↑
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => setImagePosition(prev => ({ ...prev, y: Math.min(100, prev.y + 5) }))}
+                  >
+                    ↓
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => setImagePosition(prev => ({ ...prev, x: Math.max(0, prev.x - 5) }))}
+                  >
+                    ←
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => setImagePosition(prev => ({ ...prev, x: Math.min(100, prev.x + 5) }))}
+                  >
+                    →
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant="secondary"
+                    onClick={() => setImagePosition({ x: 50, y: 50 })}
+                  >
+                    Reset
+                  </Button>
+                </div>
+                <div className="relative h-80 overflow-hidden">
+                  <img 
+                    src={aircraftData.images[0].media.path} 
+                    alt="Aircraft exterior"
+                    className="w-full h-full object-cover transition-all duration-200"
+                    style={{ objectPosition: `${imagePosition.x}% ${imagePosition.y}%` }}
+                  />
                 </div>
               </div>
             )}
