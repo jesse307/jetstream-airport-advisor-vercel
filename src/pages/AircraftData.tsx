@@ -265,15 +265,6 @@ export default function AircraftData() {
                         </div>
                       )}
                     </div>
-
-                    {aircraftData.aircraft_extension.description && (
-                      <div className="mt-6 p-6 bg-muted/20 rounded-lg border">
-                        <h3 className="text-xl font-semibold mb-3">About This Aircraft</h3>
-                        <p className="whitespace-pre-line text-muted-foreground leading-relaxed">
-                          {aircraftData.aircraft_extension.description}
-                        </p>
-                      </div>
-                    )}
                   </div>
                 </>
               )}
