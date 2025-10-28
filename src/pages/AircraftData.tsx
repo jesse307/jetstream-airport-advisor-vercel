@@ -124,33 +124,33 @@ export default function AircraftData() {
     .header {
       padding: 16px;
       border-bottom: 1px solid #e5e7eb;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
     }
     .logo { 
-      height: 40px;
-      margin-bottom: 12px;
+      height: 35px;
     }
     .title-section {
-      display: flex;
-      align-items: flex-end;
-      gap: 12px;
+      text-align: right;
     }
     .title-section h1 { 
-      font-size: 28px; 
+      font-size: 24px; 
       font-weight: 300; 
-      letter-spacing: 2px; 
+      letter-spacing: 1.5px; 
       margin: 0;
       color: #111827;
     }
     .title-section p { 
-      font-size: 12px; 
+      font-size: 10px; 
       text-transform: uppercase; 
-      letter-spacing: 1px;
+      letter-spacing: 1.5px;
       color: #6b7280;
-      margin: 0;
+      margin: 2px 0 0 0;
     }
     .hero { 
       position: relative; 
-      height: 180px; 
+      height: 220px; 
       overflow: hidden;
     }
     .hero-bg { 
@@ -749,20 +749,17 @@ export default function AircraftData() {
         {aircraftData && (
           <div id="aircraft-display" className="max-w-6xl mx-auto mt-8 bg-background rounded-2xl overflow-hidden shadow-2xl">
             {/* Header with Logo and Aircraft Name */}
-            <div className="bg-background p-8 pb-4 border-b">
-              <div className="flex items-center justify-between mb-4">
+            <div className="bg-background p-8 border-b">
+              <div className="flex items-center justify-between">
                 <img 
                   src="/images/stratos_logo.png" 
                   alt="Stratos Jets"
-                  className="h-14 w-auto"
+                  className="h-12 w-auto"
                 />
-              </div>
-              <div className="flex items-end gap-4">
-                <Plane className="h-10 w-10 text-foreground" />
-                <div>
-                  <h1 className="text-5xl font-light tracking-wider text-foreground">{aircraftData.aircraft_type?.name || 'Luxury Aircraft'}</h1>
+                <div className="text-right">
+                  <h1 className="text-4xl font-light tracking-wider text-foreground">{aircraftData.aircraft_type?.name || 'Luxury Aircraft'}</h1>
                   {aircraftData.aircraft_type?.aircraft_class?.name && (
-                    <p className="text-lg font-light text-muted-foreground tracking-wide uppercase mt-1">{aircraftData.aircraft_type.aircraft_class.name} Jet</p>
+                    <p className="text-sm font-light text-muted-foreground tracking-widest uppercase mt-1">{aircraftData.aircraft_type.aircraft_class.name} Jet</p>
                   )}
                 </div>
               </div>
