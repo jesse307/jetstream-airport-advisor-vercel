@@ -188,6 +188,16 @@ export default function AircraftData() {
                   className="w-full h-full object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
+                
+                {/* Stratos Jets Logo */}
+                <div className="absolute top-8 left-8">
+                  <img 
+                    src="/images/stratos_logo.png" 
+                    alt="Stratos Jets"
+                    className="h-16 w-auto"
+                  />
+                </div>
+
                 <div className="absolute bottom-0 left-0 right-0 p-12">
                   <div className="flex items-end gap-4 mb-3">
                     <Plane className="h-12 w-12 text-white" />
