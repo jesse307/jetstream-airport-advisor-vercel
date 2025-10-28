@@ -346,6 +346,11 @@ export default function AircraftData() {
       
       ${compressedLayoutImage ? `
         <h2>Aircraft Layout</h2>
+        <div style="margin-bottom: 8px; padding: 8px; background: #f3f4f6; border: 1px solid #e5e7eb; border-radius: 6px;">
+          <p style="font-size: 9px; color: #6b7280; margin: 0;">
+            <strong>Note:</strong> Layout is representative of aircraft type and may not reflect exact configuration.
+          </p>
+        </div>
         <div class="floorplan">
           <img src="${compressedLayoutImage}" alt="Floor Plan">
         </div>` : ''}
@@ -627,6 +632,11 @@ export default function AircraftData() {
       
       ${compressedLayoutImage ? `
         <h2>Aircraft Layout</h2>
+        <div style="margin-bottom: 12px; padding: 10px; background: #f3f4f6; border: 1px solid #e5e7eb; border-radius: 8px;">
+          <p style="font-size: 11px; color: #6b7280; margin: 0;">
+            <strong>Note:</strong> Layout is representative of aircraft type and may not reflect exact configuration.
+          </p>
+        </div>
         <div class="floorplan">
           <img src="${compressedLayoutImage}" alt="Floor Plan">
         </div>` : ''}
@@ -952,6 +962,11 @@ export default function AircraftData() {
                   <Separator className="my-12" />
                   <div>
                     <h2 className="text-xs font-medium tracking-wide text-muted-foreground mb-4 uppercase">Aircraft Layout</h2>
+                    <div className="mb-3 p-3 bg-muted/50 rounded-lg border border-muted">
+                      <p className="text-xs text-muted-foreground">
+                        <span className="font-medium">Note:</span> This layout is representative of the aircraft type and may not reflect the exact seating configuration of this specific aircraft.
+                      </p>
+                    </div>
                     <div 
                       className="bg-card p-8 rounded-xl border shadow-lg cursor-pointer hover:shadow-2xl transition-shadow"
                       onClick={() => setSelectedImage(aircraftData.images.find((img: any) => img.tag?.value === 'plan').media.path)}
