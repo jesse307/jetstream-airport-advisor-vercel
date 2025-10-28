@@ -178,121 +178,182 @@ export default function AircraftData() {
         </Card>
 
         {aircraftData && (
-          <div id="aircraft-display" className="max-w-4xl mx-auto mt-8 bg-background p-8 rounded-lg border">
-            {/* Header Section */}
-            <div className="text-center mb-8">
-              <div className="flex items-center justify-center gap-3 mb-4">
-                <Plane className="h-12 w-12 text-primary" />
-                <h1 className="text-4xl font-bold tracking-tight">{aircraftData.registration_number || 'N/A'}</h1>
+          <div id="aircraft-display" className="max-w-6xl mx-auto mt-8 bg-gradient-to-br from-background to-muted/20 rounded-xl overflow-hidden border shadow-2xl">
+            {/* Hero Image */}
+            {aircraftData.images?.[0] && (
+              <div className="relative h-96 overflow-hidden">
+                <img 
+                  src={aircraftData.images[0].media.path} 
+                  alt="Aircraft exterior"
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+                <div className="absolute bottom-0 left-0 right-0 p-8 text-white">
+                  <div className="flex items-center gap-3 mb-2">
+                    <Plane className="h-8 w-8" />
+                    <h1 className="text-5xl font-bold tracking-tight">{aircraftData.registration_number}</h1>
+                  </div>
+                  <p className="text-2xl font-light">{aircraftData.aircraft_type?.name}</p>
+                </div>
               </div>
-              <p className="text-xl text-muted-foreground">{aircraftData.aircraft_type?.name || 'Aircraft Data Report'}</p>
-            </div>
+            )}
 
-            <Separator className="mb-8" />
+            <div className="p-8 space-y-8">
+              {/* Key Stats - What matters to a flyer */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {aircraftData.passengers_max && (
+                  <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 text-center">
+                    <p className="text-3xl font-bold text-primary">{aircraftData.passengers_max}</p>
+                    <p className="text-sm text-muted-foreground mt-1">Passengers</p>
+                  </div>
+                )}
+                {aircraftData.aircraft_extension?.sleeping_places && (
+                  <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 text-center">
+                    <p className="text-3xl font-bold text-primary">{aircraftData.aircraft_extension.sleeping_places}</p>
+                    <p className="text-sm text-muted-foreground mt-1">Sleeping Places</p>
+                  </div>
+                )}
+                {aircraftData.year_of_production && (
+                  <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 text-center">
+                    <p className="text-3xl font-bold text-primary">{aircraftData.year_of_production}</p>
+                    <p className="text-sm text-muted-foreground mt-1">Year Built</p>
+                  </div>
+                )}
+                {aircraftData.aircraft_extension?.refurbishment && (
+                  <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 text-center">
+                    <p className="text-3xl font-bold text-primary">{aircraftData.aircraft_extension.refurbishment}</p>
+                    <p className="text-sm text-muted-foreground mt-1">Last Refurbished</p>
+                  </div>
+                )}
+              </div>
 
-            {/* Aircraft Details Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-              {aircraftData.aircraft_type?.name && (
-                <div>
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2">Aircraft Type</h3>
-                  <p className="text-lg font-medium">{aircraftData.aircraft_type.name}</p>
-                </div>
-              )}
-
-              {aircraftData.year_of_production && (
-                <div>
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2">Year of Production</h3>
-                  <p className="text-lg font-medium">{aircraftData.year_of_production}</p>
-                </div>
-              )}
-
-              {aircraftData.aircraft_type?.aircraft_class?.name && (
-                <div>
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2">Aircraft Class</h3>
-                  <p className="text-lg font-medium">{aircraftData.aircraft_type.aircraft_class.name}</p>
-                </div>
-              )}
-
-              {aircraftData.base_airport && (
-                <div>
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2">Base Airport</h3>
-                  <p className="text-lg font-medium">{aircraftData.base_airport.name}</p>
-                </div>
-              )}
-            </div>
-
-            {/* Aircraft Images Gallery */}
-            {aircraftData.images && aircraftData.images.length > 0 && (
-              <>
-                <Separator className="mb-8" />
-                <div>
-                  <h2 className="text-2xl font-bold mb-6">Aircraft Gallery</h2>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {aircraftData.images
-                      .filter((img: any) => img.tag?.value === 'exterior' || img.tag?.value === 'cabin')
-                      .slice(0, 6)
-                      .map((image: any, index: number) => (
-                        <div key={image.media.id} className={`${index === 0 ? 'md:col-span-2' : ''} overflow-hidden rounded-lg border`}>
-                          <img 
-                            src={image.media.path} 
-                            alt={`Aircraft ${image.tag?.value || 'photo'} ${index + 1}`}
-                            className="w-full h-full object-cover"
-                            style={{ maxHeight: index === 0 ? '400px' : '300px' }}
-                          />
+              {/* Amenities - The Experience */}
+              {aircraftData.aircraft_extension && (
+                <>
+                  <Separator />
+                  <div>
+                    <h2 className="text-3xl font-bold mb-6">Amenities & Comfort</h2>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                      {aircraftData.aircraft_extension.wireless_internet && (
+                        <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
+                          <div className="w-2 h-2 rounded-full bg-green-500" />
+                          <span className="font-medium">WiFi Available</span>
                         </div>
-                      ))}
+                      )}
+                      {aircraftData.aircraft_extension.hot_meal && (
+                        <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
+                          <div className="w-2 h-2 rounded-full bg-green-500" />
+                          <span className="font-medium">Hot Meals</span>
+                        </div>
+                      )}
+                      {aircraftData.aircraft_extension.cabin_crew && (
+                        <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
+                          <div className="w-2 h-2 rounded-full bg-green-500" />
+                          <span className="font-medium">Cabin Crew</span>
+                        </div>
+                      )}
+                      {aircraftData.aircraft_extension.lavatory && (
+                        <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
+                          <div className="w-2 h-2 rounded-full bg-green-500" />
+                          <span className="font-medium">Private Lavatory</span>
+                        </div>
+                      )}
+                      {aircraftData.aircraft_extension.satellite_phone && (
+                        <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
+                          <div className="w-2 h-2 rounded-full bg-green-500" />
+                          <span className="font-medium">Satellite Phone</span>
+                        </div>
+                      )}
+                      {aircraftData.aircraft_extension.divan_seats && (
+                        <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
+                          <div className="w-2 h-2 rounded-full bg-green-500" />
+                          <span className="font-medium">{aircraftData.aircraft_extension.divan_seats} Divan Seats</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {aircraftData.aircraft_extension.description && (
+                      <div className="mt-6 p-6 bg-muted/20 rounded-lg border">
+                        <h3 className="text-xl font-semibold mb-3">About This Aircraft</h3>
+                        <p className="whitespace-pre-line text-muted-foreground leading-relaxed">
+                          {aircraftData.aircraft_extension.description}
+                        </p>
+                      </div>
+                    )}
+
+                    {aircraftData.aircraft_extension.view_360 && (
+                      <div className="mt-6">
+                        <Button asChild className="w-full md:w-auto" size="lg">
+                          <a href={aircraftData.aircraft_extension.view_360} target="_blank" rel="noopener noreferrer">
+                            Take a 360° Virtual Tour
+                          </a>
+                        </Button>
+                      </div>
+                    )}
                   </div>
-                </div>
-              </>
-            )}
+                </>
+              )}
 
-            {/* Specifications Section */}
-            {(aircraftData.passengers_max || aircraftData.aircraft_extension) && (
-              <>
-                <Separator className="mb-8" />
-                <div>
-                  <h2 className="text-2xl font-bold mb-6">Specifications</h2>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {aircraftData.passengers_max && (
-                      <div className="bg-muted/50 p-4 rounded-lg">
-                        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2">Max Passengers</h3>
-                        <p className="text-2xl font-bold">{aircraftData.passengers_max}</p>
-                      </div>
-                    )}
+              {/* Cabin Gallery */}
+              {aircraftData.images && aircraftData.images.length > 1 && (
+                <>
+                  <Separator />
+                  <div>
+                    <h2 className="text-3xl font-bold mb-6">Interior Gallery</h2>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                      {aircraftData.images
+                        .filter((img: any) => img.tag?.value === 'cabin')
+                        .map((image: any) => (
+                          <div key={image.media.id} className="aspect-video overflow-hidden rounded-lg border shadow-md hover:shadow-xl transition-shadow">
+                            <img 
+                              src={image.media.path} 
+                              alt="Aircraft interior"
+                              className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                            />
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                </>
+              )}
 
-                    {aircraftData.aircraft_extension?.sleeping_places && (
-                      <div className="bg-muted/50 p-4 rounded-lg">
-                        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2">Sleeping Places</h3>
-                        <p className="text-2xl font-bold">{aircraftData.aircraft_extension.sleeping_places}</p>
-                      </div>
-                    )}
-
-                    {aircraftData.aircraft_extension?.refurbishment && (
-                      <div className="bg-muted/50 p-4 rounded-lg">
-                        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2">Last Refurbishment</h3>
-                        <p className="text-2xl font-bold">{aircraftData.aircraft_extension.refurbishment}</p>
-                      </div>
+              {/* Location & Operator */}
+              <Separator />
+              <div className="grid md:grid-cols-2 gap-6">
+                {aircraftData.base_airport && (
+                  <div className="space-y-2">
+                    <h3 className="text-xl font-semibold">Home Base</h3>
+                    <p className="text-2xl font-bold text-primary">
+                      {aircraftData.base_airport.name}
+                    </p>
+                    <p className="text-muted-foreground">
+                      {aircraftData.base_airport.city?.name}
+                    </p>
+                  </div>
+                )}
+                {aircraftData.company && (
+                  <div className="space-y-2">
+                    <h3 className="text-xl font-semibold">Operated By</h3>
+                    <p className="text-2xl font-bold text-primary">
+                      {aircraftData.company.name}
+                    </p>
+                    {aircraftData.company.website && (
+                      <p className="text-muted-foreground">{aircraftData.company.website}</p>
                     )}
                   </div>
-                </div>
-              </>
-            )}
-
-
-            {/* Additional Details */}
-            <Separator className="my-8" />
-            <div>
-              <h2 className="text-2xl font-bold mb-6">Additional Details</h2>
-              <div className="bg-muted/30 p-6 rounded-lg">
-                <pre className="text-sm overflow-auto whitespace-pre-wrap break-words font-mono">
-                  {JSON.stringify(aircraftData, null, 2)}
-                </pre>
+                )}
               </div>
-            </div>
 
-            {/* Footer */}
-            <div className="mt-8 pt-6 border-t text-center text-sm text-muted-foreground">
-              <p>Generated on {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
+              {/* Footer */}
+              <div className="pt-6 border-t text-center text-sm text-muted-foreground">
+                <p>Report generated on {new Date().toLocaleDateString('en-US', { 
+                  year: 'numeric', 
+                  month: 'long', 
+                  day: 'numeric', 
+                  hour: '2-digit', 
+                  minute: '2-digit' 
+                })}</p>
+              </div>
             </div>
           </div>
         )}
