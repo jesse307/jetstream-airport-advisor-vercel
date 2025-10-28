@@ -40,8 +40,8 @@ serve(async (req) => {
     console.log('Using API token:', aviapagesToken.substring(0, 10) + '...');
     console.log('Fetching aircraft data for tail number:', tailNumber);
 
-    // Call Aviapages API
-    const aviapagesUrl = `https://dir.aviapages.com/api/charter_aircraft/${encodeURIComponent(tailNumber)}/`;
+    // Call Aviapages API - using search parameter instead of path parameter
+    const aviapagesUrl = `https://dir.aviapages.com/api/charter_aircraft/?search=${encodeURIComponent(tailNumber)}`;
     console.log('Calling Aviapages API:', aviapagesUrl);
 
     const response = await fetch(aviapagesUrl, {
