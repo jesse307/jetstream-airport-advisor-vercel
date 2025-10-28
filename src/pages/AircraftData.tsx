@@ -178,51 +178,82 @@ export default function AircraftData() {
         </Card>
 
         {aircraftData && (
-          <div id="aircraft-display" className="max-w-6xl mx-auto mt-8 bg-gradient-to-br from-background to-muted/20 rounded-xl overflow-hidden border shadow-2xl">
+          <div id="aircraft-display" className="max-w-6xl mx-auto mt-8 bg-background rounded-2xl overflow-hidden shadow-2xl">
             {/* Hero Image */}
             {aircraftData.images?.[0] && (
-              <div className="relative h-96 overflow-hidden">
+              <div className="relative h-[500px] overflow-hidden">
                 <img 
                   src={aircraftData.images[0].media.path} 
                   alt="Aircraft exterior"
                   className="w-full h-full object-cover"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-                <div className="absolute bottom-0 left-0 right-0 p-8 text-white">
-                  <div className="flex items-center gap-3 mb-2">
-                    <Plane className="h-8 w-8" />
-                    <h1 className="text-5xl font-bold tracking-tight">{aircraftData.registration_number}</h1>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
+                <div className="absolute bottom-0 left-0 right-0 p-12">
+                  <div className="flex items-end gap-4 mb-3">
+                    <Plane className="h-10 w-10 text-white" />
+                    <h1 className="text-6xl font-light tracking-wider text-white">{aircraftData.registration_number}</h1>
                   </div>
-                  <p className="text-2xl font-light">{aircraftData.aircraft_type?.name}</p>
+                  <p className="text-2xl font-light text-white/90 tracking-wide">{aircraftData.aircraft_type?.name}</p>
                 </div>
               </div>
             )}
 
-            <div className="p-8 space-y-8">
+            <div className="p-12 space-y-12">
               {/* Key Stats - What matters to a flyer */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                 {aircraftData.passengers_max && (
-                  <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 text-center">
-                    <p className="text-3xl font-bold text-primary">{aircraftData.passengers_max}</p>
-                    <p className="text-sm text-muted-foreground mt-1">Passengers</p>
+                  <div className="text-center p-6 bg-card border rounded-xl hover:shadow-lg transition-all">
+                    <p className="text-5xl font-light text-foreground mb-2">{aircraftData.passengers_max}</p>
+                    <p className="text-sm uppercase tracking-wider text-muted-foreground font-medium">Passengers</p>
                   </div>
                 )}
                 {aircraftData.aircraft_extension?.sleeping_places && (
-                  <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 text-center">
-                    <p className="text-3xl font-bold text-primary">{aircraftData.aircraft_extension.sleeping_places}</p>
-                    <p className="text-sm text-muted-foreground mt-1">Sleeping Places</p>
+                  <div className="text-center p-6 bg-card border rounded-xl hover:shadow-lg transition-all">
+                    <p className="text-5xl font-light text-foreground mb-2">{aircraftData.aircraft_extension.sleeping_places}</p>
+                    <p className="text-sm uppercase tracking-wider text-muted-foreground font-medium">Sleeping Places</p>
                   </div>
                 )}
                 {aircraftData.year_of_production && (
-                  <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 text-center">
-                    <p className="text-3xl font-bold text-primary">{aircraftData.year_of_production}</p>
-                    <p className="text-sm text-muted-foreground mt-1">Year Built</p>
+                  <div className="text-center p-6 bg-card border rounded-xl hover:shadow-lg transition-all">
+                    <p className="text-5xl font-light text-foreground mb-2">{aircraftData.year_of_production}</p>
+                    <p className="text-sm uppercase tracking-wider text-muted-foreground font-medium">Year Built</p>
                   </div>
                 )}
                 {aircraftData.aircraft_extension?.refurbishment && (
-                  <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 text-center">
-                    <p className="text-3xl font-bold text-primary">{aircraftData.aircraft_extension.refurbishment}</p>
-                    <p className="text-sm text-muted-foreground mt-1">Last Refurbished</p>
+                  <div className="text-center p-6 bg-card border rounded-xl hover:shadow-lg transition-all">
+                    <p className="text-5xl font-light text-foreground mb-2">{aircraftData.aircraft_extension.refurbishment}</p>
+                    <p className="text-sm uppercase tracking-wider text-muted-foreground font-medium">Refurbished</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Aircraft Details */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {aircraftData.aircraft_type?.name && (
+                  <div className="space-y-2">
+                    <p className="text-sm uppercase tracking-wider text-muted-foreground font-medium">Aircraft Type</p>
+                    <p className="text-2xl font-light text-foreground">{aircraftData.aircraft_type.name}</p>
+                  </div>
+                )}
+                
+                {aircraftData.aircraft_type?.aircraft_class?.name && (
+                  <div className="space-y-2">
+                    <p className="text-sm uppercase tracking-wider text-muted-foreground font-medium">Class</p>
+                    <p className="text-2xl font-light text-foreground">{aircraftData.aircraft_type.aircraft_class.name}</p>
+                  </div>
+                )}
+
+                {aircraftData.year_of_production && (
+                  <div className="space-y-2">
+                    <p className="text-sm uppercase tracking-wider text-muted-foreground font-medium">Year of Production</p>
+                    <p className="text-2xl font-light text-foreground">{aircraftData.year_of_production}</p>
+                  </div>
+                )}
+
+                {aircraftData.base_airport && (
+                  <div className="space-y-2">
+                    <p className="text-sm uppercase tracking-wider text-muted-foreground font-medium">Base Airport</p>
+                    <p className="text-2xl font-light text-foreground">{aircraftData.base_airport.name}</p>
                   </div>
                 )}
               </div>
@@ -230,38 +261,38 @@ export default function AircraftData() {
               {/* Amenities - The Experience */}
               {aircraftData.aircraft_extension && (
                 <>
-                  <Separator />
+                  <Separator className="my-12" />
                   <div>
-                    <h2 className="text-3xl font-bold mb-6">Premium Amenities</h2>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    <h2 className="text-4xl font-light tracking-wide mb-8 text-foreground">Premium Amenities</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       {aircraftData.aircraft_extension.wireless_internet && (
-                        <div className="flex items-center gap-3 p-4 bg-gradient-to-br from-primary/10 to-primary/5 rounded-lg border border-primary/20">
-                          <div className="w-3 h-3 rounded-full bg-primary animate-pulse" />
-                          <span className="font-semibold">Complimentary WiFi</span>
+                        <div className="flex items-center gap-4 p-5 bg-card border rounded-xl hover:shadow-md transition-all">
+                          <div className="w-2 h-2 rounded-full bg-accent" />
+                          <span className="text-lg font-light tracking-wide">Complimentary WiFi</span>
                         </div>
                       )}
                       {aircraftData.aircraft_extension.entertainment_system && (
-                        <div className="flex items-center gap-3 p-4 bg-gradient-to-br from-primary/10 to-primary/5 rounded-lg border border-primary/20">
-                          <div className="w-3 h-3 rounded-full bg-primary animate-pulse" />
-                          <span className="font-semibold">Entertainment System</span>
+                        <div className="flex items-center gap-4 p-5 bg-card border rounded-xl hover:shadow-md transition-all">
+                          <div className="w-2 h-2 rounded-full bg-accent" />
+                          <span className="text-lg font-light tracking-wide">Entertainment System</span>
                         </div>
                       )}
                       {aircraftData.aircraft_extension.shower && (
-                        <div className="flex items-center gap-3 p-4 bg-gradient-to-br from-primary/10 to-primary/5 rounded-lg border border-primary/20">
-                          <div className="w-3 h-3 rounded-full bg-primary animate-pulse" />
-                          <span className="font-semibold">Private Shower</span>
+                        <div className="flex items-center gap-4 p-5 bg-card border rounded-xl hover:shadow-md transition-all">
+                          <div className="w-2 h-2 rounded-full bg-accent" />
+                          <span className="text-lg font-light tracking-wide">Private Shower</span>
                         </div>
                       )}
                       {aircraftData.aircraft_extension.pets_allowed && (
-                        <div className="flex items-center gap-3 p-4 bg-gradient-to-br from-primary/10 to-primary/5 rounded-lg border border-primary/20">
-                          <div className="w-3 h-3 rounded-full bg-primary animate-pulse" />
-                          <span className="font-semibold">Pet Friendly</span>
+                        <div className="flex items-center gap-4 p-5 bg-card border rounded-xl hover:shadow-md transition-all">
+                          <div className="w-2 h-2 rounded-full bg-accent" />
+                          <span className="text-lg font-light tracking-wide">Pet Friendly</span>
                         </div>
                       )}
                       {aircraftData.aircraft_extension.divan_seats && (
-                        <div className="flex items-center gap-3 p-4 bg-gradient-to-br from-primary/10 to-primary/5 rounded-lg border border-primary/20">
-                          <div className="w-3 h-3 rounded-full bg-primary animate-pulse" />
-                          <span className="font-semibold">{aircraftData.aircraft_extension.divan_seats} Divan Seats</span>
+                        <div className="flex items-center gap-4 p-5 bg-card border rounded-xl hover:shadow-md transition-all">
+                          <div className="w-2 h-2 rounded-full bg-accent" />
+                          <span className="text-lg font-light tracking-wide">{aircraftData.aircraft_extension.divan_seats} Divan Seats</span>
                         </div>
                       )}
                     </div>
@@ -272,19 +303,19 @@ export default function AircraftData() {
               {/* Cabin Gallery */}
               {aircraftData.images && aircraftData.images.length > 1 && (
                 <>
-                  <Separator />
+                  <Separator className="my-12" />
                   <div>
-                    <h2 className="text-3xl font-bold mb-6">Aircraft Layout & Interior</h2>
+                    <h2 className="text-4xl font-light tracking-wide mb-8 text-foreground">Aircraft Layout & Interior</h2>
                     
                     {/* Floor Plan - Featured */}
                     {aircraftData.images.find((img: any) => img.tag?.value === 'plan') && (
-                      <div className="mb-8">
-                        <h3 className="text-xl font-semibold mb-4">Floor Plan</h3>
-                        <div className="bg-white p-4 rounded-lg border shadow-lg">
+                      <div className="mb-10">
+                        <h3 className="text-2xl font-light tracking-wide mb-5 text-muted-foreground">Floor Plan</h3>
+                        <div className="bg-card p-8 rounded-xl border shadow-lg">
                           <img 
                             src={aircraftData.images.find((img: any) => img.tag?.value === 'plan').media.path}
                             alt="Aircraft floor plan"
-                            className="w-full h-auto"
+                            className="w-full h-auto rounded-lg"
                           />
                         </div>
                       </div>
@@ -293,16 +324,16 @@ export default function AircraftData() {
                     {/* Cabin Photos */}
                     {aircraftData.images.some((img: any) => img.tag?.value === 'cabin') && (
                       <>
-                        <h3 className="text-xl font-semibold mb-4">Cabin Gallery</h3>
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                        <h3 className="text-2xl font-light tracking-wide mb-5 text-muted-foreground">Cabin Gallery</h3>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
                           {aircraftData.images
                             .filter((img: any) => img.tag?.value === 'cabin')
                             .map((image: any) => (
-                              <div key={image.media.id} className="aspect-video overflow-hidden rounded-lg border shadow-md hover:shadow-xl transition-shadow">
+                              <div key={image.media.id} className="aspect-[4/3] overflow-hidden rounded-xl border shadow-md hover:shadow-xl transition-all">
                                 <img 
                                   src={image.media.path} 
                                   alt="Aircraft interior"
-                                  className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                                  className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
                                 />
                               </div>
                             ))}
@@ -314,14 +345,16 @@ export default function AircraftData() {
               )}
 
               {/* Footer */}
-              <div className="pt-6 border-t text-center text-sm text-muted-foreground">
-                <p>Report generated on {new Date().toLocaleDateString('en-US', { 
-                  year: 'numeric', 
-                  month: 'long', 
-                  day: 'numeric', 
-                  hour: '2-digit', 
-                  minute: '2-digit' 
-                })}</p>
+              <div className="pt-8 border-t text-center">
+                <p className="text-sm text-muted-foreground font-light tracking-wide">
+                  Report generated on {new Date().toLocaleDateString('en-US', { 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric', 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                  })}
+                </p>
               </div>
             </div>
           </div>
