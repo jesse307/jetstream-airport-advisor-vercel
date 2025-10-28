@@ -83,11 +83,239 @@ export default function AircraftData() {
     }
   };
 
-  const handleExportPDF = () => {
-    window.print();
+  const handleExportPDF = async () => {
+    // Generate the optimized HTML and print it
+    const aircraft = aircraftData;
+    
+    // Fetch and convert logo to base64
+    let logoBase64 = '';
+    try {
+      const logoResponse = await fetch('/images/stratos_logo.png');
+      const logoBlob = await logoResponse.blob();
+      logoBase64 = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.readAsDataURL(logoBlob);
+      });
+    } catch (error) {
+      console.error('Failed to load logo:', error);
+    }
+    
+    const fullHtml = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${aircraft?.aircraft_type?.name || 'Aircraft'} - Stratos Jets</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; 
+      background: white; 
+      padding: 0;
+    }
+    .container { 
+      max-width: 1200px; 
+      margin: 0 auto; 
+      background: white; 
+    }
+    .hero { 
+      position: relative; 
+      height: 180px; 
+      background: linear-gradient(to bottom, rgba(0,0,0,0.3), rgba(0,0,0,0.7)); 
+      overflow: hidden;
+    }
+    .hero-bg { 
+      width: 100%; 
+      height: 100%; 
+      object-fit: cover; 
+      object-position: center center;
+      position: absolute; 
+      top: 0; 
+      left: 0; 
+      z-index: 0; 
+    }
+    .logo { 
+      position: absolute; 
+      top: 15px; 
+      left: 15px; 
+      height: 40px; 
+      z-index: 2;
+    }
+    .hero-text { 
+      position: absolute; 
+      bottom: 20px; 
+      left: 20px; 
+      color: white; 
+      z-index: 2;
+    }
+    .hero h1 { font-size: 28px; font-weight: 300; letter-spacing: 2px; margin-bottom: 4px; }
+    .hero p { font-size: 12px; opacity: 0.9; text-transform: uppercase; letter-spacing: 1px; }
+    .content { padding: 16px; }
+    .stats { 
+      display: grid; 
+      grid-template-columns: repeat(4, 1fr); 
+      gap: 8px; 
+      margin-bottom: 16px;
+    }
+    .stat { 
+      text-align: center; 
+      padding: 12px; 
+      background: #f9fafb; 
+      border: 1px solid #e5e7eb; 
+      border-radius: 8px;
+    }
+    .stat-value { font-size: 20px; font-weight: 300; margin-bottom: 4px; color: #111827; }
+    .stat-label { 
+      font-size: 9px; 
+      text-transform: uppercase; 
+      letter-spacing: 1px; 
+      color: #6b7280; 
+      font-weight: 500;
+    }
+    h2 { 
+      font-size: 18px; 
+      font-weight: 300; 
+      letter-spacing: 1px; 
+      margin: 16px 0 12px; 
+      color: #111827;
+    }
+    .gallery { 
+      display: grid; 
+      grid-template-columns: repeat(3, 1fr); 
+      gap: 6px; 
+      margin-bottom: 16px;
+    }
+    .gallery img { 
+      width: 100%; 
+      height: 110px; 
+      object-fit: cover; 
+      border-radius: 8px;
+    }
+    .floorplan { 
+      background: #f9fafb; 
+      padding: 12px; 
+      border-radius: 8px; 
+      border: 1px solid #e5e7eb;
+      margin-bottom: 16px;
+    }
+    .floorplan img { width: 100%; height: auto; border-radius: 6px; }
+    .amenities { 
+      display: grid; 
+      grid-template-columns: repeat(3, 1fr); 
+      gap: 6px;
+    }
+    .amenity { 
+      display: flex; 
+      align-items: center; 
+      gap: 8px; 
+      padding: 10px; 
+      background: #f9fafb; 
+      border: 1px solid #e5e7eb; 
+      border-radius: 8px;
+    }
+    .amenity-dot { 
+      width: 6px; 
+      height: 6px; 
+      border-radius: 50%; 
+      background: #3b82f6;
+      flex-shrink: 0;
+    }
+    .amenity-text { font-size: 11px; font-weight: 300; letter-spacing: 0.3px; }
+    .footer { 
+      text-align: center; 
+      padding: 12px 0; 
+      border-top: 1px solid #e5e7eb; 
+      margin-top: 16px;
+      color: #6b7280;
+      font-size: 10px;
+    }
+    @media print {
+      @page { size: letter; margin: 0.3in; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="hero">
+      ${aircraft.images?.[0] ? `<img src="${aircraft.images[0].media.path}" alt="Aircraft" class="hero-bg">` : ''}
+      ${logoBase64 ? `<img src="${logoBase64}" alt="Stratos Jets" class="logo">` : ''}
+      <div class="hero-text">
+        <h1>${aircraft.aircraft_type?.name || 'Luxury Aircraft'}</h1>
+        ${aircraft.aircraft_type?.aircraft_class?.name ? `<p>${aircraft.aircraft_type.aircraft_class.name} Jet</p>` : ''}
+      </div>
+    </div>
+    
+    <div class="content">
+      <div class="stats">
+        ${aircraft.passengers_max ? `
+          <div class="stat">
+            <div class="stat-value">${aircraft.passengers_max}</div>
+            <div class="stat-label">Passengers</div>
+          </div>` : ''}
+        ${aircraft.aircraft_extension?.sleeping_places ? `
+          <div class="stat">
+            <div class="stat-value">${aircraft.aircraft_extension.sleeping_places}</div>
+            <div class="stat-label">Sleeping Places</div>
+          </div>` : ''}
+        ${aircraft.year_of_production ? `
+          <div class="stat">
+            <div class="stat-value">${aircraft.year_of_production}</div>
+            <div class="stat-label">Year Built</div>
+          </div>` : ''}
+        ${aircraft.aircraft_extension?.refurbishment ? `
+          <div class="stat">
+            <div class="stat-value">${aircraft.aircraft_extension.refurbishment}</div>
+            <div class="stat-label">Refurbished</div>
+          </div>` : ''}
+      </div>
+      
+      ${aircraft.images?.filter((img: any) => img.tag?.value === 'cabin').length > 0 ? `
+        <h2>Interior Gallery</h2>
+        <div class="gallery">
+          ${aircraft.images.filter((img: any) => img.tag?.value === 'cabin').map((img: any) => 
+            `<img src="${img.media.path}" alt="Interior">`
+          ).join('')}
+        </div>` : ''}
+      
+      ${aircraft.images?.find((img: any) => img.tag?.value === 'plan') ? `
+        <h2>Aircraft Layout</h2>
+        <div class="floorplan">
+          <img src="${aircraft.images.find((img: any) => img.tag?.value === 'plan').media.path}" alt="Floor Plan">
+        </div>` : ''}
+      
+      ${aircraft.aircraft_extension ? `
+        <h2>Premium Amenities</h2>
+        <div class="amenities">
+          ${aircraft.aircraft_extension.wireless_internet ? '<div class="amenity"><div class="amenity-dot"></div><span class="amenity-text">Complimentary WiFi</span></div>' : ''}
+          ${aircraft.aircraft_extension.entertainment_system ? '<div class="amenity"><div class="amenity-dot"></div><span class="amenity-text">Entertainment System</span></div>' : ''}
+          ${aircraft.aircraft_extension.shower ? '<div class="amenity"><div class="amenity-dot"></div><span class="amenity-text">Private Shower</span></div>' : ''}
+          ${aircraft.aircraft_extension.pets_allowed ? '<div class="amenity"><div class="amenity-dot"></div><span class="amenity-text">Pet Friendly</span></div>' : ''}
+          ${aircraft.aircraft_extension.divan_seats ? `<div class="amenity"><div class="amenity-dot"></div><span class="amenity-text">${aircraft.aircraft_extension.divan_seats} Divan Seats</span></div>` : ''}
+        </div>` : ''}
+      
+      <div class="footer">
+        Report generated on ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+      </div>
+    </div>
+  </div>
+</body>
+</html>`;
+
+    // Open in new window and print
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(fullHtml);
+      printWindow.document.close();
+      printWindow.onload = () => {
+        printWindow.print();
+      };
+    }
+    
     toast({
-      title: "Export to PDF",
-      description: "Use your browser's print dialog to save as PDF"
+      title: "Opening Print Dialog",
+      description: "Printing optimized PDF version"
     });
   };
 
