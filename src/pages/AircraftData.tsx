@@ -299,20 +299,41 @@ export default function AircraftData() {
                 <>
                   <Separator />
                   <div>
-                    <h2 className="text-3xl font-bold mb-6">Interior Gallery</h2>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                      {aircraftData.images
-                        .filter((img: any) => img.tag?.value === 'cabin')
-                        .map((image: any) => (
-                          <div key={image.media.id} className="aspect-video overflow-hidden rounded-lg border shadow-md hover:shadow-xl transition-shadow">
-                            <img 
-                              src={image.media.path} 
-                              alt="Aircraft interior"
-                              className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                            />
-                          </div>
-                        ))}
-                    </div>
+                    <h2 className="text-3xl font-bold mb-6">Aircraft Layout & Interior</h2>
+                    
+                    {/* Floor Plan - Featured */}
+                    {aircraftData.images.find((img: any) => img.tag?.value === 'plan') && (
+                      <div className="mb-8">
+                        <h3 className="text-xl font-semibold mb-4">Floor Plan</h3>
+                        <div className="bg-white p-4 rounded-lg border shadow-lg">
+                          <img 
+                            src={aircraftData.images.find((img: any) => img.tag?.value === 'plan').media.path}
+                            alt="Aircraft floor plan"
+                            className="w-full h-auto"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Cabin Photos */}
+                    {aircraftData.images.some((img: any) => img.tag?.value === 'cabin') && (
+                      <>
+                        <h3 className="text-xl font-semibold mb-4">Cabin Gallery</h3>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                          {aircraftData.images
+                            .filter((img: any) => img.tag?.value === 'cabin')
+                            .map((image: any) => (
+                              <div key={image.media.id} className="aspect-video overflow-hidden rounded-lg border shadow-md hover:shadow-xl transition-shadow">
+                                <img 
+                                  src={image.media.path} 
+                                  alt="Aircraft interior"
+                                  className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                                />
+                              </div>
+                            ))}
+                        </div>
+                      </>
+                    )}
                   </div>
                 </>
               )}
