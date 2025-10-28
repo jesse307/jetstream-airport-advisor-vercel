@@ -182,11 +182,12 @@ export default function AircraftData() {
       font-weight: 500;
     }
     h2 { 
-      font-size: 18px; 
-      font-weight: 300; 
-      letter-spacing: 1px; 
-      margin: 16px 0 12px; 
-      color: #111827;
+      font-size: 12px; 
+      font-weight: 400; 
+      letter-spacing: 0.5px; 
+      margin: 12px 0 8px; 
+      color: #6b7280;
+      text-transform: uppercase;
     }
     .gallery { 
       display: grid; 
@@ -850,7 +851,7 @@ export default function AircraftData() {
                 <>
                   <Separator className="my-12" />
                   <div>
-                    <h2 className="text-4xl font-light tracking-wide mb-8 text-foreground">Interior Gallery</h2>
+                    <h2 className="text-xs font-medium tracking-wide text-muted-foreground mb-4 uppercase">Interior Gallery</h2>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
                       {aircraftData.images
                         .filter((img: any) => img.tag?.value === 'cabin')
@@ -877,7 +878,7 @@ export default function AircraftData() {
                 <>
                   <Separator className="my-12" />
                   <div>
-                    <h2 className="text-4xl font-light tracking-wide mb-8 text-foreground">Aircraft Layout</h2>
+                    <h2 className="text-xs font-medium tracking-wide text-muted-foreground mb-4 uppercase">Aircraft Layout</h2>
                     <div 
                       className="bg-card p-8 rounded-xl border shadow-lg cursor-pointer hover:shadow-2xl transition-shadow"
                       onClick={() => setSelectedImage(aircraftData.images.find((img: any) => img.tag?.value === 'plan').media.path)}
@@ -897,7 +898,7 @@ export default function AircraftData() {
                 <>
                   <Separator className="my-12" />
                   <div>
-                    <h2 className="text-4xl font-light tracking-wide mb-8 text-foreground">Premium Amenities</h2>
+                    <h2 className="text-xs font-medium tracking-wide text-muted-foreground mb-4 uppercase">Premium Amenities</h2>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       {aircraftData.aircraft_extension.wireless_internet && (
                         <div className="flex items-center gap-4 p-5 bg-card border rounded-xl hover:shadow-md transition-all">
