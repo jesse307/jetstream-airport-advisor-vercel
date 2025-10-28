@@ -44,7 +44,14 @@ export default function AircraftData() {
         throw new Error(data.error || 'Failed to fetch aircraft data');
       }
 
-      setAircraftData(data.data);
+      // Extract the first aircraft from the results array
+      const aircraft = data.data?.results?.[0] || null;
+      
+      if (!aircraft) {
+        throw new Error('No aircraft found with that tail number');
+      }
+
+      setAircraftData(aircraft);
       
       toast({
         title: "Success",
