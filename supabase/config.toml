@@ -86,3 +86,6 @@ verify_jwt = false
 
 [functions.parse-call-notes]
 verify_jwt = false
+
+[functions.get-aviapages-aircraft]
+verify_jwt = false

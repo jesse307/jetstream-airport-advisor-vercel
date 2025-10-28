@@ -18,6 +18,7 @@ import Quotes from "./pages/Quotes";
 import Availability from "./pages/Availability";
 import Templates from "./pages/Templates";
 import TrustedOperators from "./pages/TrustedOperators";
+import AircraftData from "./pages/AircraftData";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -43,6 +44,7 @@ const App = () => (
             <Route path="/availability" element={<ProtectedRoute><Availability /></ProtectedRoute>} />
             <Route path="/templates" element={<ProtectedRoute><Templates /></ProtectedRoute>} />
             <Route path="/trusted-operators" element={<ProtectedRoute><TrustedOperators /></ProtectedRoute>} />
+            <Route path="/aircraft-data" element={<ProtectedRoute><AircraftData /></ProtectedRoute>} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
