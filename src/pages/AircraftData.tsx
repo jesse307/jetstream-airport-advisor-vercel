@@ -190,10 +190,12 @@ export default function AircraftData() {
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
                 <div className="absolute bottom-0 left-0 right-0 p-12">
                   <div className="flex items-end gap-4 mb-3">
-                    <Plane className="h-10 w-10 text-white" />
-                    <h1 className="text-6xl font-light tracking-wider text-white">{aircraftData.registration_number}</h1>
+                    <Plane className="h-12 w-12 text-white" />
+                    <h1 className="text-6xl font-light tracking-wider text-white">{aircraftData.aircraft_type?.name || 'Luxury Aircraft'}</h1>
                   </div>
-                  <p className="text-2xl font-light text-white/90 tracking-wide">{aircraftData.aircraft_type?.name}</p>
+                  {aircraftData.aircraft_type?.aircraft_class?.name && (
+                    <p className="text-xl font-light text-white/80 tracking-wide uppercase">{aircraftData.aircraft_type.aircraft_class.name} Jet</p>
+                  )}
                 </div>
               </div>
             )}
@@ -223,37 +225,6 @@ export default function AircraftData() {
                   <div className="text-center p-6 bg-card border rounded-xl hover:shadow-lg transition-all">
                     <p className="text-5xl font-light text-foreground mb-2">{aircraftData.aircraft_extension.refurbishment}</p>
                     <p className="text-sm uppercase tracking-wider text-muted-foreground font-medium">Refurbished</p>
-                  </div>
-                )}
-              </div>
-
-              {/* Aircraft Details */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {aircraftData.aircraft_type?.name && (
-                  <div className="space-y-2">
-                    <p className="text-sm uppercase tracking-wider text-muted-foreground font-medium">Aircraft Type</p>
-                    <p className="text-2xl font-light text-foreground">{aircraftData.aircraft_type.name}</p>
-                  </div>
-                )}
-                
-                {aircraftData.aircraft_type?.aircraft_class?.name && (
-                  <div className="space-y-2">
-                    <p className="text-sm uppercase tracking-wider text-muted-foreground font-medium">Class</p>
-                    <p className="text-2xl font-light text-foreground">{aircraftData.aircraft_type.aircraft_class.name}</p>
-                  </div>
-                )}
-
-                {aircraftData.year_of_production && (
-                  <div className="space-y-2">
-                    <p className="text-sm uppercase tracking-wider text-muted-foreground font-medium">Year of Production</p>
-                    <p className="text-2xl font-light text-foreground">{aircraftData.year_of_production}</p>
-                  </div>
-                )}
-
-                {aircraftData.base_airport && (
-                  <div className="space-y-2">
-                    <p className="text-sm uppercase tracking-wider text-muted-foreground font-medium">Base Airport</p>
-                    <p className="text-2xl font-light text-foreground">{aircraftData.base_airport.name}</p>
                   </div>
                 )}
               </div>
