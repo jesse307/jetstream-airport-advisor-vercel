@@ -252,12 +252,6 @@ export default function AircraftData() {
                           <span className="font-semibold">Private Shower</span>
                         </div>
                       )}
-                      {aircraftData.aircraft_extension.view_360 && (
-                        <div className="flex items-center gap-3 p-4 bg-gradient-to-br from-primary/10 to-primary/5 rounded-lg border border-primary/20">
-                          <div className="w-3 h-3 rounded-full bg-primary animate-pulse" />
-                          <span className="font-semibold">360° Virtual Tour</span>
-                        </div>
-                      )}
                       {aircraftData.aircraft_extension.pets_allowed && (
                         <div className="flex items-center gap-3 p-4 bg-gradient-to-br from-primary/10 to-primary/5 rounded-lg border border-primary/20">
                           <div className="w-3 h-3 rounded-full bg-primary animate-pulse" />
@@ -278,16 +272,6 @@ export default function AircraftData() {
                         <p className="whitespace-pre-line text-muted-foreground leading-relaxed">
                           {aircraftData.aircraft_extension.description}
                         </p>
-                      </div>
-                    )}
-
-                    {aircraftData.aircraft_extension.view_360 && (
-                      <div className="mt-6">
-                        <Button asChild className="w-full md:w-auto" size="lg">
-                          <a href={aircraftData.aircraft_extension.view_360} target="_blank" rel="noopener noreferrer">
-                            Take a 360° Virtual Tour
-                          </a>
-                        </Button>
                       </div>
                     )}
                   </div>
