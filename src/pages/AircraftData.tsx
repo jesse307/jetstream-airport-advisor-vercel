@@ -183,33 +183,33 @@ export default function AircraftData() {
             <div className="text-center mb-8">
               <div className="flex items-center justify-center gap-3 mb-4">
                 <Plane className="h-12 w-12 text-primary" />
-                <h1 className="text-4xl font-bold tracking-tight">{aircraftData.registration || 'N/A'}</h1>
+                <h1 className="text-4xl font-bold tracking-tight">{aircraftData.registration_number || 'N/A'}</h1>
               </div>
-              <p className="text-xl text-muted-foreground">{aircraftData.aircraft_type || 'Aircraft Data Report'}</p>
+              <p className="text-xl text-muted-foreground">{aircraftData.aircraft_type?.name || 'Aircraft Data Report'}</p>
             </div>
 
             <Separator className="mb-8" />
 
             {/* Aircraft Details Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-              {aircraftData.manufacturer && (
+              {aircraftData.aircraft_type?.name && (
                 <div>
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2">Manufacturer</h3>
-                  <p className="text-lg font-medium">{aircraftData.manufacturer}</p>
+                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2">Aircraft Type</h3>
+                  <p className="text-lg font-medium">{aircraftData.aircraft_type.name}</p>
                 </div>
               )}
               
-              {aircraftData.model && (
+              {aircraftData.aircraft_type?.icao && (
                 <div>
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2">Model</h3>
-                  <p className="text-lg font-medium">{aircraftData.model}</p>
+                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2">ICAO Code</h3>
+                  <p className="text-lg font-medium">{aircraftData.aircraft_type.icao}</p>
                 </div>
               )}
 
-              {aircraftData.year_manufactured && (
+              {aircraftData.year_of_production && (
                 <div>
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2">Year Manufactured</h3>
-                  <p className="text-lg font-medium">{aircraftData.year_manufactured}</p>
+                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2">Year of Production</h3>
+                  <p className="text-lg font-medium">{aircraftData.year_of_production}</p>
                 </div>
               )}
 
@@ -220,46 +220,46 @@ export default function AircraftData() {
                 </div>
               )}
 
-              {aircraftData.category && (
+              {aircraftData.aircraft_type?.aircraft_class?.name && (
                 <div>
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2">Category</h3>
-                  <p className="text-lg font-medium">{aircraftData.category}</p>
+                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2">Aircraft Class</h3>
+                  <p className="text-lg font-medium">{aircraftData.aircraft_type.aircraft_class.name}</p>
                 </div>
               )}
 
-              {aircraftData.class && (
+              {aircraftData.base_airport && (
                 <div>
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2">Class</h3>
-                  <p className="text-lg font-medium">{aircraftData.class}</p>
+                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2">Base Airport</h3>
+                  <p className="text-lg font-medium">{aircraftData.base_airport.name} ({aircraftData.base_airport.icao})</p>
                 </div>
               )}
             </div>
 
             {/* Specifications Section */}
-            {(aircraftData.max_passengers || aircraftData.cruise_speed || aircraftData.range) && (
+            {(aircraftData.passengers_max || aircraftData.aircraft_extension) && (
               <>
                 <Separator className="mb-8" />
                 <div>
                   <h2 className="text-2xl font-bold mb-6">Specifications</h2>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {aircraftData.max_passengers && (
+                    {aircraftData.passengers_max && (
                       <div className="bg-muted/50 p-4 rounded-lg">
                         <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2">Max Passengers</h3>
-                        <p className="text-2xl font-bold">{aircraftData.max_passengers}</p>
+                        <p className="text-2xl font-bold">{aircraftData.passengers_max}</p>
                       </div>
                     )}
 
-                    {aircraftData.cruise_speed && (
+                    {aircraftData.aircraft_extension?.sleeping_places && (
                       <div className="bg-muted/50 p-4 rounded-lg">
-                        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2">Cruise Speed</h3>
-                        <p className="text-2xl font-bold">{aircraftData.cruise_speed}</p>
+                        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2">Sleeping Places</h3>
+                        <p className="text-2xl font-bold">{aircraftData.aircraft_extension.sleeping_places}</p>
                       </div>
                     )}
 
-                    {aircraftData.range && (
+                    {aircraftData.aircraft_extension?.refurbishment && (
                       <div className="bg-muted/50 p-4 rounded-lg">
-                        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2">Range</h3>
-                        <p className="text-2xl font-bold">{aircraftData.range}</p>
+                        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2">Last Refurbishment</h3>
+                        <p className="text-2xl font-bold">{aircraftData.aircraft_extension.refurbishment}</p>
                       </div>
                     )}
                   </div>
@@ -267,24 +267,38 @@ export default function AircraftData() {
               </>
             )}
 
-            {/* Owner/Operator Section */}
-            {(aircraftData.owner_name || aircraftData.operator_name) && (
+            {/* Operator Section */}
+            {aircraftData.company && (
               <>
                 <Separator className="my-8" />
                 <div>
-                  <h2 className="text-2xl font-bold mb-6">Ownership & Operations</h2>
+                  <h2 className="text-2xl font-bold mb-6">Operator Information</h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {aircraftData.owner_name && (
+                    {aircraftData.company.name && (
                       <div>
-                        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2">Owner</h3>
-                        <p className="text-lg font-medium">{aircraftData.owner_name}</p>
+                        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2">Company Name</h3>
+                        <p className="text-lg font-medium">{aircraftData.company.name}</p>
                       </div>
                     )}
 
-                    {aircraftData.operator_name && (
+                    {aircraftData.company.phone && (
                       <div>
-                        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2">Operator</h3>
-                        <p className="text-lg font-medium">{aircraftData.operator_name}</p>
+                        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2">Phone</h3>
+                        <p className="text-lg font-medium">{aircraftData.company.phone}</p>
+                      </div>
+                    )}
+
+                    {aircraftData.company.website && (
+                      <div>
+                        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2">Website</h3>
+                        <p className="text-lg font-medium">{aircraftData.company.website}</p>
+                      </div>
+                    )}
+
+                    {aircraftData.company.city && (
+                      <div>
+                        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2">Location</h3>
+                        <p className="text-lg font-medium">{aircraftData.company.city.name}, {aircraftData.company.city.country?.name}</p>
                       </div>
                     )}
                   </div>
