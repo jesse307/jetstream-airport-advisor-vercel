@@ -84,9 +84,51 @@ export default function AircraftData() {
     }
   };
 
+  const compressImage = async (url: string, maxWidth: number = 800, quality: number = 0.6): Promise<string> => {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+          
+          if (width > maxWidth) {
+            height = (height * maxWidth) / width;
+            width = maxWidth;
+          }
+          
+          canvas.width = width;
+          canvas.height = height;
+          
+          const ctx = canvas.getContext('2d');
+          ctx?.drawImage(img, 0, 0, width, height);
+          
+          resolve(canvas.toDataURL('image/jpeg', quality));
+        };
+        
+        img.onerror = () => reject(new Error('Failed to load image'));
+        img.src = URL.createObjectURL(blob);
+      });
+    } catch (error) {
+      console.error('Failed to compress image:', error);
+      return url; // Fallback to original URL
+    }
+  };
+
   const handleExportPDF = async () => {
     // Generate the optimized HTML and print it
     const aircraft = aircraftData;
+    
+    toast({
+      title: "Processing Images",
+      description: "Compressing images for export..."
+    });
     
     // Fetch and convert logo to base64
     let logoBase64 = '';
@@ -101,6 +143,19 @@ export default function AircraftData() {
     } catch (error) {
       console.error('Failed to load logo:', error);
     }
+    
+    // Compress hero image
+    const heroImage = aircraft.images?.[0] ? await compressImage(aircraft.images[0].media.path, 1200, 0.65) : '';
+    
+    // Compress interior images
+    const cabinImages = aircraft.images?.filter((img: any) => img.tag?.value === 'cabin') || [];
+    const compressedCabinImages = await Promise.all(
+      cabinImages.map((img: any) => compressImage(img.media.path, 600, 0.6))
+    );
+    
+    // Compress layout image
+    const layoutImage = aircraft.images?.find((img: any) => img.tag?.value === 'plan');
+    const compressedLayoutImage = layoutImage ? await compressImage(layoutImage.media.path, 800, 0.65) : '';
     
     const fullHtml = `
 <!DOCTYPE html>
@@ -254,7 +309,7 @@ export default function AircraftData() {
       </div>
     </div>
     <div class="hero">
-      ${aircraft.images?.[0] ? `<img src="${aircraft.images[0].media.path}" alt="Aircraft" class="hero-bg">` : ''}
+      ${heroImage ? `<img src="${heroImage}" alt="Aircraft" class="hero-bg">` : ''}
     </div>
     
     <div class="content">
@@ -281,18 +336,18 @@ export default function AircraftData() {
           </div>` : ''}
       </div>
       
-      ${aircraft.images?.filter((img: any) => img.tag?.value === 'cabin').length > 0 ? `
+      ${compressedCabinImages.length > 0 ? `
         <h2>Interior Gallery</h2>
         <div class="gallery">
-          ${aircraft.images.filter((img: any) => img.tag?.value === 'cabin').map((img: any) => 
-            `<img src="${img.media.path}" alt="Interior">`
+          ${compressedCabinImages.map((imgSrc: string) => 
+            `<img src="${imgSrc}" alt="Interior">`
           ).join('')}
         </div>` : ''}
       
-      ${aircraft.images?.find((img: any) => img.tag?.value === 'plan') ? `
+      ${compressedLayoutImage ? `
         <h2>Aircraft Layout</h2>
         <div class="floorplan">
-          <img src="${aircraft.images.find((img: any) => img.tag?.value === 'plan').media.path}" alt="Floor Plan">
+          <img src="${compressedLayoutImage}" alt="Floor Plan">
         </div>` : ''}
       
       ${aircraft.aircraft_extension ? `
@@ -333,6 +388,11 @@ export default function AircraftData() {
     // Generate a standalone HTML version  
     const aircraft = aircraftData;
     
+    toast({
+      title: "Processing Images",
+      description: "Compressing images for web export..."
+    });
+    
     // Fetch and convert logo to base64
     let logoBase64 = '';
     try {
@@ -346,6 +406,19 @@ export default function AircraftData() {
     } catch (error) {
       console.error('Failed to load logo:', error);
     }
+    
+    // Compress hero image
+    const heroImage = aircraft.images?.[0] ? await compressImage(aircraft.images[0].media.path, 1400, 0.7) : '';
+    
+    // Compress interior images
+    const cabinImages = aircraft.images?.filter((img: any) => img.tag?.value === 'cabin') || [];
+    const compressedCabinImages = await Promise.all(
+      cabinImages.map((img: any) => compressImage(img.media.path, 800, 0.65))
+    );
+    
+    // Compress layout image
+    const layoutImage = aircraft.images?.find((img: any) => img.tag?.value === 'plan');
+    const compressedLayoutImage = layoutImage ? await compressImage(layoutImage.media.path, 1000, 0.7) : '';
     
     const fullHtml = `
 <!DOCTYPE html>
@@ -512,7 +585,7 @@ export default function AircraftData() {
 <body>
   <div class="container">
     <div class="hero">
-      ${aircraft.images?.[0] ? `<img src="${aircraft.images[0].media.path}" alt="Aircraft" class="hero-bg">` : ''}
+      ${heroImage ? `<img src="${heroImage}" alt="Aircraft" class="hero-bg">` : ''}
       ${logoBase64 ? `<img src="${logoBase64}" alt="Stratos Jets" class="logo">` : ''}
       <div class="hero-text">
         <h1>${aircraft.aircraft_type?.name || 'Luxury Aircraft'}</h1>
@@ -544,18 +617,18 @@ export default function AircraftData() {
           </div>` : ''}
       </div>
       
-      ${aircraft.images?.filter((img: any) => img.tag?.value === 'cabin').length > 0 ? `
+      ${compressedCabinImages.length > 0 ? `
         <h2>Interior Gallery</h2>
         <div class="gallery">
-          ${aircraft.images.filter((img: any) => img.tag?.value === 'cabin').map((img: any) => 
-            `<img src="${img.media.path}" alt="Interior">`
+          ${compressedCabinImages.map((imgSrc: string) => 
+            `<img src="${imgSrc}" alt="Interior">`
           ).join('')}
         </div>` : ''}
       
-      ${aircraft.images?.find((img: any) => img.tag?.value === 'plan') ? `
+      ${compressedLayoutImage ? `
         <h2>Aircraft Layout</h2>
         <div class="floorplan">
-          <img src="${aircraft.images.find((img: any) => img.tag?.value === 'plan').media.path}" alt="Floor Plan">
+          <img src="${compressedLayoutImage}" alt="Floor Plan">
         </div>` : ''}
       
       ${aircraft.aircraft_extension ? `
