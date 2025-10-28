@@ -5,14 +5,16 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Download, Plane } from "lucide-react";
+import { Loader2, Download, Plane, Globe } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 
 export default function AircraftData() {
   const [tailNumber, setTailNumber] = useState("");
   const [webhookUrl, setWebhookUrl] = useState("");
   const [loading, setLoading] = useState(false);
   const [aircraftData, setAircraftData] = useState<any>(null);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const { toast } = useToast();
 
   const handleFetch = async () => {
@@ -89,6 +91,44 @@ export default function AircraftData() {
     });
   };
 
+  const handlePushToWeb = () => {
+    // Generate a standalone HTML version
+    const htmlContent = document.getElementById('aircraft-display')?.outerHTML || '';
+    const fullHtml = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${aircraftData?.aircraft_type?.name || 'Aircraft'} - Stratos Jets</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @media print {
+      body * { visibility: hidden; }
+      #aircraft-display, #aircraft-display * { visibility: visible; }
+      #aircraft-display { position: absolute; left: 0; top: 0; width: 100%; }
+    }
+  </style>
+</head>
+<body class="bg-gray-50">
+  ${htmlContent}
+</body>
+</html>`;
+    
+    const blob = new Blob([fullHtml], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${aircraftData?.registration_number || 'aircraft'}-showcase.html`;
+    a.click();
+    URL.revokeObjectURL(url);
+    
+    toast({
+      title: "Web Page Downloaded",
+      description: "Upload this HTML file to workatrip.com to publish"
+    });
+  };
+
   return (
     <>
       <style>{`
@@ -104,12 +144,29 @@ export default function AircraftData() {
             left: 0;
             top: 0;
             width: 100%;
+            page-break-inside: avoid;
           }
           .no-print {
             display: none !important;
           }
         }
+        @page {
+          size: letter;
+          margin: 0.5in;
+        }
       `}</style>
+      
+      <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
+        <DialogContent className="max-w-7xl w-full p-0 bg-black/95">
+          {selectedImage && (
+            <img 
+              src={selectedImage} 
+              alt="Aircraft detail"
+              className="w-full h-auto"
+            />
+          )}
+        </DialogContent>
+      </Dialog>
       
       <div className="container mx-auto py-8 px-4">
         <Card className="max-w-4xl mx-auto no-print">
@@ -163,6 +220,10 @@ export default function AircraftData() {
                 <div className="flex items-center justify-between gap-2">
                   <h3 className="text-lg font-semibold">Aircraft Data</h3>
                   <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={handlePushToWeb}>
+                      <Globe className="mr-2 h-4 w-4" />
+                      Export Web Page
+                    </Button>
                     <Button variant="outline" size="sm" onClick={handleExportPDF}>
                       <Download className="mr-2 h-4 w-4" />
                       Export PDF
@@ -292,7 +353,10 @@ export default function AircraftData() {
                     {aircraftData.images.find((img: any) => img.tag?.value === 'plan') && (
                       <div className="mb-10">
                         <h3 className="text-2xl font-light tracking-wide mb-5 text-muted-foreground">Floor Plan</h3>
-                        <div className="bg-card p-8 rounded-xl border shadow-lg">
+                        <div 
+                          className="bg-card p-8 rounded-xl border shadow-lg cursor-pointer hover:shadow-2xl transition-shadow"
+                          onClick={() => setSelectedImage(aircraftData.images.find((img: any) => img.tag?.value === 'plan').media.path)}
+                        >
                           <img 
                             src={aircraftData.images.find((img: any) => img.tag?.value === 'plan').media.path}
                             alt="Aircraft floor plan"
@@ -310,7 +374,11 @@ export default function AircraftData() {
                           {aircraftData.images
                             .filter((img: any) => img.tag?.value === 'cabin')
                             .map((image: any) => (
-                              <div key={image.media.id} className="aspect-[4/3] overflow-hidden rounded-xl border shadow-md hover:shadow-xl transition-all">
+                              <div 
+                                key={image.media.id} 
+                                className="aspect-[4/3] overflow-hidden rounded-xl border shadow-md hover:shadow-xl transition-all cursor-pointer"
+                                onClick={() => setSelectedImage(image.media.path)}
+                              >
                                 <img 
                                   src={image.media.path} 
                                   alt="Aircraft interior"
