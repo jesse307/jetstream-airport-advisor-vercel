@@ -322,33 +322,6 @@ export default function AircraftData() {
                 </>
               )}
 
-              {/* Location & Operator */}
-              <Separator />
-              <div className="grid md:grid-cols-2 gap-6">
-                {aircraftData.base_airport && (
-                  <div className="space-y-2">
-                    <h3 className="text-xl font-semibold">Home Base</h3>
-                    <p className="text-2xl font-bold text-primary">
-                      {aircraftData.base_airport.name}
-                    </p>
-                    <p className="text-muted-foreground">
-                      {aircraftData.base_airport.city?.name}
-                    </p>
-                  </div>
-                )}
-                {aircraftData.company && (
-                  <div className="space-y-2">
-                    <h3 className="text-xl font-semibold">Operated By</h3>
-                    <p className="text-2xl font-bold text-primary">
-                      {aircraftData.company.name}
-                    </p>
-                    {aircraftData.company.website && (
-                      <p className="text-muted-foreground">{aircraftData.company.website}</p>
-                    )}
-                  </div>
-                )}
-              </div>
-
               {/* Footer */}
               <div className="pt-6 border-t text-center text-sm text-muted-foreground">
                 <p>Report generated on {new Date().toLocaleDateString('en-US', { 
