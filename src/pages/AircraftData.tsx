@@ -246,22 +246,28 @@ export default function AircraftData() {
       font-size: 13px;
     }
     @media print {
-      @page { size: letter; margin: 0.5in; }
+      @page { size: letter; margin: 0.3in; }
       body { padding: 0; background: white; }
-      .hero { height: 260px; page-break-after: avoid; }
+      .hero { height: 180px; page-break-after: avoid; }
       .hero-bg { object-position: center center; }
-      .hero h1 { font-size: 36px; }
-      .content { padding: 24px; }
-      .stats { gap: 12px; margin-bottom: 24px; }
-      .stat { padding: 16px; }
-      .stat-value { font-size: 28px; }
-      h2 { font-size: 24px; margin: 24px 0 16px; }
-      .gallery { gap: 8px; margin-bottom: 24px; }
-      .gallery img { height: 150px; }
-      .floorplan { padding: 16px; margin-bottom: 24px; }
-      .amenities { gap: 8px; }
-      .amenity { padding: 12px; }
-      .footer { padding: 16px 0; margin-top: 24px; }
+      .hero h1 { font-size: 28px; }
+      .hero p { font-size: 12px; }
+      .logo { height: 40px; top: 15px; left: 15px; }
+      .hero-text { bottom: 20px; left: 20px; }
+      .content { padding: 16px; }
+      .stats { gap: 8px; margin-bottom: 16px; }
+      .stat { padding: 12px; }
+      .stat-value { font-size: 20px; }
+      .stat-label { font-size: 9px; }
+      h2 { font-size: 18px; margin: 16px 0 12px; }
+      .gallery { gap: 6px; margin-bottom: 16px; }
+      .gallery img { height: 110px; }
+      .floorplan { padding: 12px; margin-bottom: 16px; }
+      .amenities { gap: 6px; }
+      .amenity { padding: 10px; font-size: 11px; }
+      .amenity-text { font-size: 11px; }
+      .amenity-dot { width: 6px; height: 6px; }
+      .footer { padding: 12px 0; margin-top: 16px; font-size: 10px; }
     }
   </style>
 </head>
@@ -366,10 +372,58 @@ export default function AircraftData() {
           .no-print {
             display: none !important;
           }
+          .hero {
+            height: 180px !important;
+          }
+          .content {
+            padding: 16px !important;
+          }
+          .stats {
+            gap: 8px !important;
+            margin-bottom: 16px !important;
+          }
+          .stat {
+            padding: 12px !important;
+          }
+          .stat-value {
+            font-size: 20px !important;
+          }
+          .stat-label {
+            font-size: 9px !important;
+          }
+          h2 {
+            font-size: 18px !important;
+            margin: 16px 0 12px !important;
+          }
+          .gallery {
+            gap: 6px !important;
+            margin-bottom: 16px !important;
+          }
+          .gallery img {
+            height: 110px !important;
+          }
+          .floorplan {
+            padding: 12px !important;
+            margin-bottom: 16px !important;
+          }
+          .amenities {
+            gap: 6px !important;
+          }
+          .amenity {
+            padding: 10px !important;
+          }
+          .amenity-text {
+            font-size: 11px !important;
+          }
+          .footer {
+            padding: 12px 0 !important;
+            margin-top: 16px !important;
+            font-size: 10px !important;
+          }
         }
         @page {
           size: letter;
-          margin: 0.5in;
+          margin: 0.3in;
         }
       `}</style>
       
