@@ -232,42 +232,42 @@ export default function AircraftData() {
                 <>
                   <Separator />
                   <div>
-                    <h2 className="text-3xl font-bold mb-6">Amenities & Comfort</h2>
+                    <h2 className="text-3xl font-bold mb-6">Premium Amenities</h2>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                       {aircraftData.aircraft_extension.wireless_internet && (
-                        <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
-                          <div className="w-2 h-2 rounded-full bg-green-500" />
-                          <span className="font-medium">WiFi Available</span>
+                        <div className="flex items-center gap-3 p-4 bg-gradient-to-br from-primary/10 to-primary/5 rounded-lg border border-primary/20">
+                          <div className="w-3 h-3 rounded-full bg-primary animate-pulse" />
+                          <span className="font-semibold">Complimentary WiFi</span>
                         </div>
                       )}
-                      {aircraftData.aircraft_extension.hot_meal && (
-                        <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
-                          <div className="w-2 h-2 rounded-full bg-green-500" />
-                          <span className="font-medium">Hot Meals</span>
+                      {aircraftData.aircraft_extension.entertainment_system && (
+                        <div className="flex items-center gap-3 p-4 bg-gradient-to-br from-primary/10 to-primary/5 rounded-lg border border-primary/20">
+                          <div className="w-3 h-3 rounded-full bg-primary animate-pulse" />
+                          <span className="font-semibold">Entertainment System</span>
                         </div>
                       )}
-                      {aircraftData.aircraft_extension.cabin_crew && (
-                        <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
-                          <div className="w-2 h-2 rounded-full bg-green-500" />
-                          <span className="font-medium">Cabin Crew</span>
+                      {aircraftData.aircraft_extension.shower && (
+                        <div className="flex items-center gap-3 p-4 bg-gradient-to-br from-primary/10 to-primary/5 rounded-lg border border-primary/20">
+                          <div className="w-3 h-3 rounded-full bg-primary animate-pulse" />
+                          <span className="font-semibold">Private Shower</span>
                         </div>
                       )}
-                      {aircraftData.aircraft_extension.lavatory && (
-                        <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
-                          <div className="w-2 h-2 rounded-full bg-green-500" />
-                          <span className="font-medium">Private Lavatory</span>
+                      {aircraftData.aircraft_extension.view_360 && (
+                        <div className="flex items-center gap-3 p-4 bg-gradient-to-br from-primary/10 to-primary/5 rounded-lg border border-primary/20">
+                          <div className="w-3 h-3 rounded-full bg-primary animate-pulse" />
+                          <span className="font-semibold">360° Virtual Tour</span>
                         </div>
                       )}
-                      {aircraftData.aircraft_extension.satellite_phone && (
-                        <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
-                          <div className="w-2 h-2 rounded-full bg-green-500" />
-                          <span className="font-medium">Satellite Phone</span>
+                      {aircraftData.aircraft_extension.pets_allowed && (
+                        <div className="flex items-center gap-3 p-4 bg-gradient-to-br from-primary/10 to-primary/5 rounded-lg border border-primary/20">
+                          <div className="w-3 h-3 rounded-full bg-primary animate-pulse" />
+                          <span className="font-semibold">Pet Friendly</span>
                         </div>
                       )}
                       {aircraftData.aircraft_extension.divan_seats && (
-                        <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
-                          <div className="w-2 h-2 rounded-full bg-green-500" />
-                          <span className="font-medium">{aircraftData.aircraft_extension.divan_seats} Divan Seats</span>
+                        <div className="flex items-center gap-3 p-4 bg-gradient-to-br from-primary/10 to-primary/5 rounded-lg border border-primary/20">
+                          <div className="w-3 h-3 rounded-full bg-primary animate-pulse" />
+                          <span className="font-semibold">{aircraftData.aircraft_extension.divan_seats} Divan Seats</span>
                         </div>
                       )}
                     </div>
