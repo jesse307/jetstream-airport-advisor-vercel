@@ -91,10 +91,23 @@ export default function AircraftData() {
     });
   };
 
-  const handlePushToWeb = () => {
+  const handlePushToWeb = async () => {
     // Generate a standalone HTML version  
     const aircraft = aircraftData;
-    const logoUrl = `${window.location.origin}/images/stratos_logo.png`;
+    
+    // Fetch and convert logo to base64
+    let logoBase64 = '';
+    try {
+      const logoResponse = await fetch('/images/stratos_logo.png');
+      const logoBlob = await logoResponse.blob();
+      logoBase64 = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.readAsDataURL(logoBlob);
+      });
+    } catch (error) {
+      console.error('Failed to load logo:', error);
+    }
     
     const fullHtml = `
 <!DOCTYPE html>
@@ -254,7 +267,7 @@ export default function AircraftData() {
   <div class="container">
     <div class="hero">
       ${aircraft.images?.[0] ? `<img src="${aircraft.images[0].media.path}" alt="Aircraft" class="hero-bg">` : ''}
-      <img src="${logoUrl}" alt="Stratos Jets" class="logo">
+      ${logoBase64 ? `<img src="${logoBase64}" alt="Stratos Jets" class="logo">` : ''}
       <div class="hero-text">
         <h1>${aircraft.aircraft_type?.name || 'Luxury Aircraft'}</h1>
         ${aircraft.aircraft_type?.aircraft_class?.name ? `<p>${aircraft.aircraft_type.aircraft_class.name} Jet</p>` : ''}
