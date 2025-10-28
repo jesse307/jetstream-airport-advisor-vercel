@@ -300,6 +300,53 @@ export default function AircraftData() {
                 )}
               </div>
 
+              {/* Cabin Gallery */}
+              {aircraftData.images && aircraftData.images.some((img: any) => img.tag?.value === 'cabin') && (
+                <>
+                  <Separator className="my-12" />
+                  <div>
+                    <h2 className="text-4xl font-light tracking-wide mb-8 text-foreground">Interior Gallery</h2>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+                      {aircraftData.images
+                        .filter((img: any) => img.tag?.value === 'cabin')
+                        .map((image: any) => (
+                          <div 
+                            key={image.media.id} 
+                            className="aspect-[4/3] overflow-hidden rounded-xl border shadow-md hover:shadow-xl transition-all cursor-pointer"
+                            onClick={() => setSelectedImage(image.media.path)}
+                          >
+                            <img 
+                              src={image.media.path} 
+                              alt="Aircraft interior"
+                              className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
+                            />
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* Floor Plan */}
+              {aircraftData.images?.find((img: any) => img.tag?.value === 'plan') && (
+                <>
+                  <Separator className="my-12" />
+                  <div>
+                    <h2 className="text-4xl font-light tracking-wide mb-8 text-foreground">Aircraft Layout</h2>
+                    <div 
+                      className="bg-card p-8 rounded-xl border shadow-lg cursor-pointer hover:shadow-2xl transition-shadow"
+                      onClick={() => setSelectedImage(aircraftData.images.find((img: any) => img.tag?.value === 'plan').media.path)}
+                    >
+                      <img 
+                        src={aircraftData.images.find((img: any) => img.tag?.value === 'plan').media.path}
+                        alt="Aircraft floor plan"
+                        className="w-full h-auto rounded-lg"
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
+
               {/* Amenities - The Experience */}
               {aircraftData.aircraft_extension && (
                 <>
@@ -338,57 +385,6 @@ export default function AircraftData() {
                         </div>
                       )}
                     </div>
-                  </div>
-                </>
-              )}
-
-              {/* Cabin Gallery */}
-              {aircraftData.images && aircraftData.images.length > 1 && (
-                <>
-                  <Separator className="my-12" />
-                  <div>
-                    <h2 className="text-4xl font-light tracking-wide mb-8 text-foreground">Aircraft Layout & Interior</h2>
-                    
-                    {/* Floor Plan - Featured */}
-                    {aircraftData.images.find((img: any) => img.tag?.value === 'plan') && (
-                      <div className="mb-10">
-                        <h3 className="text-2xl font-light tracking-wide mb-5 text-muted-foreground">Floor Plan</h3>
-                        <div 
-                          className="bg-card p-8 rounded-xl border shadow-lg cursor-pointer hover:shadow-2xl transition-shadow"
-                          onClick={() => setSelectedImage(aircraftData.images.find((img: any) => img.tag?.value === 'plan').media.path)}
-                        >
-                          <img 
-                            src={aircraftData.images.find((img: any) => img.tag?.value === 'plan').media.path}
-                            alt="Aircraft floor plan"
-                            className="w-full h-auto rounded-lg"
-                          />
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Cabin Photos */}
-                    {aircraftData.images.some((img: any) => img.tag?.value === 'cabin') && (
-                      <>
-                        <h3 className="text-2xl font-light tracking-wide mb-5 text-muted-foreground">Cabin Gallery</h3>
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
-                          {aircraftData.images
-                            .filter((img: any) => img.tag?.value === 'cabin')
-                            .map((image: any) => (
-                              <div 
-                                key={image.media.id} 
-                                className="aspect-[4/3] overflow-hidden rounded-xl border shadow-md hover:shadow-xl transition-all cursor-pointer"
-                                onClick={() => setSelectedImage(image.media.path)}
-                              >
-                                <img 
-                                  src={image.media.path} 
-                                  alt="Aircraft interior"
-                                  className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
-                                />
-                              </div>
-                            ))}
-                        </div>
-                      </>
-                    )}
                   </div>
                 </>
               )}
