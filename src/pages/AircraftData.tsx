@@ -591,7 +591,7 @@ export default function AircraftData() {
       .stat-label { font-size: 9px; }
       h2 { font-size: 18px; margin: 16px 0 12px; }
       .gallery { gap: 6px; margin-bottom: 16px; }
-      .gallery img { height: 110px; }
+      .gallery img { width: 100%; height: 110px; object-fit: cover; }
       .floorplan { padding: 12px; margin-bottom: 16px; }
       .amenities { gap: 6px; }
       .amenity { padding: 10px; font-size: 11px; }
@@ -737,7 +737,9 @@ export default function AircraftData() {
             margin-bottom: 16px !important;
           }
           .gallery img {
+            width: 100% !important;
             height: 110px !important;
+            object-fit: cover !important;
           }
           .floorplan {
             padding: 12px !important;
