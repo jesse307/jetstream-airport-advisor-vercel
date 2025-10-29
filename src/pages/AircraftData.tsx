@@ -264,8 +264,9 @@ export default function AircraftData() {
     }
     .gallery img { 
       width: 100%; 
-      height: 110px; 
-      object-fit: cover; 
+      height: auto; 
+      max-height: 110px;
+      object-fit: contain; 
       border-radius: 8px;
     }
     .floorplan { 
@@ -591,7 +592,7 @@ export default function AircraftData() {
       .stat-label { font-size: 9px; }
       h2 { font-size: 18px; margin: 16px 0 12px; }
       .gallery { gap: 6px; margin-bottom: 16px; }
-      .gallery img { width: 100%; height: 110px; object-fit: cover; }
+      .gallery img { width: 100%; height: auto; max-height: 110px; object-fit: contain; }
       .floorplan { padding: 12px; margin-bottom: 16px; }
       .amenities { gap: 6px; }
       .amenity { padding: 10px; font-size: 11px; }
@@ -738,8 +739,9 @@ export default function AircraftData() {
           }
           .gallery img {
             width: 100% !important;
-            height: 110px !important;
-            object-fit: cover !important;
+            height: auto !important;
+            max-height: 110px !important;
+            object-fit: contain !important;
           }
           .floorplan {
             padding: 12px !important;
