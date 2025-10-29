@@ -418,6 +418,50 @@ export default function EmailTemplates() {
       font-weight: 500;
       color: #111827;
     }
+    .rating-badge {
+      display: inline-block;
+      padding: 6px 12px;
+      margin: 4px 4px 4px 0;
+      background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+      color: white;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      box-shadow: 0 2px 4px rgba(14, 165, 233, 0.2);
+    }
+    .rating-badge.wyvern {
+      background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+      box-shadow: 0 2px 4px rgba(139, 92, 246, 0.2);
+    }
+    .rating-badge.argus {
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+      box-shadow: 0 2px 4px rgba(245, 158, 11, 0.2);
+    }
+    .quote-button {
+      display: inline-block;
+      margin-top: 16px;
+      padding: 12px 24px;
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: white;
+      text-decoration: none;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 14px;
+      box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+      transition: transform 0.2s;
+    }
+    .quote-button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+    }
+    .amenities-text {
+      margin-top: 12px;
+      color: #6b7280;
+      font-size: 14px;
+      line-height: 1.6;
+    }
     .footer {
       text-align: center;
       padding: 24px 32px;
@@ -451,7 +495,27 @@ export default function EmailTemplates() {
     </div>
     
     <div class="content">
-      ${aircraft.map(a => `
+      ${aircraft.map((a, idx) => {
+        // Parse details to extract ratings and amenities
+        const detailsParts = (a.details || '').split('•').map(p => p.trim());
+        let wyvernRating = '';
+        let argusRating = '';
+        let amenities = '';
+        
+        detailsParts.forEach(part => {
+          if (part.toLowerCase().startsWith('wyvern:')) {
+            wyvernRating = part.replace(/wyvern:\s*/i, '').trim();
+          } else if (part.toLowerCase().startsWith('argus:')) {
+            argusRating = part.replace(/argus:\s*/i, '').trim();
+          } else if (part.length > 3) {
+            amenities = part;
+          }
+        });
+        
+        // Get link for this aircraft (use extracted links if available)
+        const aircraftLink = extractedInfo?.allLinks?.[idx] || extractedInfo?.finalLink || '#';
+        
+        return `
         <div class="aircraft-section">
           <div class="aircraft-header">
             <div>
@@ -461,22 +525,32 @@ export default function EmailTemplates() {
             <div class="aircraft-price">${a.price || '$0'}</div>
           </div>
           
-          ${a.passengers ? `
+          ${a.passengers || wyvernRating || argusRating ? `
             <div class="aircraft-details">
-              <div class="detail-item">
-                <div class="detail-label">Passengers</div>
-                <div class="detail-value">${a.passengers}</div>
-              </div>
+              ${a.passengers ? `
+                <div class="detail-item">
+                  <div class="detail-label">Passengers</div>
+                  <div class="detail-value">${a.passengers}</div>
+                </div>
+              ` : ''}
             </div>
           ` : ''}
           
-          ${a.details ? `
-            <div style="margin-top: 12px; color: #4b5563; font-size: 14px; line-height: 1.6;">
-              ${a.details}
+          ${wyvernRating || argusRating ? `
+            <div style="margin-top: 16px;">
+              ${wyvernRating ? `<span class="rating-badge wyvern">Wyvern ${wyvernRating}</span>` : ''}
+              ${argusRating ? `<span class="rating-badge argus">Argus ${argusRating}</span>` : ''}
             </div>
           ` : ''}
+          
+          ${amenities ? `
+            <div class="amenities-text">${amenities}</div>
+          ` : ''}
+          
+          <a href="${aircraftLink}" class="quote-button">Click for Quote Details →</a>
         </div>
-      `).join('')}
+      `;
+      }).join('')}
       
       ${extractedInfo?.finalLink ? `
         <div style="text-align: center;">
