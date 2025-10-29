@@ -23,6 +23,29 @@ export default function EmailTemplates() {
   const [extractedInfo, setExtractedInfo] = useState<any>(null);
   const { toast } = useToast();
 
+  const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>, setInput: (value: string) => void) => {
+    e.preventDefault();
+    const clipboardData = e.clipboardData;
+    
+    // Try to get HTML format first
+    const htmlData = clipboardData.getData('text/html');
+    if (htmlData) {
+      setInput(htmlData);
+      toast({
+        title: "HTML Captured",
+        description: "Pasted HTML content successfully"
+      });
+    } else {
+      // Fallback to plain text
+      const textData = clipboardData.getData('text/plain');
+      setInput(textData);
+      toast({
+        title: "Text Captured",
+        description: "No HTML detected, pasted as plain text"
+      });
+    }
+  };
+
   const extractInfoFromHTML = () => {
     try {
       // Combine both HTML inputs
@@ -330,6 +353,7 @@ export default function EmailTemplates() {
                   placeholder="Paste first HTML content here..."
                   value={htmlInput1}
                   onChange={(e) => setHtmlInput1(e.target.value)}
+                  onPaste={(e) => handlePaste(e, setHtmlInput1)}
                   className="min-h-[200px] font-mono text-xs"
                 />
               </div>
@@ -339,6 +363,7 @@ export default function EmailTemplates() {
                   placeholder="Paste second HTML content here..."
                   value={htmlInput2}
                   onChange={(e) => setHtmlInput2(e.target.value)}
+                  onPaste={(e) => handlePaste(e, setHtmlInput2)}
                   className="min-h-[200px] font-mono text-xs"
                 />
               </div>
