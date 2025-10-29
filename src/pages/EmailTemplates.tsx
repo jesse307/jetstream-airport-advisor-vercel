@@ -27,6 +27,15 @@ export default function EmailTemplates() {
   const [htmlInput2, setHtmlInput2] = useState("");
   const [aircraft, setAircraft] = useState<AircraftInfo[]>([]);
   const [extractedInfo, setExtractedInfo] = useState<any>(null);
+  const [tripInfo, setTripInfo] = useState({
+    departureAirport: "",
+    arrivalAirport: "",
+    departureDate: "",
+    departureTime: "",
+    returnDate: "",
+    returnTime: "",
+    passengers: ""
+  });
   const { toast } = useToast();
 
   const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>, setInput: (value: string) => void) => {
@@ -481,7 +490,83 @@ export default function EmailTemplates() {
       font-size: 15px;
       color: #333333;
     }
-    .content { 
+    .trip-card {
+      margin: 20px 30px;
+      padding: 20px;
+      background: #f8f9fa;
+      border: 1px solid #cccccc;
+      border-radius: 8px;
+    }
+    .trip-header {
+      font-size: 14px;
+      text-transform: uppercase;
+      color: #1e40af;
+      letter-spacing: 1px;
+      margin-bottom: 15px;
+      font-weight: bold;
+    }
+    .trip-route {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 15px;
+      padding-bottom: 15px;
+      border-bottom: 1px solid #e5e5e5;
+    }
+    .trip-airport {
+      flex: 1;
+      text-align: center;
+    }
+    .trip-airport-code {
+      font-size: 24px;
+      font-weight: bold;
+      color: #1e40af;
+      margin-bottom: 4px;
+    }
+    .trip-airport-name {
+      font-size: 12px;
+      color: #666666;
+    }
+    .trip-arrow {
+      font-size: 20px;
+      color: #1e40af;
+      margin: 0 15px;
+    }
+    .trip-details {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+    .trip-detail-item {
+      padding: 10px;
+      background: white;
+      border-radius: 4px;
+    }
+    .trip-detail-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      color: #999999;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+    .trip-detail-value {
+      font-size: 14px;
+      color: #333333;
+      font-weight: 500;
+    }
+    @media only screen and (max-width: 600px) {
+      .trip-route {
+        flex-direction: column;
+      }
+      .trip-arrow {
+        transform: rotate(90deg);
+        margin: 10px 0;
+      }
+      .trip-details {
+        grid-template-columns: 1fr;
+      }
+    }
+    .content {
       padding: 20px 30px 40px;
     }
     .aircraft-section {
@@ -679,6 +764,49 @@ export default function EmailTemplates() {
             <p>Thank you for considering Stratos Jet Charters. Based on your requirements, we have identified the following aircraft options. Each has been carefully selected and vetted for safety and service excellence.</p>
           </div>
           
+          ${tripInfo.departureAirport || tripInfo.arrivalAirport ? `
+            <div class="trip-card">
+              <div class="trip-header">Flight Details</div>
+              
+              ${tripInfo.departureAirport && tripInfo.arrivalAirport ? `
+                <div class="trip-route">
+                  <div class="trip-airport">
+                    <div class="trip-airport-code">${tripInfo.departureAirport}</div>
+                    <div class="trip-airport-name">Departure</div>
+                  </div>
+                  <div class="trip-arrow">→</div>
+                  <div class="trip-airport">
+                    <div class="trip-airport-code">${tripInfo.arrivalAirport}</div>
+                    <div class="trip-airport-name">Arrival</div>
+                  </div>
+                </div>
+              ` : ''}
+              
+              <div class="trip-details">
+                ${tripInfo.departureDate ? `
+                  <div class="trip-detail-item">
+                    <div class="trip-detail-label">Departure Date</div>
+                    <div class="trip-detail-value">${tripInfo.departureDate}${tripInfo.departureTime ? ` at ${tripInfo.departureTime}` : ''}</div>
+                  </div>
+                ` : ''}
+                
+                ${tripInfo.returnDate ? `
+                  <div class="trip-detail-item">
+                    <div class="trip-detail-label">Return Date</div>
+                    <div class="trip-detail-value">${tripInfo.returnDate}${tripInfo.returnTime ? ` at ${tripInfo.returnTime}` : ''}</div>
+                  </div>
+                ` : ''}
+                
+                ${tripInfo.passengers ? `
+                  <div class="trip-detail-item">
+                    <div class="trip-detail-label">Total Passengers</div>
+                    <div class="trip-detail-value">${tripInfo.passengers} Passenger${tripInfo.passengers !== '1' ? 's' : ''}</div>
+                  </div>
+                ` : ''}
+              </div>
+            </div>
+          ` : ''}
+          
           <div class="content">
             ${aircraft.map((a, idx) => {
               const detailsParts = (a.details || '').split('•').map(p => p.trim());
@@ -819,6 +947,79 @@ export default function EmailTemplates() {
             <Button onClick={extractInfoFromHTML} className="w-full">
               Extract Information
             </Button>
+
+            <Separator className="my-6" />
+            
+            {/* Trip Information Section */}
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-lg font-semibold mb-2">Trip Information</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Enter flight details to display in the proposal
+                </p>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Departure Airport</Label>
+                  <Input
+                    placeholder="e.g., JFK"
+                    value={tripInfo.departureAirport}
+                    onChange={(e) => setTripInfo({ ...tripInfo, departureAirport: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Arrival Airport</Label>
+                  <Input
+                    placeholder="e.g., LAX"
+                    value={tripInfo.arrivalAirport}
+                    onChange={(e) => setTripInfo({ ...tripInfo, arrivalAirport: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Departure Date</Label>
+                  <Input
+                    type="date"
+                    value={tripInfo.departureDate}
+                    onChange={(e) => setTripInfo({ ...tripInfo, departureDate: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Departure Time</Label>
+                  <Input
+                    type="time"
+                    value={tripInfo.departureTime}
+                    onChange={(e) => setTripInfo({ ...tripInfo, departureTime: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Return Date (Optional)</Label>
+                  <Input
+                    type="date"
+                    value={tripInfo.returnDate}
+                    onChange={(e) => setTripInfo({ ...tripInfo, returnDate: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Return Time (Optional)</Label>
+                  <Input
+                    type="time"
+                    value={tripInfo.returnTime}
+                    onChange={(e) => setTripInfo({ ...tripInfo, returnTime: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Number of Passengers</Label>
+                  <Input
+                    type="number"
+                    min="1"
+                    placeholder="e.g., 8"
+                    value={tripInfo.passengers}
+                    onChange={(e) => setTripInfo({ ...tripInfo, passengers: e.target.value })}
+                  />
+                </div>
+              </div>
+            </div>
 
             {extractedInfo && (
               <Card className="bg-muted/50">
