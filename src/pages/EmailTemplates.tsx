@@ -354,432 +354,293 @@ export default function EmailTemplates() {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Your Exclusive Private Charter Proposal</title>
-  <!--[if mso]>
-  <style type="text/css">
-  body, table, td {font-family: Arial, Helvetica, sans-serif !important;}
-  </style>
-  <![endif]-->
+  <title>Private Charter Proposal</title>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
     body { 
-      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; 
-      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-      padding: 0;
+      font-family: Arial, Helvetica, sans-serif; 
+      background: #ffffff;
       margin: 0;
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-    }
-    .email-wrapper {
-      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-      padding: 40px 20px;
+      padding: 0;
+      color: #333333;
+      line-height: 1.6;
     }
     .container { 
-      max-width: 680px; 
+      max-width: 600px; 
       margin: 0 auto; 
       background: #ffffff;
-      border-radius: 16px;
-      overflow: hidden;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
     }
     .header { 
-      background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 50%, #2563eb 100%);
-      padding: 48px 40px;
+      padding: 40px 30px 30px;
       text-align: center;
-      position: relative;
-      overflow: hidden;
-    }
-    .header::before {
-      content: '';
-      position: absolute;
-      top: -50%;
-      left: -50%;
-      width: 200%;
-      height: 200%;
-      background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
-      animation: shimmer 3s infinite;
-    }
-    @keyframes shimmer {
-      0%, 100% { transform: translate(-25%, -25%); }
-      50% { transform: translate(0%, 0%); }
+      border-bottom: 2px solid #1e40af;
     }
     .logo { 
-      height: 56px; 
-      margin-bottom: 24px; 
-      position: relative;
-      z-index: 1;
-      filter: brightness(0) invert(1);
+      max-height: 50px; 
+      margin-bottom: 20px;
     }
-    h1 { 
-      font-size: 32px; 
-      font-weight: 700; 
-      color: #ffffff;
-      margin-bottom: 12px;
-      position: relative;
-      z-index: 1;
-      letter-spacing: -0.5px;
-      text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    .header-title { 
+      font-size: 24px; 
+      font-weight: normal; 
+      color: #1e40af;
+      margin: 0 0 8px 0;
     }
-    .subtitle { 
-      color: rgba(255,255,255,0.9); 
-      font-size: 16px;
-      font-weight: 400;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      position: relative;
-      z-index: 1;
+    .header-subtitle { 
+      color: #666666; 
+      font-size: 14px;
+      margin: 0;
     }
     .intro {
-      padding: 40px 40px 24px;
-      background: #ffffff;
-    }
-    .intro-text {
-      font-size: 16px;
-      line-height: 1.7;
-      color: #334155;
-      margin-bottom: 8px;
-    }
-    .intro-highlight {
-      font-size: 14px;
-      color: #64748b;
-      font-style: italic;
-    }
-    .divider {
-      height: 1px;
-      background: linear-gradient(90deg, transparent 0%, #e2e8f0 50%, transparent 100%);
-      margin: 0 40px;
+      padding: 30px 30px 20px;
+      font-size: 15px;
+      color: #333333;
     }
     .content { 
-      padding: 32px 40px 40px;
-      background: #ffffff;
+      padding: 20px 30px 40px;
     }
     .aircraft-section {
-      margin-bottom: 28px;
-      background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
-      border-radius: 16px;
-      overflow: hidden;
-      border: 2px solid #e2e8f0;
-      transition: all 0.3s ease;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-    }
-    .aircraft-section:hover {
-      border-color: #2563eb;
-      box-shadow: 0 8px 24px rgba(37, 99, 235, 0.15);
-      transform: translateY(-2px);
-    }
-    .aircraft-section:last-child {
-      margin-bottom: 0;
+      margin-bottom: 30px;
+      padding: 0;
+      border: 1px solid #cccccc;
+      background: #ffffff;
     }
     .aircraft-header {
-      background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%);
-      padding: 24px 28px;
-      color: white;
-      position: relative;
-      overflow: hidden;
+      padding: 20px;
+      background: #f8f9fa;
+      border-bottom: 1px solid #cccccc;
     }
-    .aircraft-header::after {
-      content: '';
-      position: absolute;
-      top: 0;
-      right: 0;
-      width: 200px;
-      height: 200px;
-      background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
-      border-radius: 50%;
-      transform: translate(50%, -50%);
-    }
-    .aircraft-header-content {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      position: relative;
-      z-index: 1;
+    .aircraft-header table {
+      width: 100%;
+      border-collapse: collapse;
     }
     .aircraft-type { 
-      font-size: 26px; 
-      font-weight: 700; 
-      color: #ffffff;
-      margin-bottom: 6px;
-      letter-spacing: -0.3px;
-      text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      font-size: 18px; 
+      font-weight: bold; 
+      color: #1e40af;
+      margin: 0 0 5px 0;
     }
     .aircraft-tail {
-      font-size: 13px;
-      color: rgba(255,255,255,0.85);
+      font-size: 12px;
+      color: #666666;
       text-transform: uppercase;
-      letter-spacing: 1.5px;
-      font-weight: 600;
-      background: rgba(255,255,255,0.15);
-      padding: 4px 10px;
-      border-radius: 4px;
-      display: inline-block;
-      backdrop-filter: blur(10px);
+      letter-spacing: 1px;
+      margin: 0;
     }
     .aircraft-price {
-      font-size: 36px;
-      font-weight: 300;
-      color: #ffffff;
+      font-size: 24px;
+      font-weight: bold;
+      color: #333333;
       text-align: right;
-      line-height: 1;
-      text-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      margin: 0;
     }
     .aircraft-body {
-      padding: 28px;
+      padding: 20px;
     }
-    .info-grid {
-      display: flex;
-      gap: 16px;
-      margin-bottom: 20px;
-      flex-wrap: wrap;
-    }
-    .info-card {
-      flex: 1;
-      min-width: 140px;
-      padding: 16px 20px;
-      background: #ffffff;
-      border-radius: 12px;
-      border: 2px solid #e2e8f0;
-      transition: all 0.2s;
-    }
-    .info-card:hover {
-      border-color: #2563eb;
-      background: #eff6ff;
+    .info-row {
+      padding: 12px 0;
+      border-bottom: 1px solid #eeeeee;
     }
     .info-label {
       font-size: 11px;
       text-transform: uppercase;
-      color: #64748b;
+      color: #999999;
       letter-spacing: 1px;
-      margin-bottom: 6px;
-      font-weight: 600;
+      margin-bottom: 4px;
+      font-weight: bold;
     }
     .info-value {
-      font-size: 20px;
-      font-weight: 700;
-      color: #1e293b;
-      letter-spacing: -0.3px;
-    }
-    .ratings-container {
-      margin: 20px 0;
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-    .rating-badge {
-      display: inline-flex;
-      align-items: center;
-      padding: 10px 18px;
-      background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
-      color: white;
-      border-radius: 8px;
-      font-size: 13px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
-      border: 2px solid rgba(255,255,255,0.2);
-    }
-    .rating-badge.argus {
-      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-      box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
-    }
-    .rating-badge::before {
-      content: '★';
-      margin-right: 6px;
       font-size: 16px;
+      color: #333333;
     }
-    .amenities {
-      margin: 20px 0;
-      padding: 18px;
-      background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
-      border-radius: 10px;
-      border-left: 4px solid #2563eb;
+    .ratings-section {
+      margin: 15px 0;
+      padding: 15px;
+      background: #f8f9fa;
+      border-left: 3px solid #1e40af;
     }
-    .amenities-label {
+    .ratings-label {
       font-size: 11px;
       text-transform: uppercase;
       color: #1e40af;
       letter-spacing: 1px;
       margin-bottom: 8px;
-      font-weight: 700;
+      font-weight: bold;
+    }
+    .rating-item {
+      display: inline-block;
+      margin-right: 15px;
+      font-size: 13px;
+      color: #333333;
+    }
+    .rating-item strong {
+      color: #1e40af;
+    }
+    .amenities-section {
+      margin: 15px 0;
+      padding: 15px;
+      background: #f8f9fa;
+    }
+    .amenities-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      color: #666666;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+      font-weight: bold;
     }
     .amenities-text {
-      color: #334155;
+      color: #333333;
       font-size: 14px;
-      line-height: 1.6;
-      font-weight: 500;
+      line-height: 1.5;
     }
-    .cta-container {
+    .cta-section {
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid #eeeeee;
       text-align: center;
-      margin-top: 24px;
-      padding-top: 24px;
-      border-top: 1px solid #e2e8f0;
     }
     .quote-button {
       display: inline-block;
-      padding: 16px 36px;
-      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-      color: white;
+      padding: 12px 30px;
+      background: #1e40af;
+      color: #ffffff;
       text-decoration: none;
-      border-radius: 10px;
-      font-weight: 700;
-      font-size: 15px;
-      letter-spacing: 0.5px;
-      box-shadow: 0 6px 20px rgba(16, 185, 129, 0.35);
-      transition: all 0.3s ease;
+      font-size: 14px;
+      font-weight: bold;
       text-transform: uppercase;
-      border: 2px solid rgba(255,255,255,0.3);
+      letter-spacing: 0.5px;
     }
     .quote-button:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 10px 30px rgba(16, 185, 129, 0.45);
-      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+      background: #1e3a8a;
     }
     .footer {
-      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-      padding: 48px 40px;
+      background: #f8f9fa;
+      padding: 30px;
       text-align: center;
-      color: #cbd5e1;
+      border-top: 2px solid #1e40af;
+      margin-top: 20px;
     }
     .footer-title {
-      font-size: 22px;
-      font-weight: 700;
-      color: #ffffff;
-      margin-bottom: 16px;
-      letter-spacing: -0.3px;
+      font-size: 16px;
+      font-weight: bold;
+      color: #1e40af;
+      margin-bottom: 10px;
     }
     .footer-text {
-      color: #94a3b8;
-      font-size: 14px;
-      line-height: 1.8;
-      margin-bottom: 24px;
-    }
-    .footer-contact {
+      color: #666666;
       font-size: 13px;
-      color: #64748b;
-      margin-top: 20px;
-      padding-top: 20px;
-      border-top: 1px solid rgba(255,255,255,0.1);
+      line-height: 1.6;
+      margin: 5px 0;
     }
-    .footer-link {
-      color: #60a5fa;
-      text-decoration: none;
-      font-weight: 600;
+    table {
+      border-collapse: collapse;
     }
-    @media only screen and (max-width: 640px) {
-      .email-wrapper { padding: 20px 10px; }
-      .header { padding: 32px 24px; }
-      h1 { font-size: 24px; }
-      .intro, .content { padding: 24px; }
-      .aircraft-header { padding: 20px; }
-      .aircraft-type { font-size: 20px; }
-      .aircraft-price { font-size: 28px; }
-      .aircraft-body { padding: 20px; }
-      .info-grid { flex-direction: column; }
-      .info-card { min-width: 100%; }
-      .footer { padding: 32px 24px; }
+    @media only screen and (max-width: 600px) {
+      .header, .intro, .content, .footer { 
+        padding-left: 20px; 
+        padding-right: 20px; 
+      }
+      .aircraft-price { 
+        font-size: 20px; 
+        margin-top: 10px;
+      }
     }
   </style>
 </head>
 <body>
-  <div class="email-wrapper">
-    <div class="container">
-      <div class="header">
-        ${logoBase64 ? `<img src="${logoBase64}" alt="Stratos Jet Charters" class="logo">` : ''}
-        <h1>Your Exclusive Charter Proposal</h1>
-        <p class="subtitle">Curated Flight Options</p>
-      </div>
-      
-      <div class="intro">
-        <p class="intro-text">
-          Thank you for considering Stratos Jet Charters for your private aviation needs. 
-          We've carefully selected the following premium aircraft options tailored to your requirements.
-        </p>
-        <p class="intro-highlight">
-          Each aircraft has been vetted for safety, luxury, and performance.
-        </p>
-      </div>
-      
-      <div class="divider"></div>
-      
-      <div class="content">
-        ${aircraft.map((a) => {
-          // Parse details to extract ratings and amenities
-          const detailsParts = (a.details || '').split('•').map(p => p.trim());
-          let wyvernRating = '';
-          let argusRating = '';
-          let amenities = '';
-          
-          detailsParts.forEach(part => {
-            if (part.toLowerCase().startsWith('wyvern:')) {
-              wyvernRating = part.replace(/wyvern:\s*/i, '').trim();
-            } else if (part.toLowerCase().startsWith('argus:')) {
-              argusRating = part.replace(/argus:\s*/i, '').trim();
-            } else if (part.length > 3) {
-              amenities = part;
-            }
-          });
-          
-          return `
-          <div class="aircraft-section">
-            <div class="aircraft-header">
-              <div class="aircraft-header-content">
-                <div>
-                  <div class="aircraft-type">${a.type || 'Premium Aircraft'}</div>
-                  <div class="aircraft-tail">${a.tailNumber || 'Available'}</div>
-                </div>
-                <div class="aircraft-price">${a.price || 'TBD'}</div>
-              </div>
-            </div>
-            
-            <div class="aircraft-body">
-              ${a.passengers ? `
-                <div class="info-grid">
-                  <div class="info-card">
-                    <div class="info-label">Passenger Capacity</div>
-                    <div class="info-value">${a.passengers}</div>
-                  </div>
-                </div>
-              ` : ''}
-              
-              ${wyvernRating || argusRating ? `
-                <div class="ratings-container">
-                  ${wyvernRating ? `<span class="rating-badge">${wyvernRating} Certified</span>` : ''}
-                  ${argusRating ? `<span class="rating-badge argus">${argusRating} Rated</span>` : ''}
-                </div>
-              ` : ''}
-              
-              ${amenities ? `
-                <div class="amenities">
-                  <div class="amenities-label">Included Amenities</div>
-                  <div class="amenities-text">${amenities}</div>
-                </div>
-              ` : ''}
-              
-              ${a.link ? `
-                <div class="cta-container">
-                  <a href="${a.link}" class="quote-button">View Complete Quote →</a>
-                </div>
-              ` : ''}
-            </div>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+    <tr>
+      <td align="center">
+        <div class="container">
+          <div class="header">
+            ${logoBase64 ? `<img src="${logoBase64}" alt="Stratos Jet Charters" class="logo">` : ''}
+            <h1 class="header-title">Private Charter Proposal</h1>
+            <p class="header-subtitle">Curated Aircraft Options for Your Journey</p>
           </div>
-        `;
-        }).join('')}
-      </div>
-      
-      <div class="footer">
-        <div class="footer-title">Stratos Jet Charters</div>
-        <p class="footer-text">
-          Elevating private aviation with unparalleled service, safety, and sophistication.<br>
-          Your journey begins the moment you contact us.
-        </p>
-        <div class="footer-contact">
-          Questions? Contact your dedicated aviation specialist or visit<br>
-          <a href="https://stratosjets.com" class="footer-link">stratosjets.com</a>
+          
+          <div class="intro">
+            <p>Dear Client,</p>
+            <p>Thank you for considering Stratos Jet Charters. Based on your requirements, we have identified the following aircraft options. Each has been carefully selected and vetted for safety and service excellence.</p>
+          </div>
+          
+          <div class="content">
+            ${aircraft.map((a) => {
+              const detailsParts = (a.details || '').split('•').map(p => p.trim());
+              let wyvernRating = '';
+              let argusRating = '';
+              let amenities = '';
+              
+              detailsParts.forEach(part => {
+                if (part.toLowerCase().startsWith('wyvern:')) {
+                  wyvernRating = part.replace(/wyvern:\s*/i, '').trim();
+                } else if (part.toLowerCase().startsWith('argus:')) {
+                  argusRating = part.replace(/argus:\s*/i, '').trim();
+                } else if (part.length > 3) {
+                  amenities = part;
+                }
+              });
+              
+              return `
+              <div class="aircraft-section">
+                <div class="aircraft-header">
+                  <table width="100%" cellpadding="0" cellspacing="0">
+                    <tr>
+                      <td width="70%">
+                        <p class="aircraft-type">${a.type || 'Aircraft'}</p>
+                        <p class="aircraft-tail">Tail Number: ${a.tailNumber || 'Available Upon Request'}</p>
+                      </td>
+                      <td width="30%" valign="top">
+                        <p class="aircraft-price">${a.price || 'TBD'}</p>
+                      </td>
+                    </tr>
+                  </table>
+                </div>
+                
+                <div class="aircraft-body">
+                  ${a.passengers ? `
+                    <div class="info-row">
+                      <div class="info-label">Passenger Capacity</div>
+                      <div class="info-value">${a.passengers} Passengers</div>
+                    </div>
+                  ` : ''}
+                  
+                  ${wyvernRating || argusRating ? `
+                    <div class="ratings-section">
+                      <div class="ratings-label">Safety Ratings</div>
+                      ${wyvernRating ? `<span class="rating-item"><strong>Wyvern:</strong> ${wyvernRating}</span>` : ''}
+                      ${argusRating ? `<span class="rating-item"><strong>Argus:</strong> ${argusRating}</span>` : ''}
+                    </div>
+                  ` : ''}
+                  
+                  ${amenities ? `
+                    <div class="amenities-section">
+                      <div class="amenities-label">Included Amenities</div>
+                      <div class="amenities-text">${amenities}</div>
+                    </div>
+                  ` : ''}
+                  
+                  ${a.link ? `
+                    <div class="cta-section">
+                      <a href="${a.link}" class="quote-button">View Complete Quote</a>
+                    </div>
+                  ` : ''}
+                </div>
+              </div>
+            `;
+            }).join('')}
+          </div>
+          
+          <div class="footer">
+            <div class="footer-title">Stratos Jet Charters, Inc.</div>
+            <p class="footer-text">Your Trusted Partner in Private Aviation</p>
+            <p class="footer-text">Available 24/7 for Your Travel Needs</p>
+            <p class="footer-text" style="margin-top: 15px; color: #999999; font-size: 12px;">
+              This proposal is valid for 48 hours. Aircraft availability subject to confirmation.
+            </p>
+          </div>
         </div>
-      </div>
-    </div>
-  </div>
+      </td>
+    </tr>
+  </table>
 </body>
 </html>`;
 
