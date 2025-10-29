@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Trash2, Mail, Eye } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import { supabase } from "@/integrations/supabase/client";
 
 interface AircraftInfo {
   id: string;
@@ -15,6 +16,7 @@ interface AircraftInfo {
   price: string;
   details: string;
   link?: string;
+  images?: string[];
 }
 
 export default function EmailTemplates() {
@@ -280,6 +282,10 @@ export default function EmailTemplates() {
       // Add aircraft to list
       if (newAircraft.length > 0) {
         setAircraft(newAircraft);
+        
+        // Fetch images for aircraft with tail numbers
+        fetchAircraftImages(newAircraft);
+        
         toast({
           title: "Aircraft Created",
           description: `Created ${newAircraft.length} aircraft (highest price per line)`
@@ -332,6 +338,36 @@ export default function EmailTemplates() {
 
   const removeAircraft = (id: string) => {
     setAircraft(aircraft.filter(a => a.id !== id));
+  };
+
+  const fetchAircraftImages = async (aircraftList: AircraftInfo[]) => {
+    for (const aircraft of aircraftList) {
+      if (aircraft.tailNumber) {
+        try {
+          const { data, error } = await supabase.functions.invoke('get-aviapages-aircraft', {
+            body: { tailNumber: aircraft.tailNumber }
+          });
+
+          if (error) {
+            console.error('Error fetching aircraft images:', error);
+            continue;
+          }
+
+          if (data?.success && data?.data?.results?.[0]?.photos) {
+            const photos = data.data.results[0].photos;
+            // Get up to 3 images
+            const imageUrls = photos.slice(0, 3).map((photo: any) => photo.url);
+            
+            // Update aircraft with images
+            setAircraft(prev => prev.map(a => 
+              a.id === aircraft.id ? { ...a, images: imageUrls } : a
+            ));
+          }
+        } catch (error) {
+          console.error('Error fetching images for', aircraft.tailNumber, error);
+        }
+      }
+    }
   };
 
   const generateEmailHTML = async () => {
@@ -500,6 +536,19 @@ export default function EmailTemplates() {
       color: #1e40af;
       font-weight: bold;
     }
+    .aircraft-images {
+      margin: 15px 0;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .aircraft-image {
+      width: 120px;
+      height: 90px;
+      object-fit: cover;
+      border: 1px solid #e5e5e5;
+      border-radius: 4px;
+    }
     .cta-section {
       margin-top: 20px;
       padding-top: 20px;
@@ -625,6 +674,12 @@ export default function EmailTemplates() {
                       <ul class="details-list">
                         ${detailsItems.map(item => `<li>${item}</li>`).join('')}
                       </ul>
+                    </div>
+                  ` : ''}
+                  
+                  ${a.images && a.images.length > 0 ? `
+                    <div class="aircraft-images">
+                      ${a.images.map(img => `<img src="${img}" alt="Aircraft" class="aircraft-image" />`).join('')}
                     </div>
                   ` : ''}
                   
