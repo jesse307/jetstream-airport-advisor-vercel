@@ -187,13 +187,52 @@ export default function EmailTemplates() {
         const passengersInContext = context.match(/(\d+)\s*(passenger|pax|seat|people)/i);
         const passengers = passengersInContext ? passengersInContext[1] : "";
         
+        // Extract Wyvern and Argus ratings
+        const wyvernMatch = context.match(/Wyvern\s+(\w+(?:\s+\w+)?)/i);
+        const argusMatch = context.match(/Argus\s+(\w+(?:\s+\w+)?)/i);
+        
+        // Build details string with ratings and additional notes
+        let detailsParts: string[] = [];
+        
+        if (wyvernMatch) {
+          detailsParts.push(`Wyvern: ${wyvernMatch[1]}`);
+        }
+        
+        if (argusMatch) {
+          detailsParts.push(`Argus: ${argusMatch[1]}`);
+        }
+        
+        // Extract any additional notes - look for text that's not tail numbers, prices, or aircraft types
+        let notes = context;
+        // Remove tail numbers
+        notes = notes.replace(/N\d{1,5}[A-Z]{0,2}/gi, '');
+        // Remove prices
+        notes = notes.replace(/\$[\d,]+/g, '');
+        // Remove aircraft types
+        if (aircraftType) {
+          notes = notes.replace(new RegExp(aircraftType.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), '');
+        }
+        // Remove passenger info
+        notes = notes.replace(/\d+\s*(passenger|pax|seat|people)/gi, '');
+        // Remove Wyvern and Argus ratings (already captured)
+        notes = notes.replace(/Wyvern\s+\w+(?:\s+\w+)?/gi, '');
+        notes = notes.replace(/Argus\s+\w+(?:\s+\w+)?/gi, '');
+        // Clean up extra whitespace
+        notes = notes.replace(/\s+/g, ' ').trim();
+        
+        if (notes.length > 10) {
+          detailsParts.push(notes);
+        }
+        
+        const details = detailsParts.join(' • ');
+        
         return {
           id: Date.now().toString() + index,
           tailNumber,
           type: aircraftType,
           passengers,
           price: priceObj.value,
-          details: ""
+          details
         };
       });
       
