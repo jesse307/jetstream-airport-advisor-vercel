@@ -281,9 +281,11 @@ export default function EmailTemplates() {
       
       // Add aircraft to list
       if (newAircraft.length > 0) {
+        console.log('Setting aircraft with tail numbers:', newAircraft.map(a => ({ id: a.id, tailNumber: a.tailNumber })));
         setAircraft(newAircraft);
         
         // Fetch images for aircraft with tail numbers
+        console.log('Calling fetchAircraftImages...');
         fetchAircraftImages(newAircraft);
         
         toast({
@@ -341,12 +343,20 @@ export default function EmailTemplates() {
   };
 
   const fetchAircraftImages = async (aircraftList: AircraftInfo[]) => {
+    console.log('fetchAircraftImages called with:', aircraftList.length, 'aircraft');
+    
     for (const aircraft of aircraftList) {
-      if (aircraft.tailNumber) {
+      console.log('Processing aircraft:', aircraft.tailNumber);
+      
+      if (aircraft.tailNumber && aircraft.tailNumber.trim().length > 0) {
         try {
+          console.log('Fetching images for tail number:', aircraft.tailNumber);
+          
           const { data, error } = await supabase.functions.invoke('get-aviapages-aircraft', {
             body: { tailNumber: aircraft.tailNumber }
           });
+
+          console.log('Response for', aircraft.tailNumber, ':', { success: data?.success, error });
 
           if (error) {
             console.error('Error fetching aircraft images:', error);
@@ -355,17 +365,24 @@ export default function EmailTemplates() {
 
           if (data?.success && data?.data?.results?.[0]?.photos) {
             const photos = data.data.results[0].photos;
+            console.log('Found', photos.length, 'photos for', aircraft.tailNumber);
+            
             // Get up to 3 images
             const imageUrls = photos.slice(0, 3).map((photo: any) => photo.url);
+            console.log('Image URLs:', imageUrls);
             
             // Update aircraft with images
             setAircraft(prev => prev.map(a => 
               a.id === aircraft.id ? { ...a, images: imageUrls } : a
             ));
+          } else {
+            console.log('No photos found for', aircraft.tailNumber);
           }
         } catch (error) {
           console.error('Error fetching images for', aircraft.tailNumber, error);
         }
+      } else {
+        console.log('Skipping aircraft - no tail number');
       }
     }
   };
