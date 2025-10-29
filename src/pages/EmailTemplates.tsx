@@ -412,6 +412,14 @@ export default function EmailTemplates() {
       width: 100%;
       border-collapse: collapse;
     }
+    .option-number {
+      font-size: 12px;
+      color: #999999;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin: 0 0 5px 0;
+      font-weight: bold;
+    }
     .aircraft-type { 
       font-size: 18px; 
       font-weight: bold; 
@@ -459,12 +467,12 @@ export default function EmailTemplates() {
     .ratings-row {
       margin: 12px 0 0 0;
     }
-    .amenities-section {
+    .details-section {
       margin: 15px 0;
       padding: 15px;
       background: #f8f9fa;
     }
-    .amenities-label {
+    .details-label {
       font-size: 11px;
       text-transform: uppercase;
       color: #666666;
@@ -472,10 +480,25 @@ export default function EmailTemplates() {
       margin-bottom: 8px;
       font-weight: bold;
     }
-    .amenities-text {
+    .details-list {
       color: #333333;
       font-size: 14px;
-      line-height: 1.5;
+      line-height: 1.8;
+      margin: 0;
+      padding-left: 0;
+      list-style: none;
+    }
+    .details-list li {
+      padding-left: 20px;
+      position: relative;
+      margin-bottom: 4px;
+    }
+    .details-list li:before {
+      content: "•";
+      position: absolute;
+      left: 0;
+      color: #1e40af;
+      font-weight: bold;
     }
     .cta-section {
       margin-top: 20px;
@@ -548,11 +571,11 @@ export default function EmailTemplates() {
           </div>
           
           <div class="content">
-            ${aircraft.map((a) => {
+            ${aircraft.map((a, idx) => {
               const detailsParts = (a.details || '').split('•').map(p => p.trim());
               let wyvernRating = '';
               let argusRating = '';
-              let amenities = '';
+              let detailsItems: string[] = [];
               
               detailsParts.forEach(part => {
                 if (part.toLowerCase().startsWith('wyvern:')) {
@@ -560,7 +583,9 @@ export default function EmailTemplates() {
                 } else if (part.toLowerCase().startsWith('argus:')) {
                   argusRating = part.replace(/argus:\s*/i, '').trim();
                 } else if (part.length > 3) {
-                  amenities = part;
+                  // Split by common delimiters and clean up
+                  const items = part.split(/[,;]/).map(item => item.trim()).filter(item => item.length > 0);
+                  detailsItems.push(...items);
                 }
               });
               
@@ -570,6 +595,7 @@ export default function EmailTemplates() {
                   <table width="100%" cellpadding="0" cellspacing="0">
                     <tr>
                       <td width="70%">
+                        <p class="option-number">Option ${idx + 1}</p>
                         <p class="aircraft-type">${a.type || 'Aircraft'}</p>
                         ${wyvernRating || argusRating ? `
                           <div class="ratings-row">
@@ -593,10 +619,12 @@ export default function EmailTemplates() {
                     </div>
                   ` : ''}
                   
-                  ${amenities ? `
-                    <div class="amenities-section">
-                      <div class="amenities-label">Included Amenities</div>
-                      <div class="amenities-text">${amenities}</div>
+                  ${detailsItems.length > 0 ? `
+                    <div class="details-section">
+                      <div class="details-label">Details</div>
+                      <ul class="details-list">
+                        ${detailsItems.map(item => `<li>${item}</li>`).join('')}
+                      </ul>
                     </div>
                   ` : ''}
                   
