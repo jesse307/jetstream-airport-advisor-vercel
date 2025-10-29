@@ -48,35 +48,52 @@ export default function EmailTemplates() {
 
   const extractInfoFromHTML = () => {
     try {
-      // Combine both HTML inputs
+      // Parse both HTML inputs separately
+      const parser = new DOMParser();
+      const doc1 = parser.parseFromString(htmlInput1, 'text/html');
+      const doc2 = parser.parseFromString(htmlInput2, 'text/html');
+      
+      const text1 = doc1.body.textContent || "";
+      const text2 = doc2.body.textContent || "";
+      
+      // For first HTML: split by lines and get highest price per line
+      const lines1 = text1.split('\n').filter(line => line.trim());
+      const pricesPerLine: { value: string; amount: number; line: string }[] = [];
+      
+      lines1.forEach(line => {
+        const pricesInLine = line.match(/\$[\d,]+/g);
+        if (pricesInLine && pricesInLine.length > 0) {
+          // Find the highest price in this line
+          let maxPrice = pricesInLine[0];
+          let maxAmount = parseInt(pricesInLine[0].replace(/[$,]/g, ''));
+          
+          pricesInLine.forEach(price => {
+            const amount = parseInt(price.replace(/[$,]/g, ''));
+            if (amount > maxAmount) {
+              maxAmount = amount;
+              maxPrice = price;
+            }
+          });
+          
+          pricesPerLine.push({ value: maxPrice, amount: maxAmount, line });
+        }
+      });
+      
+      // Combine both texts for context
+      const combinedText = text1 + "\n\n" + text2;
       const combinedHTML = htmlInput1 + "\n\n" + htmlInput2;
       
-      // Create temporary DOM element to parse HTML
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(combinedHTML, 'text/html');
-      
-      // Extract text content for pattern matching
-      const textContent = doc.body.textContent || "";
-      
-      // Extract URLs from href attributes and plain text
-      const links = [...doc.querySelectorAll('a')].map(a => a.getAttribute('href')).filter(Boolean);
-      const urlsInText = textContent.match(/https?:\/\/[^\s]+/g) || [];
+      // Extract URLs
+      const links = [...doc1.querySelectorAll('a'), ...doc2.querySelectorAll('a')].map(a => a.getAttribute('href')).filter(Boolean);
+      const urlsInText = combinedText.match(/https?:\/\/[^\s]+/g) || [];
       const allLinks = [...new Set([...links, ...urlsInText])];
       const finalLink = allLinks.length > 0 ? allLinks[allLinks.length - 1] : null;
       
-      // Extract prices and their positions
-      const priceRegex = /\$[\d,]+/g;
-      const prices: { value: string; index: number }[] = [];
-      let match;
-      while ((match = priceRegex.exec(textContent)) !== null) {
-        prices.push({ value: match[0], index: match.index });
-      }
-      
       // Extract all tail numbers, aircraft types, and passengers
-      const tailNumberMatches = textContent.match(/N\d{1,5}[A-Z]{0,2}/gi) || [];
+      const tailNumberMatches = combinedText.match(/N\d{1,5}[A-Z]{0,2}/gi) || [];
       
       // Extract aircraft types - being more specific and excluding operators
-      const operatorNames = ['Prime', 'NetJets', 'Flexjet', 'VistaJet', 'XOJet', 'Sentient', 'Wheels Up', 'Magellan', 'Air Charter Service'];
+      const operatorNames = ['Prime', 'NetJets', 'Flexjet', 'VistaJet', 'XOJet', 'Sentient', 'Wheels Up', 'Magellan', 'Air Charter Service', 'Journey'];
       const aircraftTypePatterns = [
         // Specific manufacturers with models
         /(?:Gulfstream|Bombardier|Cessna|Embraer|Dassault|Boeing|Airbus)\s+(?:Citation|Challenger|Global|Legacy|Falcon|Phenom|Hawker|Learjet|G|CL)[\w-]+/gi,
@@ -86,11 +103,11 @@ export default function EmailTemplates() {
       
       let aircraftTypes: string[] = [];
       aircraftTypePatterns.forEach(pattern => {
-        const matches = textContent.match(pattern);
+        const matches = combinedText.match(pattern);
         if (matches) {
           // Filter out any matches that contain operator names
           const filtered = matches.filter(match => 
-            !operatorNames.some(op => match.includes(op))
+            !operatorNames.some(op => match.toLowerCase().includes(op.toLowerCase()))
           );
           aircraftTypes = [...aircraftTypes, ...filtered];
         }
@@ -99,14 +116,12 @@ export default function EmailTemplates() {
       // Clean up aircraft types - remove extra spaces and normalize
       aircraftTypes = aircraftTypes.map(type => type.trim().replace(/\s+/g, ' '));
       
-      const passengersMatches = textContent.match(/(\d+)\s*(passenger|pax|seat|people)/gi) || [];
+      const passengersMatches = combinedText.match(/(\d+)\s*(passenger|pax|seat|people)/gi) || [];
       
-      // Create aircraft entries based on prices
-      const newAircraft: AircraftInfo[] = prices.map((priceObj, index) => {
-        // Get context around this price (±200 characters)
-        const contextStart = Math.max(0, priceObj.index - 200);
-        const contextEnd = Math.min(textContent.length, priceObj.index + 200);
-        const context = textContent.substring(contextStart, contextEnd);
+      // Create aircraft entries based on highest prices per line
+      const newAircraft: AircraftInfo[] = pricesPerLine.map((priceObj, index) => {
+        // Use the line context for this price
+        const context = priceObj.line;
         
         // Find tail number in context
         const tailInContext = context.match(/N\d{1,5}[A-Z]{0,2}/i);
@@ -124,7 +139,7 @@ export default function EmailTemplates() {
           if (typeMatch) {
             aircraftType = typeMatch[0].trim().replace(/\s+/g, ' ');
             // Make sure it doesn't contain operator names
-            const hasOperator = operatorNames.some(op => aircraftType.includes(op));
+            const hasOperator = operatorNames.some(op => aircraftType.toLowerCase().includes(op.toLowerCase()));
             if (!hasOperator) break;
             aircraftType = ""; // Reset if it contains operator name
           }
@@ -153,15 +168,15 @@ export default function EmailTemplates() {
         setAircraft(newAircraft);
         toast({
           title: "Aircraft Created",
-          description: `Created ${newAircraft.length} aircraft from extracted prices`
+          description: `Created ${newAircraft.length} aircraft (highest price per line)`
         });
       }
       
       const info = {
-        combinedText: textContent,
+        combinedText,
         combinedHTML,
         tailNumbers: tailNumberMatches,
-        prices: prices.map(p => p.value),
+        prices: pricesPerLine.map(p => p.value),
         passengers: passengersMatches,
         aircraftTypes: [...new Set(aircraftTypes)],
         allLinks,
@@ -174,7 +189,7 @@ export default function EmailTemplates() {
       
       toast({
         title: "Info Extracted",
-        description: `Found ${prices.length} prices, ${tailNumberMatches.length} tail numbers, ${aircraftTypes.length} aircraft types`
+        description: `Found ${pricesPerLine.length} aircraft (max price per line)`
       });
     } catch (error) {
       console.error('Extraction error:', error);
