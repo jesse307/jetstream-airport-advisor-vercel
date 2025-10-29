@@ -64,29 +64,81 @@ export default function EmailTemplates() {
       const allLinks = [...new Set([...links, ...urlsInText])];
       const finalLink = allLinks.length > 0 ? allLinks[allLinks.length - 1] : null;
       
-      // Try to extract common patterns from text
-      const tailNumberMatch = textContent.match(/N\d{1,5}[A-Z]{0,2}/gi);
-      const priceMatch = textContent.match(/\$[\d,]+/g);
-      const passengersMatch = textContent.match(/(\d+)\s*(passenger|pax|seat|people)/gi);
+      // Extract prices and their positions
+      const priceRegex = /\$[\d,]+/g;
+      const prices: { value: string; index: number }[] = [];
+      let match;
+      while ((match = priceRegex.exec(textContent)) !== null) {
+        prices.push({ value: match[0], index: match.index });
+      }
       
-      // Try to extract aircraft types (common patterns)
+      // Extract all tail numbers, aircraft types, and passengers
+      const tailNumberMatches = textContent.match(/N\d{1,5}[A-Z]{0,2}/gi) || [];
       const aircraftTypePatterns = [
         /(?:Gulfstream|Bombardier|Cessna|Embraer|Dassault|Boeing|Airbus|Citation|Challenger|Global|Legacy|Falcon|Phenom|Hawker|Learjet)\s+[A-Z0-9-]+/gi,
         /[A-Z][a-z]+\s+[A-Z0-9-]+(?:\s+(?:ER|SP|XR|XRS))?/g
       ];
-      
       let aircraftTypes: string[] = [];
       aircraftTypePatterns.forEach(pattern => {
         const matches = textContent.match(pattern);
         if (matches) aircraftTypes = [...aircraftTypes, ...matches];
       });
       
+      const passengersMatches = textContent.match(/(\d+)\s*(passenger|pax|seat|people)/gi) || [];
+      
+      // Create aircraft entries based on prices
+      const newAircraft: AircraftInfo[] = prices.map((priceObj, index) => {
+        // Get context around this price (±200 characters)
+        const contextStart = Math.max(0, priceObj.index - 200);
+        const contextEnd = Math.min(textContent.length, priceObj.index + 200);
+        const context = textContent.substring(contextStart, contextEnd);
+        
+        // Find tail number in context
+        const tailInContext = context.match(/N\d{1,5}[A-Z]{0,2}/i);
+        const tailNumber = tailInContext ? tailInContext[0] : (tailNumberMatches[index] || "");
+        
+        // Find aircraft type in context
+        let aircraftType = "";
+        for (const pattern of aircraftTypePatterns) {
+          const typeMatch = context.match(pattern);
+          if (typeMatch) {
+            aircraftType = typeMatch[0];
+            break;
+          }
+        }
+        if (!aircraftType && aircraftTypes[index]) {
+          aircraftType = aircraftTypes[index];
+        }
+        
+        // Find passengers in context
+        const passengersInContext = context.match(/(\d+)\s*(passenger|pax|seat|people)/i);
+        const passengers = passengersInContext ? passengersInContext[1] : "";
+        
+        return {
+          id: Date.now().toString() + index,
+          tailNumber,
+          type: aircraftType,
+          passengers,
+          price: priceObj.value,
+          details: ""
+        };
+      });
+      
+      // Add aircraft to list
+      if (newAircraft.length > 0) {
+        setAircraft(newAircraft);
+        toast({
+          title: "Aircraft Created",
+          description: `Created ${newAircraft.length} aircraft from extracted prices`
+        });
+      }
+      
       const info = {
         combinedText: textContent,
         combinedHTML,
-        tailNumbers: tailNumberMatch || [],
-        prices: priceMatch || [],
-        passengers: passengersMatch || [],
+        tailNumbers: tailNumberMatches,
+        prices: prices.map(p => p.value),
+        passengers: passengersMatches,
         aircraftTypes: [...new Set(aircraftTypes)],
         allLinks,
         finalLink,
@@ -98,7 +150,7 @@ export default function EmailTemplates() {
       
       toast({
         title: "Info Extracted",
-        description: `Found ${tailNumberMatch?.length || 0} tail numbers, ${priceMatch?.length || 0} prices, ${aircraftTypes.length} aircraft types`
+        description: `Found ${prices.length} prices, ${tailNumberMatches.length} tail numbers, ${aircraftTypes.length} aircraft types`
       });
     } catch (error) {
       console.error('Extraction error:', error);
