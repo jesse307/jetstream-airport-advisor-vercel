@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, Download, Plane, Globe } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export default function AircraftData() {
   const [tailNumber, setTailNumber] = useState("");
@@ -16,6 +17,8 @@ export default function AircraftData() {
   const [aircraftData, setAircraftData] = useState<any>(null);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [imagePosition, setImagePosition] = useState({ x: 50, y: 50 }); // Center by default
+  const [selectedAmenities, setSelectedAmenities] = useState<Record<string, boolean>>({});
+  const [customAmenities, setCustomAmenities] = useState<string[]>(['', '', '']);
   const { toast } = useToast();
 
   const handleFetch = async () => {
@@ -55,6 +58,15 @@ export default function AircraftData() {
       }
 
       setAircraftData(aircraft);
+      
+      // Initialize amenities selection
+      const initialAmenities: Record<string, boolean> = {};
+      if (aircraft.aircraft_extension?.wireless_internet) initialAmenities.wifi = true;
+      if (aircraft.aircraft_extension?.entertainment_system) initialAmenities.entertainment = true;
+      if (aircraft.aircraft_extension?.shower) initialAmenities.shower = true;
+      if (aircraft.aircraft_extension?.pets_allowed) initialAmenities.pets = true;
+      if (aircraft.aircraft_extension?.divan_seats) initialAmenities.divan = true;
+      setSelectedAmenities(initialAmenities);
       
       toast({
         title: "Success",
@@ -355,15 +367,17 @@ export default function AircraftData() {
           <img src="${compressedLayoutImage}" alt="Floor Plan">
         </div>` : ''}
       
-      ${aircraft.aircraft_extension ? `
+      ${(Object.values(selectedAmenities).some(v => v) || customAmenities.some(a => a.trim())) ? `
         <h2>Premium Amenities</h2>
         <div class="amenities">
-          ${aircraft.aircraft_extension.wireless_internet ? '<div class="amenity"><div class="amenity-dot"></div><span class="amenity-text">Complimentary WiFi</span></div>' : ''}
-          ${aircraft.aircraft_extension.entertainment_system ? '<div class="amenity"><div class="amenity-dot"></div><span class="amenity-text">Entertainment System</span></div>' : ''}
-          ${aircraft.aircraft_extension.shower ? '<div class="amenity"><div class="amenity-dot"></div><span class="amenity-text">Private Shower</span></div>' : ''}
-          ${aircraft.aircraft_extension.pets_allowed ? '<div class="amenity"><div class="amenity-dot"></div><span class="amenity-text">Pet Friendly</span></div>' : ''}
-          ${aircraft.aircraft_extension.divan_seats ? `<div class="amenity"><div class="amenity-dot"></div><span class="amenity-text">${aircraft.aircraft_extension.divan_seats} Divan Seats</span></div>` : ''}
+          ${selectedAmenities.wifi ? '<div class="amenity"><div class="amenity-dot"></div><span class="amenity-text">Complimentary WiFi</span></div>' : ''}
+          ${selectedAmenities.entertainment ? '<div class="amenity"><div class="amenity-dot"></div><span class="amenity-text">Entertainment System</span></div>' : ''}
+          ${selectedAmenities.shower ? '<div class="amenity"><div class="amenity-dot"></div><span class="amenity-text">Private Shower</span></div>' : ''}
+          ${selectedAmenities.pets ? '<div class="amenity"><div class="amenity-dot"></div><span class="amenity-text">Pet Friendly</span></div>' : ''}
+          ${selectedAmenities.divan && aircraft.aircraft_extension?.divan_seats ? `<div class="amenity"><div class="amenity-dot"></div><span class="amenity-text">${aircraft.aircraft_extension.divan_seats} Divan Seats</span></div>` : ''}
+          ${customAmenities.filter(a => a.trim()).map(a => `<div class="amenity"><div class="amenity-dot"></div><span class="amenity-text">${a}</span></div>`).join('')}
         </div>` : ''}
+      
       
       <div class="footer">
         STRATOS JET CHARTERS
@@ -641,15 +655,17 @@ export default function AircraftData() {
           <img src="${compressedLayoutImage}" alt="Floor Plan">
         </div>` : ''}
       
-      ${aircraft.aircraft_extension ? `
+      ${(Object.values(selectedAmenities).some(v => v) || customAmenities.some(a => a.trim())) ? `
         <h2>Premium Amenities</h2>
         <div class="amenities">
-          ${aircraft.aircraft_extension.wireless_internet ? '<div class="amenity"><div class="amenity-dot"></div><span class="amenity-text">Complimentary WiFi</span></div>' : ''}
-          ${aircraft.aircraft_extension.entertainment_system ? '<div class="amenity"><div class="amenity-dot"></div><span class="amenity-text">Entertainment System</span></div>' : ''}
-          ${aircraft.aircraft_extension.shower ? '<div class="amenity"><div class="amenity-dot"></div><span class="amenity-text">Private Shower</span></div>' : ''}
-          ${aircraft.aircraft_extension.pets_allowed ? '<div class="amenity"><div class="amenity-dot"></div><span class="amenity-text">Pet Friendly</span></div>' : ''}
-          ${aircraft.aircraft_extension.divan_seats ? `<div class="amenity"><div class="amenity-dot"></div><span class="amenity-text">${aircraft.aircraft_extension.divan_seats} Divan Seats</span></div>` : ''}
+          ${selectedAmenities.wifi ? '<div class="amenity"><div class="amenity-dot"></div><span class="amenity-text">Complimentary WiFi</span></div>' : ''}
+          ${selectedAmenities.entertainment ? '<div class="amenity"><div class="amenity-dot"></div><span class="amenity-text">Entertainment System</span></div>' : ''}
+          ${selectedAmenities.shower ? '<div class="amenity"><div class="amenity-dot"></div><span class="amenity-text">Private Shower</span></div>' : ''}
+          ${selectedAmenities.pets ? '<div class="amenity"><div class="amenity-dot"></div><span class="amenity-text">Pet Friendly</span></div>' : ''}
+          ${selectedAmenities.divan && aircraft.aircraft_extension?.divan_seats ? `<div class="amenity"><div class="amenity-dot"></div><span class="amenity-text">${aircraft.aircraft_extension.divan_seats} Divan Seats</span></div>` : ''}
+          ${customAmenities.filter(a => a.trim()).map(a => `<div class="amenity"><div class="amenity-dot"></div><span class="amenity-text">${a}</span></div>`).join('')}
         </div>` : ''}
+      
       
       <div class="footer">
         STRATOS JET CHARTERS
@@ -825,6 +841,89 @@ export default function AircraftData() {
                     </Button>
                   </div>
                 </div>
+
+                {/* Amenities Selection */}
+                <div className="space-y-3 pt-4">
+                  <Label className="text-base font-semibold">Select Amenities to Display</Label>
+                  <div className="grid grid-cols-2 gap-3">
+                    {aircraftData.aircraft_extension?.wireless_internet && (
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="wifi"
+                          checked={selectedAmenities.wifi || false}
+                          onCheckedChange={(checked) => 
+                            setSelectedAmenities(prev => ({ ...prev, wifi: !!checked }))
+                          }
+                        />
+                        <label htmlFor="wifi" className="text-sm cursor-pointer">Complimentary WiFi</label>
+                      </div>
+                    )}
+                    {aircraftData.aircraft_extension?.entertainment_system && (
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="entertainment"
+                          checked={selectedAmenities.entertainment || false}
+                          onCheckedChange={(checked) => 
+                            setSelectedAmenities(prev => ({ ...prev, entertainment: !!checked }))
+                          }
+                        />
+                        <label htmlFor="entertainment" className="text-sm cursor-pointer">Entertainment System</label>
+                      </div>
+                    )}
+                    {aircraftData.aircraft_extension?.shower && (
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="shower"
+                          checked={selectedAmenities.shower || false}
+                          onCheckedChange={(checked) => 
+                            setSelectedAmenities(prev => ({ ...prev, shower: !!checked }))
+                          }
+                        />
+                        <label htmlFor="shower" className="text-sm cursor-pointer">Private Shower</label>
+                      </div>
+                    )}
+                    {aircraftData.aircraft_extension?.pets_allowed && (
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="pets"
+                          checked={selectedAmenities.pets || false}
+                          onCheckedChange={(checked) => 
+                            setSelectedAmenities(prev => ({ ...prev, pets: !!checked }))
+                          }
+                        />
+                        <label htmlFor="pets" className="text-sm cursor-pointer">Pet Friendly</label>
+                      </div>
+                    )}
+                    {aircraftData.aircraft_extension?.divan_seats && (
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="divan"
+                          checked={selectedAmenities.divan || false}
+                          onCheckedChange={(checked) => 
+                            setSelectedAmenities(prev => ({ ...prev, divan: !!checked }))
+                          }
+                        />
+                        <label htmlFor="divan" className="text-sm cursor-pointer">{aircraftData.aircraft_extension.divan_seats} Divan Seats</label>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="space-y-2 pt-2">
+                    <Label className="text-sm">Custom Amenities</Label>
+                    {customAmenities.map((amenity, index) => (
+                      <Input
+                        key={index}
+                        placeholder={`Custom amenity ${index + 1}`}
+                        value={amenity}
+                        onChange={(e) => {
+                          const newCustomAmenities = [...customAmenities];
+                          newCustomAmenities[index] = e.target.value;
+                          setCustomAmenities(newCustomAmenities);
+                        }}
+                      />
+                    ))}
+                  </div>
+                </div>
               </div>
             )}
           </CardContent>
@@ -982,42 +1081,48 @@ export default function AircraftData() {
               )}
 
               {/* Amenities - The Experience */}
-              {aircraftData.aircraft_extension && (
+              {(Object.values(selectedAmenities).some(v => v) || customAmenities.some(a => a.trim())) && (
                 <>
                   <Separator className="my-12" />
                   <div>
                     <h2 className="text-xs font-medium tracking-wide text-muted-foreground mb-4 uppercase">Premium Amenities</h2>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      {aircraftData.aircraft_extension.wireless_internet && (
+                      {selectedAmenities.wifi && (
                         <div className="flex items-center gap-4 p-5 bg-card border rounded-xl hover:shadow-md transition-all">
                           <div className="w-2 h-2 rounded-full bg-accent" />
                           <span className="text-lg font-light tracking-wide">Complimentary WiFi</span>
                         </div>
                       )}
-                      {aircraftData.aircraft_extension.entertainment_system && (
+                      {selectedAmenities.entertainment && (
                         <div className="flex items-center gap-4 p-5 bg-card border rounded-xl hover:shadow-md transition-all">
                           <div className="w-2 h-2 rounded-full bg-accent" />
                           <span className="text-lg font-light tracking-wide">Entertainment System</span>
                         </div>
                       )}
-                      {aircraftData.aircraft_extension.shower && (
+                      {selectedAmenities.shower && (
                         <div className="flex items-center gap-4 p-5 bg-card border rounded-xl hover:shadow-md transition-all">
                           <div className="w-2 h-2 rounded-full bg-accent" />
                           <span className="text-lg font-light tracking-wide">Private Shower</span>
                         </div>
                       )}
-                      {aircraftData.aircraft_extension.pets_allowed && (
+                      {selectedAmenities.pets && (
                         <div className="flex items-center gap-4 p-5 bg-card border rounded-xl hover:shadow-md transition-all">
                           <div className="w-2 h-2 rounded-full bg-accent" />
                           <span className="text-lg font-light tracking-wide">Pet Friendly</span>
                         </div>
                       )}
-                      {aircraftData.aircraft_extension.divan_seats && (
+                      {selectedAmenities.divan && aircraftData.aircraft_extension?.divan_seats && (
                         <div className="flex items-center gap-4 p-5 bg-card border rounded-xl hover:shadow-md transition-all">
                           <div className="w-2 h-2 rounded-full bg-accent" />
                           <span className="text-lg font-light tracking-wide">{aircraftData.aircraft_extension.divan_seats} Divan Seats</span>
                         </div>
                       )}
+                      {customAmenities.filter(a => a.trim()).map((amenity, index) => (
+                        <div key={`custom-${index}`} className="flex items-center gap-4 p-5 bg-card border rounded-xl hover:shadow-md transition-all">
+                          <div className="w-2 h-2 rounded-full bg-accent" />
+                          <span className="text-lg font-light tracking-wide">{amenity}</span>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 </>
