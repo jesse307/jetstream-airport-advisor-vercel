@@ -367,9 +367,15 @@ export default function EmailTemplates() {
             const images = data.data.results[0].images;
             console.log('Found', images.length, 'images for', aircraft.tailNumber);
             
-            // Get up to 3 images - aviapages returns images with media.path
-            const imageUrls = images.slice(0, 3).map((img: any) => img.media.path);
-            console.log('Image URLs:', imageUrls);
+            // Get up to 3 unique images - aviapages returns images with media.path
+            const imageUrls = images
+              .map((img: any) => img.media.path)
+              .filter((url: string, index: number, self: string[]) => 
+                self.indexOf(url) === index // Remove duplicates
+              )
+              .slice(0, 3); // Take max 3
+              
+            console.log('Unique image URLs:', imageUrls);
             
             // Update aircraft with images
             setAircraft(prev => prev.map(a => 
@@ -565,13 +571,22 @@ export default function EmailTemplates() {
       display: flex;
       gap: 8px;
       flex-wrap: wrap;
+      justify-content: center;
     }
     .aircraft-image {
-      width: 120px;
-      height: 90px;
+      flex: 1;
+      min-width: 150px;
+      max-width: calc(33.333% - 6px);
+      height: 110px;
       object-fit: cover;
-      border: 1px solid #e5e5e5;
+      border: 1px solid #cccccc;
       border-radius: 4px;
+    }
+    @media only screen and (max-width: 600px) {
+      .aircraft-image {
+        max-width: 100%;
+        min-width: 100%;
+      }
     }
     .cta-section {
       margin-top: 20px;
