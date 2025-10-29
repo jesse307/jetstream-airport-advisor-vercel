@@ -363,12 +363,12 @@ export default function EmailTemplates() {
             continue;
           }
 
-          if (data?.success && data?.data?.results?.[0]?.photos) {
-            const photos = data.data.results[0].photos;
-            console.log('Found', photos.length, 'photos for', aircraft.tailNumber);
+          if (data?.success && data?.data?.results?.[0]?.images) {
+            const images = data.data.results[0].images;
+            console.log('Found', images.length, 'images for', aircraft.tailNumber);
             
-            // Get up to 3 images
-            const imageUrls = photos.slice(0, 3).map((photo: any) => photo.url);
+            // Get up to 3 images - aviapages returns images with media.path
+            const imageUrls = images.slice(0, 3).map((img: any) => img.media.path);
             console.log('Image URLs:', imageUrls);
             
             // Update aircraft with images
@@ -376,7 +376,7 @@ export default function EmailTemplates() {
               a.id === aircraft.id ? { ...a, images: imageUrls } : a
             ));
           } else {
-            console.log('No photos found for', aircraft.tailNumber);
+            console.log('No images found for', aircraft.tailNumber);
           }
         } catch (error) {
           console.error('Error fetching images for', aircraft.tailNumber, error);
