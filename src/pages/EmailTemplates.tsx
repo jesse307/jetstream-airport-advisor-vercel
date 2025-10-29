@@ -840,14 +840,14 @@ export default function EmailTemplates() {
               <div class="trip-details">
                 ${tripInfo.departureDate ? `
                   <div class="trip-detail-item">
-                    <div class="trip-detail-label">Departure Date</div>
+                    <div class="trip-detail-label">${tripInfo.returnDate ? 'Departure' : 'Date'}</div>
                     <div class="trip-detail-value">${tripInfo.departureDate}${tripInfo.departureTime ? ` at ${tripInfo.departureTime}` : ''}</div>
                   </div>
                 ` : ''}
                 
                 ${tripInfo.returnDate ? `
                   <div class="trip-detail-item">
-                    <div class="trip-detail-label">Return Date</div>
+                    <div class="trip-detail-label">Return</div>
                     <div class="trip-detail-value">${tripInfo.returnDate}${tripInfo.returnTime ? ` at ${tripInfo.returnTime}` : ''}</div>
                   </div>
                 ` : ''}
@@ -909,11 +909,11 @@ export default function EmailTemplates() {
                   ` : ''}
                   
                   ${amenities.length > 0 ? `
-                    <div class="details-section">
-                      <div class="details-label">Amenities</div>
-                      <ul class="details-list">
-                        ${amenities.map(item => `<li>${item}</li>`).join('')}
-                      </ul>
+                    <div class="info-row">
+                      <div class="info-label">Amenities</div>
+                      <div class="info-value" style="display: flex; flex-wrap: wrap; gap: 6px;">
+                        ${amenities.map(item => `<span style="display: inline-block; padding: 3px 10px; background-color: #f3f4f6; color: #374151; border-radius: 12px; font-size: 12px; white-space: nowrap;">${item}</span>`).join('')}
+                      </div>
                     </div>
                   ` : ''}
                   
