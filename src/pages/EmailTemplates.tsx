@@ -187,41 +187,56 @@ export default function EmailTemplates() {
         const passengersInContext = context.match(/(\d+)\s*(passenger|pax|seat|people)/i);
         const passengers = passengersInContext ? passengersInContext[1] : "";
         
-        // Extract Wyvern and Argus ratings
-        const wyvernMatch = context.match(/Wyvern\s+(\w+(?:\s+\w+)?)/i);
-        const argusMatch = context.match(/Argus\s+(\w+(?:\s+\w+)?)/i);
-        
-        // Build details string with ratings and additional notes
+        // Look for this aircraft's details in the second HTML box
         let detailsParts: string[] = [];
         
+        // Try to find matching section in text2 by tail number or aircraft type
+        let matchingSection = "";
+        if (tailNumber) {
+          const tailRegex = new RegExp(`${tailNumber}[\\s\\S]{0,300}`, 'i');
+          const match = text2.match(tailRegex);
+          if (match) matchingSection = match[0];
+        }
+        
+        // If no match by tail, try by aircraft type
+        if (!matchingSection && aircraftType) {
+          const typeRegex = new RegExp(`${aircraftType.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[\\s\\S]{0,300}`, 'i');
+          const match = text2.match(typeRegex);
+          if (match) matchingSection = match[0];
+        }
+        
+        // If still no match, use index-based section from text2
+        if (!matchingSection) {
+          const lines2 = text2.split(/\n+/).filter(line => line.trim());
+          if (lines2[index]) {
+            matchingSection = lines2[index];
+          }
+        }
+        
+        console.log(`Aircraft ${index} matching section:`, matchingSection);
+        
+        // Extract Wyvern rating (more flexible pattern)
+        const wyvernMatch = matchingSection.match(/Wyvern[:\s-]*([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)/i) || 
+                           text2.match(new RegExp(`Wyvern[:\\s-]*([A-Z][a-z]+(?:\\s+[A-Z][a-z]+)?)`, 'gi'))?.[index]?.match(/Wyvern[:\s-]*([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)/i);
+        
+        // Extract Argus rating (more flexible pattern)
+        const argusMatch = matchingSection.match(/Argus[:\s-]*([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?(?:\s+[A-Z][a-z]+)?)/i) ||
+                          text2.match(new RegExp(`Argus[:\\s-]*([A-Z][a-z]+(?:\\s+[A-Z][a-z]+)?(?:\\s+[A-Z][a-z]+)?)`, 'gi'))?.[index]?.match(/Argus[:\s-]*([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?(?:\s+[A-Z][a-z]+)?)/i);
+        
         if (wyvernMatch) {
-          detailsParts.push(`Wyvern: ${wyvernMatch[1]}`);
+          detailsParts.push(`Wyvern: ${wyvernMatch[1].trim()}`);
         }
         
         if (argusMatch) {
-          detailsParts.push(`Argus: ${argusMatch[1]}`);
+          detailsParts.push(`Argus: ${argusMatch[1].trim()}`);
         }
         
-        // Extract any additional notes - look for text that's not tail numbers, prices, or aircraft types
-        let notes = context;
-        // Remove tail numbers
-        notes = notes.replace(/N\d{1,5}[A-Z]{0,2}/gi, '');
-        // Remove prices
-        notes = notes.replace(/\$[\d,]+/g, '');
-        // Remove aircraft types
-        if (aircraftType) {
-          notes = notes.replace(new RegExp(aircraftType.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), '');
-        }
-        // Remove passenger info
-        notes = notes.replace(/\d+\s*(passenger|pax|seat|people)/gi, '');
-        // Remove Wyvern and Argus ratings (already captured)
-        notes = notes.replace(/Wyvern\s+\w+(?:\s+\w+)?/gi, '');
-        notes = notes.replace(/Argus\s+\w+(?:\s+\w+)?/gi, '');
-        // Clean up extra whitespace
-        notes = notes.replace(/\s+/g, ' ').trim();
-        
-        if (notes.length > 10) {
-          detailsParts.push(notes);
+        // Extract amenities/notes from second box (wifi, etc.)
+        const amenitiesPattern = /(?:free\s+)?wifi|entertainment|lavatory|galley|refreshments|catering|baggage|cargo|pets?\s+allowed|smoking|non-?smoking/gi;
+        const amenitiesMatches = matchingSection.match(amenitiesPattern);
+        if (amenitiesMatches && amenitiesMatches.length > 0) {
+          const uniqueAmenities = [...new Set(amenitiesMatches.map(a => a.trim()))];
+          detailsParts.push(uniqueAmenities.join(', '));
         }
         
         const details = detailsParts.join(' • ');
