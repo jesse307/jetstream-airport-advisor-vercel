@@ -25,30 +25,47 @@ export default function EmailTemplates() {
 
   const extractInfoFromHTML = () => {
     try {
-      // Create temporary DOM elements to parse HTML
+      // Combine both HTML inputs
+      const combinedHTML = htmlInput1 + "\n\n" + htmlInput2;
+      
+      // Create temporary DOM element to parse HTML
       const parser = new DOMParser();
-      const doc1 = parser.parseFromString(htmlInput1, 'text/html');
-      const doc2 = parser.parseFromString(htmlInput2, 'text/html');
+      const doc = parser.parseFromString(combinedHTML, 'text/html');
       
-      // Extract text content
-      const text1 = doc1.body.textContent || "";
-      const text2 = doc2.body.textContent || "";
-      const combinedText = text1 + "\n" + text2;
+      // Extract text content for pattern matching
+      const textContent = doc.body.textContent || "";
       
-      // Extract URLs
-      const links = [...doc1.querySelectorAll('a'), ...doc2.querySelectorAll('a')];
-      const finalLink = links.length > 0 ? links[links.length - 1].getAttribute('href') : null;
+      // Extract URLs from href attributes and plain text
+      const links = [...doc.querySelectorAll('a')].map(a => a.getAttribute('href')).filter(Boolean);
+      const urlsInText = textContent.match(/https?:\/\/[^\s]+/g) || [];
+      const allLinks = [...new Set([...links, ...urlsInText])];
+      const finalLink = allLinks.length > 0 ? allLinks[allLinks.length - 1] : null;
       
-      // Try to extract common patterns
-      const tailNumberMatch = combinedText.match(/N\d{1,5}[A-Z]{0,2}/gi);
-      const priceMatch = combinedText.match(/\$[\d,]+/g);
-      const passengersMatch = combinedText.match(/(\d+)\s*(passenger|pax|seat)/gi);
+      // Try to extract common patterns from text
+      const tailNumberMatch = textContent.match(/N\d{1,5}[A-Z]{0,2}/gi);
+      const priceMatch = textContent.match(/\$[\d,]+/g);
+      const passengersMatch = textContent.match(/(\d+)\s*(passenger|pax|seat|people)/gi);
+      
+      // Try to extract aircraft types (common patterns)
+      const aircraftTypePatterns = [
+        /(?:Gulfstream|Bombardier|Cessna|Embraer|Dassault|Boeing|Airbus|Citation|Challenger|Global|Legacy|Falcon|Phenom|Hawker|Learjet)\s+[A-Z0-9-]+/gi,
+        /[A-Z][a-z]+\s+[A-Z0-9-]+(?:\s+(?:ER|SP|XR|XRS))?/g
+      ];
+      
+      let aircraftTypes: string[] = [];
+      aircraftTypePatterns.forEach(pattern => {
+        const matches = textContent.match(pattern);
+        if (matches) aircraftTypes = [...aircraftTypes, ...matches];
+      });
       
       const info = {
-        combinedText,
+        combinedText: textContent,
+        combinedHTML,
         tailNumbers: tailNumberMatch || [],
         prices: priceMatch || [],
         passengers: passengersMatch || [],
+        aircraftTypes: [...new Set(aircraftTypes)],
+        allLinks,
         finalLink,
         rawHtml1: htmlInput1,
         rawHtml2: htmlInput2,
@@ -58,9 +75,10 @@ export default function EmailTemplates() {
       
       toast({
         title: "Info Extracted",
-        description: `Found ${tailNumberMatch?.length || 0} tail numbers, ${priceMatch?.length || 0} prices`
+        description: `Found ${tailNumberMatch?.length || 0} tail numbers, ${priceMatch?.length || 0} prices, ${aircraftTypes.length} aircraft types`
       });
     } catch (error) {
+      console.error('Extraction error:', error);
       toast({
         title: "Error",
         description: "Failed to parse HTML",
@@ -341,19 +359,41 @@ export default function EmailTemplates() {
                       <strong>Tail Numbers:</strong> {extractedInfo.tailNumbers.join(', ')}
                     </div>
                   )}
+                  {extractedInfo.aircraftTypes.length > 0 && (
+                    <div>
+                      <strong>Aircraft Types:</strong> {extractedInfo.aircraftTypes.join(', ')}
+                    </div>
+                  )}
                   {extractedInfo.prices.length > 0 && (
                     <div>
                       <strong>Prices:</strong> {extractedInfo.prices.join(', ')}
                     </div>
                   )}
-                  {extractedInfo.finalLink && (
+                  {extractedInfo.passengers.length > 0 && (
                     <div>
-                      <strong>Link:</strong>{' '}
-                      <a href={extractedInfo.finalLink} target="_blank" rel="noopener noreferrer" className="text-primary underline">
-                        {extractedInfo.finalLink}
-                      </a>
+                      <strong>Passengers:</strong> {extractedInfo.passengers.join(', ')}
                     </div>
                   )}
+                  {extractedInfo.allLinks.length > 0 && (
+                    <div>
+                      <strong>Links Found:</strong>
+                      <div className="mt-1 space-y-1">
+                        {extractedInfo.allLinks.map((link: string, idx: number) => (
+                          <div key={idx}>
+                            <a href={link} target="_blank" rel="noopener noreferrer" className="text-primary underline text-xs break-all">
+                              {link}
+                            </a>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  <details className="mt-4">
+                    <summary className="cursor-pointer font-medium">View Combined HTML</summary>
+                    <pre className="mt-2 p-2 bg-background rounded text-xs overflow-auto max-h-40">
+                      {extractedInfo.combinedHTML}
+                    </pre>
+                  </details>
                 </CardContent>
               </Card>
             )}
