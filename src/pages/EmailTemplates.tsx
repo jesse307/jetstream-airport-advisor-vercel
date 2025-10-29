@@ -74,15 +74,30 @@ export default function EmailTemplates() {
       
       // Extract all tail numbers, aircraft types, and passengers
       const tailNumberMatches = textContent.match(/N\d{1,5}[A-Z]{0,2}/gi) || [];
+      
+      // Extract aircraft types - being more specific and excluding operators
+      const operatorNames = ['Prime', 'NetJets', 'Flexjet', 'VistaJet', 'XOJet', 'Sentient', 'Wheels Up', 'Magellan', 'Air Charter Service'];
       const aircraftTypePatterns = [
-        /(?:Gulfstream|Bombardier|Cessna|Embraer|Dassault|Boeing|Airbus|Citation|Challenger|Global|Legacy|Falcon|Phenom|Hawker|Learjet)\s+[A-Z0-9-]+/gi,
-        /[A-Z][a-z]+\s+[A-Z0-9-]+(?:\s+(?:ER|SP|XR|XRS))?/g
+        // Specific manufacturers with models
+        /(?:Gulfstream|Bombardier|Cessna|Embraer|Dassault|Boeing|Airbus)\s+(?:Citation|Challenger|Global|Legacy|Falcon|Phenom|Hawker|Learjet|G|CL)[\w-]+/gi,
+        // Common format: Word + alphanumeric (like "Citation X", "Global 6000")
+        /(?:Citation|Challenger|Global|Legacy|Falcon|Phenom|Hawker|Learjet|Gulfstream)\s+[\w-]+/gi
       ];
+      
       let aircraftTypes: string[] = [];
       aircraftTypePatterns.forEach(pattern => {
         const matches = textContent.match(pattern);
-        if (matches) aircraftTypes = [...aircraftTypes, ...matches];
+        if (matches) {
+          // Filter out any matches that contain operator names
+          const filtered = matches.filter(match => 
+            !operatorNames.some(op => match.includes(op))
+          );
+          aircraftTypes = [...aircraftTypes, ...filtered];
+        }
       });
+      
+      // Clean up aircraft types - remove extra spaces and normalize
+      aircraftTypes = aircraftTypes.map(type => type.trim().replace(/\s+/g, ' '));
       
       const passengersMatches = textContent.match(/(\d+)\s*(passenger|pax|seat|people)/gi) || [];
       
@@ -97,15 +112,24 @@ export default function EmailTemplates() {
         const tailInContext = context.match(/N\d{1,5}[A-Z]{0,2}/i);
         const tailNumber = tailInContext ? tailInContext[0] : (tailNumberMatches[index] || "");
         
-        // Find aircraft type in context
+        // Find aircraft type in context - look for manufacturer + model
         let aircraftType = "";
-        for (const pattern of aircraftTypePatterns) {
+        const typePatterns = [
+          /(?:Gulfstream|Bombardier|Cessna|Embraer|Dassault)\s+(?:Citation|Challenger|Global|Legacy|Falcon|Phenom|G|CL)[\w-]+/i,
+          /(?:Citation|Challenger|Global|Legacy|Falcon|Phenom|Hawker|Learjet|Gulfstream)\s+[\w-]+/i
+        ];
+        
+        for (const pattern of typePatterns) {
           const typeMatch = context.match(pattern);
           if (typeMatch) {
-            aircraftType = typeMatch[0];
-            break;
+            aircraftType = typeMatch[0].trim().replace(/\s+/g, ' ');
+            // Make sure it doesn't contain operator names
+            const hasOperator = operatorNames.some(op => aircraftType.includes(op));
+            if (!hasOperator) break;
+            aircraftType = ""; // Reset if it contains operator name
           }
         }
+        
         if (!aircraftType && aircraftTypes[index]) {
           aircraftType = aircraftTypes[index];
         }
