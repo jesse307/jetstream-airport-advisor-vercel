@@ -139,6 +139,78 @@ export default function EmailTemplates() {
       
       console.log('Links found in second box:', allLinks);
       
+      // Extract trip information
+      const tripData: any = {};
+      
+      // Extract airports (look for IATA codes - 3 letter uppercase)
+      const airportMatches = combinedText.match(/\b[A-Z]{3}\b/g);
+      if (airportMatches && airportMatches.length >= 2) {
+        // Common airport indicator patterns
+        const departurePatterns = /(?:from|departure|depart|origin|leaving)[\s:]*([A-Z]{3})/gi;
+        const arrivalPatterns = /(?:to|arrival|arrive|destination|going\s+to)[\s:]*([A-Z]{3})/gi;
+        
+        const depMatch = combinedText.match(departurePatterns);
+        const arrMatch = combinedText.match(arrivalPatterns);
+        
+        if (depMatch && depMatch[0]) {
+          const depCode = depMatch[0].match(/[A-Z]{3}/);
+          if (depCode) tripData.departureAirport = depCode[0];
+        } else if (airportMatches[0]) {
+          tripData.departureAirport = airportMatches[0];
+        }
+        
+        if (arrMatch && arrMatch[0]) {
+          const arrCode = arrMatch[0].match(/[A-Z]{3}/);
+          if (arrCode) tripData.arrivalAirport = arrCode[0];
+        } else if (airportMatches[1]) {
+          tripData.arrivalAirport = airportMatches[1];
+        }
+      }
+      
+      // Extract dates (various formats)
+      const datePatterns = [
+        /\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}/g,  // MM/DD/YYYY or DD-MM-YYYY
+        /\d{4}[\/\-]\d{1,2}[\/\-]\d{1,2}/g,    // YYYY-MM-DD
+        /(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2},?\s+\d{4}/gi, // Month DD, YYYY
+      ];
+      
+      let foundDates: string[] = [];
+      datePatterns.forEach(pattern => {
+        const matches = combinedText.match(pattern);
+        if (matches) foundDates = [...foundDates, ...matches];
+      });
+      
+      if (foundDates.length > 0) {
+        tripData.departureDate = foundDates[0];
+        if (foundDates.length > 1) {
+          tripData.returnDate = foundDates[1];
+        }
+      }
+      
+      // Extract times (HH:MM format)
+      const timeMatches = combinedText.match(/\b\d{1,2}:\d{2}\s*(?:AM|PM|am|pm)?\b/g);
+      if (timeMatches && timeMatches.length > 0) {
+        tripData.departureTime = timeMatches[0];
+        if (timeMatches.length > 1) {
+          tripData.returnTime = timeMatches[1];
+        }
+      }
+      
+      // Extract passenger count
+      const paxMatch = combinedText.match(/(\d+)\s*(?:passenger|pax|people|person)/i);
+      if (paxMatch) {
+        tripData.passengers = paxMatch[1];
+      }
+      
+      // Update trip info state if we found any data
+      if (Object.keys(tripData).length > 0) {
+        setTripInfo(prev => ({
+          ...prev,
+          ...tripData
+        }));
+        console.log('Extracted trip info:', tripData);
+      }
+      
       // Extract all tail numbers, aircraft types, and passengers
       const tailNumberMatches = combinedText.match(/N\d{1,5}[A-Z]{0,2}/gi) || [];
       
