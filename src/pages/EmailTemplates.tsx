@@ -56,12 +56,44 @@ export default function EmailTemplates() {
       const text1 = doc1.body.textContent || "";
       const text2 = doc2.body.textContent || "";
       
-      // For first HTML: split by lines and get highest price per line
-      const lines1 = text1.split('\n').filter(line => line.trim());
+      // For first HTML: split by multiple delimiters to find aircraft entries
+      // Try splitting by common separators that might indicate different aircraft
+      let lines1 = text1.split(/\n+/).filter(line => line.trim());
+      
+      // If we don't get enough lines, try splitting by multiple spaces or tabs
+      if (lines1.length < 4) {
+        lines1 = text1.split(/\s{3,}|\t+/).filter(line => line.trim());
+      }
+      
+      // If still not enough, try to find sections with multiple prices
+      if (lines1.length < 4) {
+        const pricePattern = /\$[\d,]+/g;
+        const allPrices = text1.match(pricePattern) || [];
+        
+        // If we have 12 prices (3 per aircraft × 4 aircraft), split the text into 4 chunks
+        if (allPrices.length >= 9) {
+          const chunkSize = Math.floor(text1.length / 4);
+          lines1 = [];
+          for (let i = 0; i < 4; i++) {
+            const start = i * chunkSize;
+            const end = (i === 3) ? text1.length : (i + 1) * chunkSize;
+            const chunk = text1.substring(start, end);
+            if (chunk.match(pricePattern)) {
+              lines1.push(chunk);
+            }
+          }
+        }
+      }
+      
+      console.log('Lines found:', lines1.length);
+      console.log('Lines:', lines1);
+      
       const pricesPerLine: { value: string; amount: number; line: string }[] = [];
       
-      lines1.forEach(line => {
+      lines1.forEach((line, idx) => {
         const pricesInLine = line.match(/\$[\d,]+/g);
+        console.log(`Line ${idx} prices:`, pricesInLine);
+        
         if (pricesInLine && pricesInLine.length > 0) {
           // Find the highest price in this line
           let maxPrice = pricesInLine[0];
@@ -78,6 +110,8 @@ export default function EmailTemplates() {
           pricesPerLine.push({ value: maxPrice, amount: maxAmount, line });
         }
       });
+      
+      console.log('Prices per line:', pricesPerLine);
       
       // Combine both texts for context
       const combinedText = text1 + "\n\n" + text2;
