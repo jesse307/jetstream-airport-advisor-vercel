@@ -388,6 +388,13 @@ export default function EmailTemplates() {
   };
 
   const generateEmailHTML = async () => {
+    // Fetch images for aircraft with tail numbers first
+    console.log('Generating email - fetching images for aircraft with tail numbers');
+    await fetchAircraftImages(aircraft);
+    
+    // Small delay to ensure images are loaded
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
     // Fetch logo and convert to base64
     let logoBase64 = '';
     try {
