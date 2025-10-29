@@ -418,12 +418,17 @@ export default function EmailTemplates() {
       color: #1e40af;
       margin: 0 0 5px 0;
     }
-    .aircraft-tail {
-      font-size: 12px;
-      color: #666666;
+    .rating-badge {
+      display: inline-block;
+      padding: 4px 10px;
+      margin-right: 8px;
+      font-size: 11px;
+      font-weight: bold;
       text-transform: uppercase;
-      letter-spacing: 1px;
-      margin: 0;
+      letter-spacing: 0.5px;
+      background: #f8f9fa;
+      border: 1px solid #1e40af;
+      color: #1e40af;
     }
     .aircraft-price {
       font-size: 24px;
@@ -451,28 +456,8 @@ export default function EmailTemplates() {
       font-size: 16px;
       color: #333333;
     }
-    .ratings-section {
-      margin: 15px 0;
-      padding: 15px;
-      background: #f8f9fa;
-      border-left: 3px solid #1e40af;
-    }
-    .ratings-label {
-      font-size: 11px;
-      text-transform: uppercase;
-      color: #1e40af;
-      letter-spacing: 1px;
-      margin-bottom: 8px;
-      font-weight: bold;
-    }
-    .rating-item {
-      display: inline-block;
-      margin-right: 15px;
-      font-size: 13px;
-      color: #333333;
-    }
-    .rating-item strong {
-      color: #1e40af;
+    .ratings-row {
+      margin: 12px 0 0 0;
     }
     .amenities-section {
       margin: 15px 0;
@@ -586,7 +571,12 @@ export default function EmailTemplates() {
                     <tr>
                       <td width="70%">
                         <p class="aircraft-type">${a.type || 'Aircraft'}</p>
-                        <p class="aircraft-tail">Tail Number: ${a.tailNumber || 'Available Upon Request'}</p>
+                        ${wyvernRating || argusRating ? `
+                          <div class="ratings-row">
+                            ${wyvernRating ? `<span class="rating-badge">Wyvern ${wyvernRating}</span>` : ''}
+                            ${argusRating ? `<span class="rating-badge">Argus ${argusRating}</span>` : ''}
+                          </div>
+                        ` : ''}
                       </td>
                       <td width="30%" valign="top">
                         <p class="aircraft-price">${a.price || 'TBD'}</p>
@@ -600,14 +590,6 @@ export default function EmailTemplates() {
                     <div class="info-row">
                       <div class="info-label">Passenger Capacity</div>
                       <div class="info-value">${a.passengers} Passengers</div>
-                    </div>
-                  ` : ''}
-                  
-                  ${wyvernRating || argusRating ? `
-                    <div class="ratings-section">
-                      <div class="ratings-label">Safety Ratings</div>
-                      ${wyvernRating ? `<span class="rating-item"><strong>Wyvern:</strong> ${wyvernRating}</span>` : ''}
-                      ${argusRating ? `<span class="rating-item"><strong>Argus:</strong> ${argusRating}</span>` : ''}
                     </div>
                   ` : ''}
                   
