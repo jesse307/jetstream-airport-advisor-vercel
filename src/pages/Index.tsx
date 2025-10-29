@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plane, MapPin, Navigation, Settings, TestTube, UserPlus, Upload, History, Users, Radio, FileText, Calendar, Mail, Wrench, ChevronDown, Search } from "lucide-react";
+import { Plane, MapPin, Navigation, Settings, TestTube, UserPlus, Upload, History, Users, Radio, FileText, Calendar, Mail, Wrench, ChevronDown, Search, Send } from "lucide-react";
 import { Link } from "react-router-dom";
 import { AirportSearch } from "@/components/AirportSearch";
 import { FlightCalculator } from "@/components/FlightCalculator";
@@ -93,6 +93,12 @@ const Index = () => {
                     <Link to="/aircraft-data" className="flex items-center cursor-pointer">
                       <Search className="h-4 w-4 mr-2" />
                       Aircraft Lookup
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/email-templates" className="flex items-center cursor-pointer">
+                      <Send className="h-4 w-4 mr-2" />
+                      Email Builder
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
