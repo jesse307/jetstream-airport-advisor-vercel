@@ -139,51 +139,34 @@ export default function EmailTemplates() {
       
       console.log('Links found in second box:', allLinks);
       
-      // Extract trip information
+      // Extract trip information from box 2 text
       const tripData: any = {};
       
-      // Extract airports (look for IATA codes - 3 letter uppercase)
-      const airportMatches = combinedText.match(/\b[A-Z]{3}\b/g);
-      if (airportMatches && airportMatches.length >= 2) {
-        // Common airport indicator patterns
-        const departurePatterns = /(?:from|departure|depart|origin|leaving)[\s:]*([A-Z]{3})/gi;
-        const arrivalPatterns = /(?:to|arrival|arrive|destination|going\s+to)[\s:]*([A-Z]{3})/gi;
-        
-        const depMatch = combinedText.match(departurePatterns);
-        const arrMatch = combinedText.match(arrivalPatterns);
-        
-        if (depMatch && depMatch[0]) {
-          const depCode = depMatch[0].match(/[A-Z]{3}/);
-          if (depCode) tripData.departureAirport = depCode[0];
-        } else if (airportMatches[0]) {
+      // Look for route pattern: XXX-XXX date (e.g., "TEB-BFI 11/26/2025")
+      const routePattern = /([A-Z]{3})\s*-\s*([A-Z]{3})\s+(\d{1,2}\/\d{1,2}\/\d{4})/i;
+      const routeMatch = text2.match(routePattern);
+      
+      if (routeMatch) {
+        tripData.departureAirport = routeMatch[1];
+        tripData.arrivalAirport = routeMatch[2];
+        tripData.departureDate = routeMatch[3];
+        console.log('Extracted trip info:', tripData);
+      } else {
+        // Fallback: Extract airports and dates separately
+        const airportMatches = combinedText.match(/\b[A-Z]{3}\b/g);
+        if (airportMatches && airportMatches.length >= 2) {
           tripData.departureAirport = airportMatches[0];
-        }
-        
-        if (arrMatch && arrMatch[0]) {
-          const arrCode = arrMatch[0].match(/[A-Z]{3}/);
-          if (arrCode) tripData.arrivalAirport = arrCode[0];
-        } else if (airportMatches[1]) {
           tripData.arrivalAirport = airportMatches[1];
         }
-      }
-      
-      // Extract dates (various formats)
-      const datePatterns = [
-        /\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}/g,  // MM/DD/YYYY or DD-MM-YYYY
-        /\d{4}[\/\-]\d{1,2}[\/\-]\d{1,2}/g,    // YYYY-MM-DD
-        /(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2},?\s+\d{4}/gi, // Month DD, YYYY
-      ];
-      
-      let foundDates: string[] = [];
-      datePatterns.forEach(pattern => {
-        const matches = combinedText.match(pattern);
-        if (matches) foundDates = [...foundDates, ...matches];
-      });
-      
-      if (foundDates.length > 0) {
-        tripData.departureDate = foundDates[0];
-        if (foundDates.length > 1) {
-          tripData.returnDate = foundDates[1];
+        
+        // Extract dates
+        const datePattern = /\d{1,2}\/\d{1,2}\/\d{4}/g;
+        const dateMatches = combinedText.match(datePattern);
+        if (dateMatches && dateMatches.length > 0) {
+          tripData.departureDate = dateMatches[0];
+          if (dateMatches.length > 1) {
+            tripData.returnDate = dateMatches[1];
+          }
         }
       }
       
