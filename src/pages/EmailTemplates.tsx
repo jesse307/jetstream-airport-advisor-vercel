@@ -3,8 +3,10 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, Mail, Eye } from "lucide-react";
+import { Plus, Trash2, Eye, X } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -17,6 +19,7 @@ interface AircraftInfo {
   details: string;
   link?: string;
   images?: string[];
+  amenities?: string[];
 }
 
 export default function EmailTemplates() {
@@ -192,7 +195,6 @@ export default function EmailTemplates() {
         const passengers = passengersInContext ? passengersInContext[1] : "";
         
         // Look for this aircraft's details in the second HTML box
-        let detailsParts: string[] = [];
         let aircraftLink = '';
         
         // Try to find matching section in text2 by tail number or aircraft type
@@ -242,13 +244,16 @@ export default function EmailTemplates() {
         
         console.log(`Aircraft ${index} link:`, aircraftLink);
         
-        // Extract Wyvern rating (more flexible pattern)
+        // Extract Wyvern and Argus ratings from matching section
         const wyvernMatch = matchingSection.match(/Wyvern[:\s-]*([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)/i) || 
                            text2.match(new RegExp(`Wyvern[:\\s-]*([A-Z][a-z]+(?:\\s+[A-Z][a-z]+)?)`, 'gi'))?.[index]?.match(/Wyvern[:\s-]*([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)/i);
         
-        // Extract Argus rating (more flexible pattern)
         const argusMatch = matchingSection.match(/Argus[:\s-]*([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?(?:\s+[A-Z][a-z]+)?)/i) ||
                           text2.match(new RegExp(`Argus[:\\s-]*([A-Z][a-z]+(?:\\s+[A-Z][a-z]+)?(?:\\s+[A-Z][a-z]+)?)`, 'gi'))?.[index]?.match(/Argus[:\s-]*([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?(?:\s+[A-Z][a-z]+)?)/i);
+        
+        // Build details string with ratings and extract amenities
+        let detailsParts: string[] = [];
+        let amenitiesList: string[] = [];
         
         if (wyvernMatch) {
           detailsParts.push(`Wyvern: ${wyvernMatch[1].trim()}`);
@@ -262,8 +267,9 @@ export default function EmailTemplates() {
         const amenitiesPattern = /(?:free\s+)?wifi|entertainment|lavatory|galley|refreshments|catering|baggage|cargo|pets?\s+allowed|smoking|non-?smoking/gi;
         const amenitiesMatches = matchingSection.match(amenitiesPattern);
         if (amenitiesMatches && amenitiesMatches.length > 0) {
-          const uniqueAmenities = [...new Set(amenitiesMatches.map(a => a.trim()))];
-          detailsParts.push(uniqueAmenities.join(', '));
+          amenitiesList = [...new Set(amenitiesMatches.map(a => 
+            a.trim().charAt(0).toUpperCase() + a.trim().slice(1).toLowerCase()
+          ))];
         }
         
         const details = detailsParts.join(' • ');
@@ -275,7 +281,8 @@ export default function EmailTemplates() {
           passengers,
           price: priceObj.value,
           details,
-          link: aircraftLink
+          link: aircraftLink,
+          amenities: amenitiesList
         };
       });
       
@@ -329,13 +336,27 @@ export default function EmailTemplates() {
       type: "",
       passengers: "",
       price: "",
-      details: ""
+      details: "",
+      amenities: []
     };
     setAircraft([...aircraft, newAircraft]);
   };
 
-  const updateAircraft = (id: string, field: keyof AircraftInfo, value: string) => {
+  const updateAircraft = (id: string, field: keyof AircraftInfo, value: string | string[]) => {
     setAircraft(aircraft.map(a => a.id === id ? { ...a, [field]: value } : a));
+  };
+  
+  const addAmenity = (id: string, amenity: string) => {
+    if (!amenity.trim()) return;
+    setAircraft(aircraft.map(a => 
+      a.id === id ? { ...a, amenities: [...(a.amenities || []), amenity.trim()] } : a
+    ));
+  };
+  
+  const removeAmenity = (id: string, index: number) => {
+    setAircraft(aircraft.map(a => 
+      a.id === id ? { ...a, amenities: (a.amenities || []).filter((_, i) => i !== index) } : a
+    ));
   };
 
   const removeAircraft = (id: string) => {
@@ -663,19 +684,16 @@ export default function EmailTemplates() {
               const detailsParts = (a.details || '').split('•').map(p => p.trim());
               let wyvernRating = '';
               let argusRating = '';
-              let detailsItems: string[] = [];
               
               detailsParts.forEach(part => {
                 if (part.toLowerCase().startsWith('wyvern:')) {
                   wyvernRating = part.replace(/wyvern:\s*/i, '').trim();
                 } else if (part.toLowerCase().startsWith('argus:')) {
                   argusRating = part.replace(/argus:\s*/i, '').trim();
-                } else if (part.length > 3) {
-                  // Split by common delimiters and clean up
-                  const items = part.split(/[,;]/).map(item => item.trim()).filter(item => item.length > 0);
-                  detailsItems.push(...items);
                 }
               });
+              
+              const amenities = a.amenities || [];
               
               return `
               <div class="aircraft-section">
@@ -707,11 +725,11 @@ export default function EmailTemplates() {
                     </div>
                   ` : ''}
                   
-                  ${detailsItems.length > 0 ? `
+                  ${amenities.length > 0 ? `
                     <div class="details-section">
-                      <div class="details-label">Details</div>
+                      <div class="details-label">Amenities</div>
                       <ul class="details-list">
-                        ${detailsItems.map(item => `<li>${item}</li>`).join('')}
+                        ${amenities.map(item => `<li>${item}</li>`).join('')}
                       </ul>
                     </div>
                   ` : ''}
@@ -924,18 +942,62 @@ export default function EmailTemplates() {
                           rows={1}
                         />
                       </div>
-                    </div>
+                     </div>
 
-                    <div className="space-y-2">
-                      <Label>Additional Details</Label>
-                      <Textarea
-                        placeholder="Any additional information about this aircraft..."
-                        value={a.details}
-                        onChange={(e) => updateAircraft(a.id, 'details', e.target.value)}
-                        rows={3}
-                      />
-                    </div>
-                  </CardContent>
+                     <div className="space-y-3">
+                       <div className="flex items-center justify-between">
+                         <Label>Amenities</Label>
+                         <span className="text-xs text-muted-foreground">
+                           {a.amenities?.length || 0} added
+                         </span>
+                       </div>
+                       
+                       {/* Display amenities as badges */}
+                       {a.amenities && a.amenities.length > 0 && (
+                         <div className="flex flex-wrap gap-2 p-3 bg-muted/50 rounded-md">
+                           {a.amenities.map((amenity, idx) => (
+                             <Badge key={idx} variant="secondary" className="gap-1">
+                               {amenity}
+                               <button
+                                 onClick={() => removeAmenity(a.id, idx)}
+                                 className="ml-1 hover:bg-destructive/20 rounded-full"
+                               >
+                                 <X className="h-3 w-3" />
+                               </button>
+                             </Badge>
+                           ))}
+                         </div>
+                       )}
+                       
+                       {/* Add new amenity */}
+                       <div className="flex gap-2">
+                         <Input
+                           id={`amenity-${a.id}`}
+                           placeholder="e.g., WiFi, Entertainment System, Lavatory"
+                           onKeyDown={(e) => {
+                             if (e.key === 'Enter') {
+                               const input = e.currentTarget;
+                               addAmenity(a.id, input.value);
+                               input.value = '';
+                             }
+                           }}
+                         />
+                         <Button
+                           size="sm"
+                           variant="outline"
+                           onClick={() => {
+                             const input = document.getElementById(`amenity-${a.id}`) as HTMLInputElement;
+                             if (input) {
+                               addAmenity(a.id, input.value);
+                               input.value = '';
+                             }
+                           }}
+                         >
+                           <Plus className="h-4 w-4" />
+                         </Button>
+                       </div>
+                     </div>
+                   </CardContent>
                 </Card>
               ))
             )}
