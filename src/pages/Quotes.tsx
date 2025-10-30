@@ -21,7 +21,7 @@ export default function Quotes() {
   const [loading, setLoading] = useState(true);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [previewId, setPreviewId] = useState<string | null>(null);
-  const [automatedProcessOpen, setAutomatedProcessOpen] = useState(false);
+  const [automatedProcessQuote, setAutomatedProcessQuote] = useState<any>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -478,13 +478,7 @@ export default function Quotes() {
   return (
     <div className="container mx-auto p-6">
       <div className="mb-6">
-        <div className="flex items-center justify-between mb-2">
-          <h1 className="text-3xl font-bold">Charter Quotes</h1>
-          <Button onClick={() => setAutomatedProcessOpen(true)} variant="default">
-            <Sparkles className="h-4 w-4 mr-2" />
-            Automated Process
-          </Button>
-        </div>
+        <h1 className="text-3xl font-bold mb-2">Charter Quotes</h1>
         <p className="text-muted-foreground">
           Quotes received via email webhook
         </p>
@@ -532,6 +526,14 @@ export default function Quotes() {
                       </CardDescription>
                     </div>
                     <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        onClick={() => setAutomatedProcessQuote(quote)}
+                        variant="default"
+                      >
+                        <Sparkles className="h-4 w-4 mr-1" />
+                        Automated Process
+                      </Button>
                       <Button
                         size="sm"
                         onClick={() => setPreviewId(previewId === quote.id ? null : quote.id)}
@@ -641,10 +643,14 @@ export default function Quotes() {
         </div>
       )}
 
-      <AutomatedQuoteProcess 
-        open={automatedProcessOpen}
-        onOpenChange={setAutomatedProcessOpen}
-      />
+      {automatedProcessQuote && (
+        <AutomatedQuoteProcess 
+          open={!!automatedProcessQuote}
+          onOpenChange={(open) => !open && setAutomatedProcessQuote(null)}
+          quote={automatedProcessQuote}
+          onComplete={fetchQuotes}
+        />
+      )}
     </div>
   );
 }

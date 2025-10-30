@@ -1,17 +1,19 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { X, Plus } from "lucide-react";
+import { X, Plus, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface AutomatedQuoteProcessProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  quoteData?: any;
+  quote: any;
+  onComplete?: () => void;
 }
 
 const DEFAULT_AMENITIES = [
@@ -29,25 +31,73 @@ const DEFAULT_AMENITIES = [
   "Beds"
 ];
 
-export function AutomatedQuoteProcess({ open, onOpenChange, quoteData }: AutomatedQuoteProcessProps) {
+export function AutomatedQuoteProcess({ open, onOpenChange, quote, onComplete }: AutomatedQuoteProcessProps) {
   const [step, setStep] = useState(1);
   const [tailNumber, setTailNumber] = useState("");
   const [operator, setOperator] = useState("");
   const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
   const [customAmenity, setCustomAmenity] = useState("");
   const [customAmenities, setCustomAmenities] = useState<string[]>([]);
+  const [processing, setProcessing] = useState(false);
   const { toast } = useToast();
 
-  const handleNext = () => {
+  // Load existing data when dialog opens
+  useEffect(() => {
+    if (open && quote) {
+      const extracted = quote.extracted_data || {};
+      setTailNumber(extracted.tail_number || "");
+      setOperator(extracted.operator || "");
+      
+      // Parse existing amenities
+      const existingAmenities = extracted.amenities || [];
+      setSelectedAmenities(existingAmenities);
+      
+      // Find custom amenities (not in default list)
+      const customOnes = existingAmenities.filter((a: string) => !DEFAULT_AMENITIES.includes(a));
+      setCustomAmenities(customOnes);
+    }
+  }, [open, quote]);
+
+  const handleNext = async () => {
     if (step === 1) {
       setStep(2);
     } else {
-      // Process complete
-      toast({
-        title: "Processing Started",
-        description: "Automated quote process initiated successfully.",
-      });
-      handleClose();
+      // Process complete - update the quote in Supabase
+      setProcessing(true);
+      try {
+        const enhancedData = {
+          ...quote.extracted_data,
+          tail_number: tailNumber || null,
+          operator: operator || null,
+          amenities: selectedAmenities,
+          enhanced: true,
+          enhanced_at: new Date().toISOString()
+        };
+
+        const { error } = await supabase
+          .from('quotes')
+          .update({ extracted_data: enhancedData })
+          .eq('id', quote.id);
+
+        if (error) throw error;
+
+        toast({
+          title: "Quote Enhanced",
+          description: "Quote data has been updated successfully.",
+        });
+        
+        onComplete?.();
+        handleClose();
+      } catch (error: any) {
+        console.error('Error updating quote:', error);
+        toast({
+          title: "Error",
+          description: "Failed to update quote data",
+          variant: "destructive",
+        });
+      } finally {
+        setProcessing(false);
+      }
     }
   };
 
@@ -214,11 +264,19 @@ export function AutomatedQuoteProcess({ open, onOpenChange, quoteData }: Automat
           <Button
             variant="outline"
             onClick={step === 1 ? handleClose : handleBack}
+            disabled={processing}
           >
             {step === 1 ? "Cancel" : "Back"}
           </Button>
-          <Button onClick={handleNext}>
-            {step === 1 ? "Next" : "Process"}
+          <Button onClick={handleNext} disabled={processing}>
+            {processing ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Processing...
+              </>
+            ) : (
+              step === 1 ? "Next" : "Complete"
+            )}
           </Button>
         </div>
       </DialogContent>
