@@ -31,10 +31,16 @@ const DEFAULT_AMENITIES = [
   "Beds"
 ];
 
+interface QuoteOption {
+  tail_number?: string;
+  operator?: string;
+  amenities?: string[];
+  [key: string]: any;
+}
+
 export function AutomatedQuoteProcess({ open, onOpenChange, quote, onComplete }: AutomatedQuoteProcessProps) {
   const [step, setStep] = useState(1);
-  const [tailNumber, setTailNumber] = useState("");
-  const [operator, setOperator] = useState("");
+  const [quoteOptions, setQuoteOptions] = useState<QuoteOption[]>([]);
   const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
   const [customAmenity, setCustomAmenity] = useState("");
   const [customAmenities, setCustomAmenities] = useState<string[]>([]);
@@ -45,18 +51,34 @@ export function AutomatedQuoteProcess({ open, onOpenChange, quote, onComplete }:
   useEffect(() => {
     if (open && quote) {
       const extracted = quote.extracted_data || {};
-      setTailNumber(extracted.tail_number || "");
-      setOperator(extracted.operator || "");
+      const quotes = extracted.quotes || [];
       
-      // Parse existing amenities
-      const existingAmenities = extracted.amenities || [];
-      setSelectedAmenities(existingAmenities);
+      // Initialize quote options with existing data
+      setQuoteOptions(quotes.map((q: any) => ({
+        ...q,
+        tail_number: q.tail_number || "",
+        operator: q.operator || "",
+        amenities: q.amenities || []
+      })));
       
-      // Find custom amenities (not in default list)
-      const customOnes = existingAmenities.filter((a: string) => !DEFAULT_AMENITIES.includes(a));
+      // For amenities step, gather all unique amenities
+      const allAmenities = quotes.flatMap((q: any) => q.amenities || []);
+      const uniqueAmenities = [...new Set(allAmenities)] as string[];
+      setSelectedAmenities(uniqueAmenities);
+      
+      // Find custom amenities
+      const customOnes = uniqueAmenities.filter((a: string) => !DEFAULT_AMENITIES.includes(a));
       setCustomAmenities(customOnes);
     }
   }, [open, quote]);
+
+  const updateQuoteOption = (index: number, field: string, value: string) => {
+    setQuoteOptions(prev => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], [field]: value };
+      return updated;
+    });
+  };
 
   const handleNext = async () => {
     if (step === 1) {
@@ -65,11 +87,15 @@ export function AutomatedQuoteProcess({ open, onOpenChange, quote, onComplete }:
       // Process complete - update the quote in Supabase
       setProcessing(true);
       try {
+        // Apply selected amenities to all quote options
+        const enhancedQuotes = quoteOptions.map(q => ({
+          ...q,
+          amenities: selectedAmenities
+        }));
+
         const enhancedData = {
           ...quote.extracted_data,
-          tail_number: tailNumber || null,
-          operator: operator || null,
-          amenities: selectedAmenities,
+          quotes: enhancedQuotes,
           enhanced: true,
           enhanced_at: new Date().toISOString()
         };
@@ -109,8 +135,7 @@ export function AutomatedQuoteProcess({ open, onOpenChange, quote, onComplete }:
 
   const handleClose = () => {
     setStep(1);
-    setTailNumber("");
-    setOperator("");
+    setQuoteOptions([]);
     setSelectedAmenities([]);
     setCustomAmenities([]);
     setCustomAmenity("");
@@ -151,30 +176,43 @@ export function AutomatedQuoteProcess({ open, onOpenChange, quote, onComplete }:
         </DialogHeader>
 
         {step === 1 && (
-          <div className="space-y-6 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="tailNumber">Tail Number (Optional)</Label>
-              <Input
-                id="tailNumber"
-                placeholder="e.g., N12345"
-                value={tailNumber}
-                onChange={(e) => setTailNumber(e.target.value)}
-              />
-            </div>
+          <div className="space-y-6 py-4 max-h-[500px] overflow-y-auto">
+            {quoteOptions.map((option, index) => (
+              <div key={index} className="p-4 border rounded-lg space-y-3 bg-muted/50">
+                <div className="flex items-center justify-between mb-2">
+                  <Badge variant="secondary">Option {index + 1}</Badge>
+                  {option.aircraft_type && (
+                    <span className="text-sm font-semibold">{option.aircraft_type}</span>
+                  )}
+                </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="operator">Operator Name (Optional)</Label>
-              <Input
-                id="operator"
-                placeholder="e.g., ABC Charter"
-                value={operator}
-                onChange={(e) => setOperator(e.target.value)}
-              />
-            </div>
+                <div className="space-y-2">
+                  <Label htmlFor={`tailNumber-${index}`}>Tail Number (Optional)</Label>
+                  <Input
+                    id={`tailNumber-${index}`}
+                    placeholder="e.g., N12345"
+                    value={option.tail_number || ""}
+                    onChange={(e) => updateQuoteOption(index, 'tail_number', e.target.value)}
+                  />
+                </div>
 
-            <p className="text-sm text-muted-foreground">
-              Provide tail number or operator information to fetch specific aircraft details. Both fields are optional.
-            </p>
+                <div className="space-y-2">
+                  <Label htmlFor={`operator-${index}`}>Operator Name (Optional)</Label>
+                  <Input
+                    id={`operator-${index}`}
+                    placeholder="e.g., ABC Charter"
+                    value={option.operator || ""}
+                    onChange={(e) => updateQuoteOption(index, 'operator', e.target.value)}
+                  />
+                </div>
+              </div>
+            ))}
+
+            {quoteOptions.length === 0 && (
+              <p className="text-sm text-muted-foreground text-center py-8">
+                No quote options found in this quote.
+              </p>
+            )}
           </div>
         )}
 
