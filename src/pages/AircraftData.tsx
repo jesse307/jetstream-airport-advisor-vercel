@@ -103,13 +103,32 @@ export default function AircraftData() {
 
     toast({
       title: "Generating Email",
-      description: "Creating compact version..."
+      description: "Loading images..."
     });
 
     // Get up to 3 cabin images
     const cabinImages = aircraft.aircraft_images?.filter(
       (img: any) => img.image_type?.name?.toLowerCase().includes('cabin')
     ).slice(0, 3) || [];
+
+    // Convert images to base64
+    const imagePromises = cabinImages.map(async (img: any) => {
+      try {
+        const response = await fetch(img.image_url);
+        const blob = await response.blob();
+        return new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(blob);
+        });
+      } catch (error) {
+        console.error('Failed to load image:', error);
+        return '';
+      }
+    });
+
+    const base64Images = await Promise.all(imagePromises);
+    const validImages = base64Images.filter(img => img);
 
     // Generate compact email HTML
     const emailHTML = `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden;">
@@ -139,12 +158,12 @@ export default function AircraftData() {
       </tr>
     </table>
     
-    ${cabinImages.length > 0 ? `
+    ${validImages.length > 0 ? `
     <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
       <tr>
-        ${cabinImages.map((img: any) => `
+        ${validImages.map((imgData: string) => `
         <td style="padding: 4px;">
-          <img src="${img.image_url}" alt="Interior" style="width: 100%; height: auto; border-radius: 6px; display: block;">
+          <img src="${imgData}" alt="Interior" style="width: 100%; height: auto; border-radius: 6px; display: block;">
         </td>
         `).join('')}
       </tr>
