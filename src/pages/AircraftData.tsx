@@ -723,18 +723,22 @@ export default function AircraftData() {
       font-size: 13px;
     }
     @media print {
-      @page { size: letter; margin: 0.2in; }
+      @page { size: letter; margin: 0.15in; }
       body { padding: 0; background: white; }
-      .container { max-width: 100%; width: 100%; margin: 0; }
-      .header { padding: 20px; }
+      .container { max-width: 100%; width: 100%; margin: 0; border-radius: 0; box-shadow: none; }
+      .header { padding: 24px 30px; }
       .logo { height: 40px; }
       .title-section h1 { font-size: 22px; }
       .title-section p { font-size: 10px; margin-top: 2px; }
       .hero { height: 260px; }
-      .content { padding: 20px; }
-      .stats { gap: 8px; margin-bottom: 16px; }
-      .stat { padding: 12px; }
-      .stat-value { font-size: 20px; }
+      .content { padding: 30px; }
+      .stats { 
+        grid-template-columns: repeat(4, 1fr); 
+        gap: 12px; 
+        margin-bottom: 20px; 
+      }
+      .stat { padding: 16px; }
+      .stat-value { font-size: 24px; }
       .stat-label { font-size: 9px; }
       h2 { font-size: 18px; margin: 16px 0 12px; }
       .gallery { gap: 8px; margin-bottom: 16px; }
