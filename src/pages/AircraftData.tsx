@@ -217,14 +217,17 @@ export default function AircraftData() {
     }
     .hero { 
       position: relative; 
-      height: 220px; 
-      overflow: hidden;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f9fafb;
     }
     .hero-bg { 
       width: 100%; 
-      height: 100%; 
-      object-fit: cover; 
-      object-position: ${imagePosition.x}% ${imagePosition.y}%;
+      height: auto;
+      max-height: 280px;
+      object-fit: contain;
     }
     .content { padding: 16px; }
     .stats { 
@@ -258,15 +261,18 @@ export default function AircraftData() {
     }
     .gallery { 
       display: grid; 
-      grid-template-columns: repeat(3, 1fr); 
-      gap: 6px; 
+      grid-template-columns: repeat(${compressedCabinImages.length === 1 ? '1' : compressedCabinImages.length === 2 ? '2' : '3'}, 1fr); 
+      gap: 8px; 
       margin-bottom: 16px;
     }
     .gallery img { 
       width: 100%; 
-      height: 110px; 
-      object-fit: cover; 
+      height: auto;
+      min-height: ${compressedCabinImages.length <= 2 ? '200px' : '140px'};
+      max-height: ${compressedCabinImages.length <= 2 ? '300px' : '160px'};
+      object-fit: contain; 
       border-radius: 8px;
+      background: #f9fafb;
     }
     .floorplan { 
       background: #f9fafb; 
@@ -463,18 +469,23 @@ export default function AircraftData() {
     }
     .hero { 
       position: relative; 
-      height: 320px; 
+      width: 100%;
+      min-height: 320px;
       background: linear-gradient(to bottom, rgba(0,0,0,0.3), rgba(0,0,0,0.7)); 
+      display: flex;
+      align-items: center;
+      justify-content: center;
       overflow: hidden;
     }
     .hero-bg { 
       width: 100%; 
-      height: 100%; 
-      object-fit: cover; 
-      object-position: center center;
+      height: auto;
+      max-height: 400px;
+      object-fit: contain;
       position: absolute; 
-      top: 0; 
-      left: 0; 
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
       z-index: 0; 
     }
     .logo { 
@@ -524,17 +535,20 @@ export default function AircraftData() {
     }
     .gallery { 
       display: grid; 
-      grid-template-columns: repeat(3, 1fr); 
+      grid-template-columns: repeat(${compressedCabinImages.length === 1 ? '1' : compressedCabinImages.length === 2 ? '2' : '3'}, 1fr); 
       gap: 16px; 
       margin-bottom: 48px;
     }
     .gallery img { 
       width: 100%; 
-      height: 200px; 
-      object-fit: cover; 
+      height: auto;
+      min-height: ${compressedCabinImages.length <= 2 ? '300px' : '220px'};
+      max-height: ${compressedCabinImages.length <= 2 ? '400px' : '280px'};
+      object-fit: contain; 
       border-radius: 12px; 
       cursor: pointer;
       transition: transform 0.3s;
+      background: #f9fafb;
     }
     .gallery img:hover { transform: scale(1.05); }
     .floorplan { 
@@ -578,8 +592,8 @@ export default function AircraftData() {
     @media print {
       @page { size: letter; margin: 0.3in; }
       body { padding: 0; background: white; }
-      .hero { height: 180px; page-break-after: avoid; }
-      .hero-bg { object-position: center center; }
+      .hero { min-height: 200px; page-break-after: avoid; }
+      .hero-bg { max-height: 220px; }
       .hero h1 { font-size: 28px; }
       .hero p { font-size: 12px; }
       .logo { height: 40px; top: 15px; left: 15px; }
@@ -590,8 +604,8 @@ export default function AircraftData() {
       .stat-value { font-size: 20px; }
       .stat-label { font-size: 9px; }
       h2 { font-size: 18px; margin: 16px 0 12px; }
-      .gallery { gap: 6px; margin-bottom: 16px; }
-      .gallery img { width: 100%; height: 110px; object-fit: cover; }
+      .gallery { gap: 8px; margin-bottom: 16px; }
+      .gallery img { min-height: ${compressedCabinImages.length <= 2 ? '160px' : '120px'}; max-height: ${compressedCabinImages.length <= 2 ? '200px' : '140px'}; }
       .floorplan { padding: 12px; margin-bottom: 16px; }
       .amenities { gap: 6px; }
       .amenity { padding: 10px; font-size: 11px; }
