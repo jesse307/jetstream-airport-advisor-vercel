@@ -723,31 +723,34 @@ export default function AircraftData() {
       font-size: 13px;
     }
     @media print {
-      @page { size: letter; margin: 0.15in; }
+      @page { size: letter; margin: 0.1in; }
       body { padding: 0; background: white; }
       .container { max-width: 100%; width: 100%; margin: 0; border-radius: 0; box-shadow: none; }
-      .header { padding: 24px 30px; }
-      .logo { height: 40px; }
-      .title-section h1 { font-size: 22px; }
-      .title-section p { font-size: 10px; margin-top: 2px; }
-      .hero { height: 260px; }
-      .content { padding: 30px; }
+      .header { padding: 24px 40px; }
+      .logo { height: 45px; }
+      .title-section h1 { font-size: 24px; }
+      .title-section p { font-size: 11px; margin-top: 2px; }
+      .hero { height: 280px; }
+      .content { padding: 40px; }
       .stats { 
-        grid-template-columns: repeat(4, 1fr); 
-        gap: 12px; 
-        margin-bottom: 20px; 
+        display: flex;
+        gap: 16px; 
+        margin-bottom: 24px; 
       }
-      .stat { padding: 16px; }
-      .stat-value { font-size: 24px; }
-      .stat-label { font-size: 9px; }
-      h2 { font-size: 18px; margin: 16px 0 12px; }
-      .gallery { gap: 8px; margin-bottom: 16px; }
-      .floorplan { padding: 12px; margin-bottom: 16px; }
-      .amenities { gap: 6px; }
-      .amenity { padding: 10px; font-size: 11px; }
-      .amenity-text { font-size: 11px; }
-      .amenity-dot { width: 6px; height: 6px; }
-      .footer { padding: 12px 0; margin-top: 16px; font-size: 10px; }
+      .stat { 
+        flex: 1;
+        padding: 20px; 
+      }
+      .stat-value { font-size: 28px; }
+      .stat-label { font-size: 10px; }
+      h2 { font-size: 20px; margin: 20px 0 14px; }
+      .gallery { gap: 10px; margin-bottom: 20px; }
+      .floorplan { padding: 16px; margin-bottom: 20px; }
+      .amenities { gap: 8px; }
+      .amenity { padding: 12px; font-size: 12px; }
+      .amenity-text { font-size: 12px; }
+      .amenity-dot { width: 7px; height: 7px; }
+      .footer { padding: 14px 0; margin-top: 20px; font-size: 11px; }
     }
   </style>
 </head>
