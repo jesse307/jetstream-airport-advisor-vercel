@@ -217,7 +217,7 @@ export default function AircraftData() {
     }
     .hero { 
       position: relative; 
-      height: 220px; 
+      height: 320px; 
       overflow: hidden;
     }
     .hero-bg { 
@@ -578,7 +578,7 @@ export default function AircraftData() {
     @media print {
       @page { size: letter; margin: 0.3in; }
       body { padding: 0; background: white; }
-      .hero { height: 180px; page-break-after: avoid; }
+      .hero { height: 240px; page-break-after: avoid; }
       .hero h1 { font-size: 28px; }
       .hero p { font-size: 12px; }
       .logo { height: 40px; top: 15px; left: 15px; }
