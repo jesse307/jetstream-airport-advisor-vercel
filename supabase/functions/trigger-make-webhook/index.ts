@@ -32,11 +32,11 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { leadData }: { leadData: LeadData } = await req.json();
+    const { leadData, quoteData }: { leadData?: LeadData; quoteData?: any } = await req.json();
     
-    if (!leadData) {
+    if (!leadData && !quoteData) {
       return new Response(
-        JSON.stringify({ error: "Lead data is required" }),
+        JSON.stringify({ error: "Lead data or quote data is required" }),
         {
           status: 400,
           headers: { "Content-Type": "application/json", ...corsHeaders },
@@ -51,33 +51,46 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Create form data with individual fields for Make webhook
     const formData = new URLSearchParams();
-    formData.append('firstName', leadData.first_name);
-    formData.append('lastName', leadData.last_name);
-    formData.append('email', leadData.email);
-    formData.append('phone', leadData.phone || '');
-    formData.append('tripType', leadData.trip_type);
-    formData.append('departureAirport', leadData.departure_airport);
-    formData.append('arrivalAirport', leadData.arrival_airport);
-    formData.append('departureDate', leadData.departure_date);
-    formData.append('departureTime', leadData.departure_time || '');
-    formData.append('returnDate', leadData.return_date || '');
-    formData.append('returnTime', leadData.return_time || '');
-    formData.append('passengers', leadData.passengers.toString());
-    formData.append('notes', leadData.notes || '');
-    formData.append('leadId', leadData.id);
-    formData.append('createdAt', leadData.created_at);
-    formData.append('status', leadData.status);
-    formData.append('distance', leadData.analysis_data?.distance?.toString() || '');
-    formData.append('flightTime', leadData.analysis_data?.flight_time || '');
-    formData.append('aiAnalysis', leadData.analysis_data?.analysis || '');
+    
+    if (leadData) {
+      formData.append('type', 'lead');
+      formData.append('firstName', leadData.first_name);
+      formData.append('lastName', leadData.last_name);
+      formData.append('email', leadData.email);
+      formData.append('phone', leadData.phone || '');
+      formData.append('tripType', leadData.trip_type);
+      formData.append('departureAirport', leadData.departure_airport);
+      formData.append('arrivalAirport', leadData.arrival_airport);
+      formData.append('departureDate', leadData.departure_date);
+      formData.append('departureTime', leadData.departure_time || '');
+      formData.append('returnDate', leadData.return_date || '');
+      formData.append('returnTime', leadData.return_time || '');
+      formData.append('passengers', leadData.passengers.toString());
+      formData.append('notes', leadData.notes || '');
+      formData.append('leadId', leadData.id);
+      formData.append('createdAt', leadData.created_at);
+      formData.append('status', leadData.status);
+      formData.append('distance', leadData.analysis_data?.distance?.toString() || '');
+      formData.append('flightTime', leadData.analysis_data?.flight_time || '');
+      formData.append('aiAnalysis', leadData.analysis_data?.analysis || '');
+    } else if (quoteData) {
+      formData.append('type', 'quote');
+      formData.append('quoteId', quoteData.id);
+      formData.append('senderEmail', quoteData.sender_email || '');
+      formData.append('subject', quoteData.subject || '');
+      formData.append('status', quoteData.status);
+      formData.append('createdAt', quoteData.created_at);
+      formData.append('extractedData', JSON.stringify(quoteData.extracted_data || {}));
+      formData.append('rawEmailData', JSON.stringify(quoteData.raw_email_data || {}));
+    }
 
     // Save to database first
     const { data: logEntry, error: dbError } = await supabase
       .from('webhook_logs')
       .insert({
-        lead_id: leadData.id,
+        lead_id: leadData?.id || quoteData?.id,
         webhook_url: "https://hook.us2.make.com/j8qtzo8gui8ieqaye9dxprb2cgxqydlb",
-        payload: leadData,
+        payload: leadData || quoteData,
       })
       .select()
       .single();

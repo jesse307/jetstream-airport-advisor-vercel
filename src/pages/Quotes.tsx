@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, Mail, Plane, Calendar, Users, DollarSign, Copy, Check, Eye, Sparkles } from "lucide-react";
+import { Loader2, Mail, Plane, Calendar, Users, DollarSign, Copy, Check, Eye, Sparkles, Upload } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { AutomatedQuoteProcess } from "@/components/AutomatedQuoteProcess";
 
@@ -22,6 +22,7 @@ export default function Quotes() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [automatedProcessQuote, setAutomatedProcessQuote] = useState<any>(null);
+  const [exportingQuoteId, setExportingQuoteId] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -68,6 +69,41 @@ export default function Quotes() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleExportQuote = async (quote: Quote) => {
+    setExportingQuoteId(quote.id);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke("trigger-make-webhook", {
+        body: {
+          quoteData: {
+            id: quote.id,
+            sender_email: quote.sender_email,
+            subject: quote.subject,
+            status: quote.status,
+            created_at: quote.created_at,
+            extracted_data: quote.extracted_data,
+          }
+        }
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Quote exported to Make successfully",
+      });
+    } catch (error) {
+      console.error("Error exporting quote:", error);
+      toast({
+        title: "Error",
+        description: "Failed to export quote to Make",
+        variant: "destructive",
+      });
+    } finally {
+      setExportingQuoteId(null);
     }
   };
 
@@ -533,6 +569,15 @@ export default function Quotes() {
                       >
                         <Sparkles className="h-4 w-4 mr-1" />
                         Automated Process
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={() => handleExportQuote(quote)}
+                        variant="secondary"
+                        disabled={exportingQuoteId === quote.id}
+                      >
+                        <Upload className="h-4 w-4 mr-1" />
+                        {exportingQuoteId === quote.id ? 'Exporting...' : 'Export Lead'}
                       </Button>
                       <Button
                         size="sm"
