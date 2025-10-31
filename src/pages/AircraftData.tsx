@@ -217,17 +217,14 @@ export default function AircraftData() {
     }
     .hero { 
       position: relative; 
-      width: 100%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: #f9fafb;
+      height: 220px; 
+      overflow: hidden;
     }
     .hero-bg { 
       width: 100%; 
-      height: auto;
-      max-height: 280px;
-      object-fit: contain;
+      height: 100%; 
+      object-fit: cover; 
+      object-position: ${imagePosition.x}% ${imagePosition.y}%;
     }
     .content { padding: 16px; }
     .stats { 
@@ -267,12 +264,9 @@ export default function AircraftData() {
     }
     .gallery img { 
       width: 100%; 
-      height: auto;
-      min-height: ${compressedCabinImages.length <= 2 ? '200px' : '140px'};
-      max-height: ${compressedCabinImages.length <= 2 ? '300px' : '160px'};
-      object-fit: contain; 
+      aspect-ratio: 4/3;
+      object-fit: cover; 
       border-radius: 8px;
-      background: #f9fafb;
     }
     .floorplan { 
       background: #f9fafb; 
@@ -469,23 +463,18 @@ export default function AircraftData() {
     }
     .hero { 
       position: relative; 
-      width: 100%;
-      min-height: 320px;
+      height: 320px; 
       background: linear-gradient(to bottom, rgba(0,0,0,0.3), rgba(0,0,0,0.7)); 
-      display: flex;
-      align-items: center;
-      justify-content: center;
       overflow: hidden;
     }
     .hero-bg { 
       width: 100%; 
-      height: auto;
-      max-height: 400px;
-      object-fit: contain;
+      height: 100%; 
+      object-fit: cover; 
+      object-position: ${imagePosition.x}% ${imagePosition.y}%;
       position: absolute; 
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
+      top: 0; 
+      left: 0; 
       z-index: 0; 
     }
     .logo { 
@@ -541,14 +530,11 @@ export default function AircraftData() {
     }
     .gallery img { 
       width: 100%; 
-      height: auto;
-      min-height: ${compressedCabinImages.length <= 2 ? '300px' : '220px'};
-      max-height: ${compressedCabinImages.length <= 2 ? '400px' : '280px'};
-      object-fit: contain; 
+      aspect-ratio: 4/3;
+      object-fit: cover; 
       border-radius: 12px; 
       cursor: pointer;
       transition: transform 0.3s;
-      background: #f9fafb;
     }
     .gallery img:hover { transform: scale(1.05); }
     .floorplan { 
@@ -592,8 +578,7 @@ export default function AircraftData() {
     @media print {
       @page { size: letter; margin: 0.3in; }
       body { padding: 0; background: white; }
-      .hero { min-height: 200px; page-break-after: avoid; }
-      .hero-bg { max-height: 220px; }
+      .hero { height: 180px; page-break-after: avoid; }
       .hero h1 { font-size: 28px; }
       .hero p { font-size: 12px; }
       .logo { height: 40px; top: 15px; left: 15px; }
@@ -605,7 +590,6 @@ export default function AircraftData() {
       .stat-label { font-size: 9px; }
       h2 { font-size: 18px; margin: 16px 0 12px; }
       .gallery { gap: 8px; margin-bottom: 16px; }
-      .gallery img { min-height: ${compressedCabinImages.length <= 2 ? '160px' : '120px'}; max-height: ${compressedCabinImages.length <= 2 ? '200px' : '140px'}; }
       .floorplan { padding: 12px; margin-bottom: 16px; }
       .amenities { gap: 6px; }
       .amenity { padding: 10px; font-size: 11px; }
