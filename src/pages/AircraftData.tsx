@@ -97,6 +97,103 @@ export default function AircraftData() {
     }
   };
 
+  const handleCopyEmailHTML = async () => {
+    const aircraft = aircraftData;
+    if (!aircraft) return;
+
+    toast({
+      title: "Generating Email",
+      description: "Creating compact version..."
+    });
+
+    // Get up to 3 cabin images
+    const cabinImages = aircraft.aircraft_images?.filter(
+      (img: any) => img.image_type?.name?.toLowerCase().includes('cabin')
+    ).slice(0, 3) || [];
+
+    // Generate compact email HTML
+    const emailHTML = `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden;">
+  <div style="background: #f9fafb; padding: 20px; text-align: center; border-bottom: 1px solid #e5e7eb;">
+    <h1 style="margin: 0; font-size: 24px; font-weight: 600; color: #111827; letter-spacing: 1px;">${aircraft.aircraft_type?.name || 'Luxury Aircraft'}</h1>
+    ${aircraft.aircraft_type?.aircraft_class?.name ? `<p style="margin: 8px 0 0 0; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: #6b7280;">${aircraft.aircraft_type.aircraft_class.name} Jet</p>` : ''}
+  </div>
+  
+  <div style="padding: 24px;">
+    <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+      <tr>
+        ${aircraft.passengers_max ? `
+        <td style="text-align: center; padding: 16px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px;">
+          <div style="font-size: 28px; font-weight: 300; color: #111827; margin-bottom: 4px;">${aircraft.passengers_max}</div>
+          <div style="font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #6b7280;">Passengers</div>
+        </td>` : ''}
+        ${aircraft.aircraft_extension?.sleeping_places ? `
+        <td style="text-align: center; padding: 16px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px;">
+          <div style="font-size: 28px; font-weight: 300; color: #111827; margin-bottom: 4px;">${aircraft.aircraft_extension.sleeping_places}</div>
+          <div style="font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #6b7280;">Sleeping</div>
+        </td>` : ''}
+        ${aircraft.year_of_production ? `
+        <td style="text-align: center; padding: 16px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px;">
+          <div style="font-size: 28px; font-weight: 300; color: #111827; margin-bottom: 4px;">${aircraft.year_of_production}</div>
+          <div style="font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #6b7280;">Year Built</div>
+        </td>` : ''}
+      </tr>
+    </table>
+    
+    ${cabinImages.length > 0 ? `
+    <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+      <tr>
+        ${cabinImages.map((img: any) => `
+        <td style="padding: 4px;">
+          <img src="${img.image_url}" alt="Interior" style="width: 100%; height: auto; border-radius: 6px; display: block;">
+        </td>
+        `).join('')}
+      </tr>
+    </table>` : ''}
+    
+    ${(Object.values(selectedAmenities).some(v => v) || customAmenities.some(a => a.trim())) ? `
+    <div style="margin-bottom: 20px;">
+      <h3 style="font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: #6b7280; margin: 0 0 12px 0;">Premium Amenities</h3>
+      <table style="width: 100%; border-collapse: collapse;">
+        <tr>
+          ${selectedAmenities.wifi ? '<td style="padding: 8px 0;"><span style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #3b82f6; margin-right: 8px;"></span><span style="font-size: 13px; color: #111827;">WiFi</span></td>' : ''}
+          ${selectedAmenities.entertainment ? '<td style="padding: 8px 0;"><span style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #3b82f6; margin-right: 8px;"></span><span style="font-size: 13px; color: #111827;">Entertainment</span></td>' : ''}
+          ${selectedAmenities.shower ? '<td style="padding: 8px 0;"><span style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #3b82f6; margin-right: 8px;"></span><span style="font-size: 13px; color: #111827;">Shower</span></td>' : ''}
+        </tr>
+        ${selectedAmenities.pets || selectedAmenities.divan || customAmenities.some(a => a.trim()) ? `<tr>
+          ${selectedAmenities.pets ? '<td style="padding: 8px 0;"><span style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #3b82f6; margin-right: 8px;"></span><span style="font-size: 13px; color: #111827;">Pet Friendly</span></td>' : ''}
+          ${selectedAmenities.divan ? '<td style="padding: 8px 0;"><span style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #3b82f6; margin-right: 8px;"></span><span style="font-size: 13px; color: #111827;">Divan Seats</span></td>' : ''}
+          ${customAmenities.filter(a => a.trim()).slice(0, 1).map(a => `<td style="padding: 8px 0;"><span style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #3b82f6; margin-right: 8px;"></span><span style="font-size: 13px; color: #111827;">${a}</span></td>`).join('')}
+        </tr>` : ''}
+      </table>
+    </div>` : ''}
+    
+    <div style="text-align: center; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+      <p style="margin: 0; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #6b7280;">STRATOS JET CHARTERS</p>
+    </div>
+  </div>
+</div>`;
+
+    // Copy to clipboard in a Gmail-friendly way
+    try {
+      const type = "text/html";
+      const blob = new Blob([emailHTML], { type });
+      const data = [new ClipboardItem({ [type]: blob })];
+      await navigator.clipboard.write(data);
+      
+      toast({
+        title: "Copied!",
+        description: "Paste into Gmail using Ctrl/Cmd+V"
+      });
+    } catch (err) {
+      // Fallback to plain text
+      navigator.clipboard.writeText(emailHTML);
+      toast({
+        title: "HTML Copied",
+        description: "Paste into Gmail's HTML editor"
+      });
+    }
+  };
+
   const compressImage = async (url: string, maxWidth: number = 800, quality: number = 0.6): Promise<string> => {
     try {
       const response = await fetch(url);
@@ -847,6 +944,9 @@ export default function AircraftData() {
                 <div className="flex items-center justify-between gap-2">
                   <h3 className="text-lg font-semibold">Aircraft Data</h3>
                   <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={handleCopyEmailHTML}>
+                      Copy for Gmail
+                    </Button>
                     <Button variant="outline" size="sm" onClick={handlePushToWeb}>
                       <Globe className="mr-2 h-4 w-4" />
                       Export Web Page
