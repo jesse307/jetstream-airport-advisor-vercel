@@ -185,8 +185,8 @@ export default function AircraftData() {
       padding: 0;
     }
     .container { 
-      max-width: 1200px; 
-      margin: 0 auto; 
+      max-width: 100%; 
+      margin: 0; 
       background: white; 
     }
     .header {
@@ -230,7 +230,7 @@ export default function AircraftData() {
       transform: scale(${imageZoom / 100});
       transform-origin: ${imagePosition.x}% ${imagePosition.y}%;
     }
-    .content { padding: 16px; }
+    .content { padding: 24px; }
     .stats { 
       display: grid; 
       grid-template-columns: repeat(4, 1fr); 
@@ -593,12 +593,12 @@ export default function AircraftData() {
     @media print {
       @page { size: letter; margin: 0.3in; }
       body { padding: 0; background: white; }
-      .header { padding: 16px; }
+      .header { padding: 20px; }
       .logo { height: 40px; }
-      .title-section h1 { font-size: 20px; }
+      .title-section h1 { font-size: 22px; }
       .title-section p { font-size: 10px; margin-top: 2px; }
       .hero { height: 260px; }
-      .content { padding: 16px; }
+      .content { padding: 20px; }
       .stats { gap: 8px; margin-bottom: 16px; }
       .stat { padding: 12px; }
       .stat-value { font-size: 20px; }
