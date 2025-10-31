@@ -35,15 +35,14 @@ interface QuoteOption {
   tail_number?: string;
   operator?: string;
   amenities?: string[];
+  customAmenities?: string[];
   [key: string]: any;
 }
 
 export function AutomatedQuoteProcess({ open, onOpenChange, quote, onComplete }: AutomatedQuoteProcessProps) {
   const [step, setStep] = useState(1);
   const [quoteOptions, setQuoteOptions] = useState<QuoteOption[]>([]);
-  const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
-  const [customAmenity, setCustomAmenity] = useState("");
-  const [customAmenities, setCustomAmenities] = useState<string[]>([]);
+  const [customAmenityInputs, setCustomAmenityInputs] = useState<Record<number, string>>({});
   const [processing, setProcessing] = useState(false);
   const { toast } = useToast();
 
@@ -58,24 +57,61 @@ export function AutomatedQuoteProcess({ open, onOpenChange, quote, onComplete }:
         ...q,
         tail_number: q.tail_number || "",
         operator: q.operator || "",
-        amenities: q.amenities || []
+        amenities: q.amenities || [],
+        customAmenities: (q.amenities || []).filter((a: string) => !DEFAULT_AMENITIES.includes(a))
       })));
-      
-      // For amenities step, gather all unique amenities
-      const allAmenities = quotes.flatMap((q: any) => q.amenities || []);
-      const uniqueAmenities = [...new Set(allAmenities)] as string[];
-      setSelectedAmenities(uniqueAmenities);
-      
-      // Find custom amenities
-      const customOnes = uniqueAmenities.filter((a: string) => !DEFAULT_AMENITIES.includes(a));
-      setCustomAmenities(customOnes);
     }
   }, [open, quote]);
 
-  const updateQuoteOption = (index: number, field: string, value: string) => {
+  const updateQuoteOption = (index: number, field: string, value: any) => {
     setQuoteOptions(prev => {
       const updated = [...prev];
       updated[index] = { ...updated[index], [field]: value };
+      return updated;
+    });
+  };
+
+  const toggleAmenity = (index: number, amenity: string) => {
+    setQuoteOptions(prev => {
+      const updated = [...prev];
+      const currentAmenities = updated[index].amenities || [];
+      updated[index] = {
+        ...updated[index],
+        amenities: currentAmenities.includes(amenity)
+          ? currentAmenities.filter(a => a !== amenity)
+          : [...currentAmenities, amenity]
+      };
+      return updated;
+    });
+  };
+
+  const addCustomAmenity = (index: number, amenity: string) => {
+    if (amenity.trim()) {
+      setQuoteOptions(prev => {
+        const updated = [...prev];
+        const customAmenities = updated[index].customAmenities || [];
+        const amenities = updated[index].amenities || [];
+        
+        if (!customAmenities.includes(amenity.trim())) {
+          updated[index] = {
+            ...updated[index],
+            customAmenities: [...customAmenities, amenity.trim()],
+            amenities: [...amenities, amenity.trim()]
+          };
+        }
+        return updated;
+      });
+    }
+  };
+
+  const removeCustomAmenity = (index: number, amenity: string) => {
+    setQuoteOptions(prev => {
+      const updated = [...prev];
+      updated[index] = {
+        ...updated[index],
+        customAmenities: (updated[index].customAmenities || []).filter(a => a !== amenity),
+        amenities: (updated[index].amenities || []).filter(a => a !== amenity)
+      };
       return updated;
     });
   };
@@ -87,11 +123,10 @@ export function AutomatedQuoteProcess({ open, onOpenChange, quote, onComplete }:
       // Process complete - update the quote in Supabase
       setProcessing(true);
       try {
-        // Apply selected amenities to all quote options
-        const enhancedQuotes = quoteOptions.map(q => ({
-          ...q,
-          amenities: selectedAmenities
-        }));
+        const enhancedQuotes = quoteOptions.map(q => {
+          const { customAmenities, ...rest } = q;
+          return rest;
+        });
 
         const enhancedData = {
           ...quote.extracted_data,
@@ -136,38 +171,12 @@ export function AutomatedQuoteProcess({ open, onOpenChange, quote, onComplete }:
   const handleClose = () => {
     setStep(1);
     setQuoteOptions([]);
-    setSelectedAmenities([]);
-    setCustomAmenities([]);
-    setCustomAmenity("");
     onOpenChange(false);
   };
 
-  const toggleAmenity = (amenity: string) => {
-    setSelectedAmenities(prev =>
-      prev.includes(amenity)
-        ? prev.filter(a => a !== amenity)
-        : [...prev, amenity]
-    );
-  };
-
-  const addCustomAmenity = () => {
-    if (customAmenity.trim() && !customAmenities.includes(customAmenity.trim())) {
-      setCustomAmenities([...customAmenities, customAmenity.trim()]);
-      setSelectedAmenities([...selectedAmenities, customAmenity.trim()]);
-      setCustomAmenity("");
-    }
-  };
-
-  const removeCustomAmenity = (amenity: string) => {
-    setCustomAmenities(prev => prev.filter(a => a !== amenity));
-    setSelectedAmenities(prev => prev.filter(a => a !== amenity));
-  };
-
-  const allAmenities = [...DEFAULT_AMENITIES, ...customAmenities];
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[700px]">
         <DialogHeader>
           <DialogTitle>Automated Quote Process</DialogTitle>
           <DialogDescription>
@@ -217,84 +226,102 @@ export function AutomatedQuoteProcess({ open, onOpenChange, quote, onComplete }:
         )}
 
         {step === 2 && (
-          <div className="space-y-6 py-4">
-            <div className="space-y-4">
-              <Label>Select Amenities</Label>
-              <div className="grid grid-cols-2 gap-3">
-                {allAmenities.map((amenity) => {
-                  const isCustom = customAmenities.includes(amenity);
-                  const isSelected = selectedAmenities.includes(amenity);
-                  
-                  return (
-                    <div key={amenity} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={amenity}
-                        checked={isSelected}
-                        onCheckedChange={() => toggleAmenity(amenity)}
-                      />
-                      <label
-                        htmlFor={amenity}
-                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex items-center gap-2 flex-1"
-                      >
-                        {amenity}
-                        {isCustom && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-4 w-4 p-0"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              removeCustomAmenity(amenity);
-                            }}
-                          >
-                            <X className="h-3 w-3" />
-                          </Button>
-                        )}
-                      </label>
+          <div className="space-y-6 py-4 max-h-[500px] overflow-y-auto">
+            {quoteOptions.map((option, optIndex) => {
+              const allAmenities = [...DEFAULT_AMENITIES, ...(option.customAmenities || [])];
+              
+              return (
+                <div key={optIndex} className="p-4 border rounded-lg space-y-4 bg-muted/50">
+                  <div className="flex items-center justify-between">
+                    <Badge variant="secondary">Option {optIndex + 1}</Badge>
+                    {option.aircraft_type && (
+                      <span className="text-sm font-semibold">{option.aircraft_type}</span>
+                    )}
+                  </div>
+
+                  <div className="space-y-3">
+                    <Label>Select Amenities</Label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {allAmenities.map((amenity) => {
+                        const isCustom = option.customAmenities?.includes(amenity);
+                        const isSelected = option.amenities?.includes(amenity);
+                        
+                        return (
+                          <div key={amenity} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={`${optIndex}-${amenity}`}
+                              checked={isSelected}
+                              onCheckedChange={() => toggleAmenity(optIndex, amenity)}
+                            />
+                            <label
+                              htmlFor={`${optIndex}-${amenity}`}
+                              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex items-center gap-1 flex-1"
+                            >
+                              {amenity}
+                              {isCustom && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-4 w-4 p-0"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    removeCustomAmenity(optIndex, amenity);
+                                  }}
+                                >
+                                  <X className="h-3 w-3" />
+                                </Button>
+                              )}
+                            </label>
+                          </div>
+                        );
+                      })}
                     </div>
-                  );
-                })}
-              </div>
-            </div>
+                  </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="customAmenity">Add Custom Amenity</Label>
-              <div className="flex gap-2">
-                <Input
-                  id="customAmenity"
-                  placeholder="Enter amenity name"
-                  value={customAmenity}
-                  onChange={(e) => setCustomAmenity(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      addCustomAmenity();
-                    }
-                  }}
-                />
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={addCustomAmenity}
-                  disabled={!customAmenity.trim()}
-                >
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
+                  <div className="space-y-2">
+                    <Label>Add Custom Amenity</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Enter amenity name"
+                        value={customAmenityInputs[optIndex] || ""}
+                        onChange={(e) => setCustomAmenityInputs(prev => ({ ...prev, [optIndex]: e.target.value }))}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            addCustomAmenity(optIndex, customAmenityInputs[optIndex] || "");
+                            setCustomAmenityInputs(prev => ({ ...prev, [optIndex]: "" }));
+                          }
+                        }}
+                      />
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        onClick={() => {
+                          addCustomAmenity(optIndex, customAmenityInputs[optIndex] || "");
+                          setCustomAmenityInputs(prev => ({ ...prev, [optIndex]: "" }));
+                        }}
+                        disabled={!(customAmenityInputs[optIndex] || "").trim()}
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
 
-            {selectedAmenities.length > 0 && (
-              <div className="space-y-2">
-                <Label>Selected Amenities ({selectedAmenities.length})</Label>
-                <div className="flex flex-wrap gap-2">
-                  {selectedAmenities.map((amenity) => (
-                    <Badge key={amenity} variant="secondary">
-                      {amenity}
-                    </Badge>
-                  ))}
+                  {option.amenities && option.amenities.length > 0 && (
+                    <div className="space-y-2">
+                      <Label>Selected ({option.amenities.length})</Label>
+                      <div className="flex flex-wrap gap-2">
+                        {option.amenities.map((amenity: string) => (
+                          <Badge key={amenity} variant="secondary">
+                            {amenity}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
-              </div>
-            )}
+              );
+            })}
           </div>
         )}
 
