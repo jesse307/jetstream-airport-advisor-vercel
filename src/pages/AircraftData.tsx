@@ -217,14 +217,17 @@ export default function AircraftData() {
     }
     .hero { 
       position: relative; 
-      height: 320px; 
-      overflow: hidden;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f9fafb;
     }
     .hero-bg { 
       width: 100%; 
-      height: 100%; 
-      object-fit: cover; 
-      object-position: ${imagePosition.x}% ${imagePosition.y}%;
+      height: auto;
+      max-height: 400px;
+      object-fit: contain;
     }
     .content { padding: 16px; }
     .stats { 
@@ -492,14 +495,17 @@ export default function AircraftData() {
     }
     .hero { 
       position: relative; 
-      height: 320px; 
-      overflow: hidden;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f9fafb;
     }
     .hero-bg { 
       width: 100%; 
-      height: 100%; 
-      object-fit: cover; 
-      object-position: ${imagePosition.x}% ${imagePosition.y}%;
+      height: auto;
+      max-height: 500px;
+      object-fit: contain;
     }
     .content { padding: 48px; }
     .stats { 
@@ -590,7 +596,7 @@ export default function AircraftData() {
       .logo { height: 40px; }
       .title-section h1 { font-size: 20px; }
       .title-section p { font-size: 10px; margin-top: 2px; }
-      .hero { height: 240px; page-break-after: avoid; }
+      .hero-bg { max-height: 280px; }
       .content { padding: 16px; }
       .stats { gap: 8px; margin-bottom: 16px; }
       .stat { padding: 12px; }
