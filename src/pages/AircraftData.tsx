@@ -189,31 +189,31 @@ export default function AircraftData() {
       background: white; 
     }
     .header {
-      padding: 16px;
+      padding: 20px;
       border-bottom: 1px solid #e5e7eb;
       display: flex;
       align-items: center;
       justify-content: space-between;
     }
     .logo { 
-      height: 45px;
+      height: 50px;
     }
     .title-section {
       text-align: right;
     }
     .title-section h1 { 
-      font-size: 24px; 
+      font-size: 28px; 
       font-weight: 600; 
       letter-spacing: 1.5px; 
       margin: 0;
       color: #111827;
     }
     .title-section p { 
-      font-size: 10px; 
+      font-size: 11px; 
       text-transform: uppercase; 
       letter-spacing: 1.5px;
       color: #6b7280;
-      margin: 2px 0 0 0;
+      margin: 4px 0 0 0;
     }
     .hero { 
       position: relative; 
@@ -320,9 +320,10 @@ export default function AircraftData() {
         ${aircraft.aircraft_type?.aircraft_class?.name ? `<p>${aircraft.aircraft_type.aircraft_class.name} Jet</p>` : ''}
       </div>
     </div>
+    ${heroImage ? `
     <div class="hero">
-      ${heroImage ? `<img src="${heroImage}" alt="Aircraft" class="hero-bg">` : ''}
-    </div>
+      <img src="${heroImage}" alt="Aircraft" class="hero-bg">
+    </div>` : ''}
     
     <div class="content">
       <div class="stats">
@@ -461,10 +462,37 @@ export default function AircraftData() {
       overflow: hidden; 
       box-shadow: 0 20px 60px rgba(0,0,0,0.15);
     }
+    .header {
+      padding: 30px 40px;
+      border-bottom: 1px solid #e5e7eb;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: white;
+    }
+    .logo { 
+      height: 60px;
+    }
+    .title-section {
+      text-align: right;
+    }
+    .title-section h1 { 
+      font-size: 36px; 
+      font-weight: 600; 
+      letter-spacing: 2px; 
+      margin: 0;
+      color: #111827;
+    }
+    .title-section p { 
+      font-size: 14px; 
+      text-transform: uppercase; 
+      letter-spacing: 1.5px;
+      color: #6b7280;
+      margin: 6px 0 0 0;
+    }
     .hero { 
       position: relative; 
       height: 320px; 
-      background: linear-gradient(to bottom, rgba(0,0,0,0.3), rgba(0,0,0,0.7)); 
       overflow: hidden;
     }
     .hero-bg { 
@@ -472,27 +500,7 @@ export default function AircraftData() {
       height: 100%; 
       object-fit: cover; 
       object-position: ${imagePosition.x}% ${imagePosition.y}%;
-      position: absolute; 
-      top: 0; 
-      left: 0; 
-      z-index: 0; 
     }
-    .logo { 
-      position: absolute; 
-      top: 30px; 
-      left: 30px; 
-      height: 60px; 
-      z-index: 2;
-    }
-    .hero-text { 
-      position: absolute; 
-      bottom: 40px; 
-      left: 40px; 
-      color: white; 
-      z-index: 2;
-    }
-    .hero h1 { font-size: 48px; font-weight: 300; letter-spacing: 2px; margin-bottom: 8px; }
-    .hero p { font-size: 18px; opacity: 0.9; text-transform: uppercase; letter-spacing: 1px; }
     .content { padding: 48px; }
     .stats { 
       display: grid; 
@@ -578,11 +586,11 @@ export default function AircraftData() {
     @media print {
       @page { size: letter; margin: 0.3in; }
       body { padding: 0; background: white; }
+      .header { padding: 16px; }
+      .logo { height: 40px; }
+      .title-section h1 { font-size: 20px; }
+      .title-section p { font-size: 10px; margin-top: 2px; }
       .hero { height: 240px; page-break-after: avoid; }
-      .hero h1 { font-size: 28px; }
-      .hero p { font-size: 12px; }
-      .logo { height: 40px; top: 15px; left: 15px; }
-      .hero-text { bottom: 20px; left: 20px; }
       .content { padding: 16px; }
       .stats { gap: 8px; margin-bottom: 16px; }
       .stat { padding: 12px; }
@@ -601,14 +609,17 @@ export default function AircraftData() {
 </head>
 <body>
   <div class="container">
-    <div class="hero">
-      ${heroImage ? `<img src="${heroImage}" alt="Aircraft" class="hero-bg">` : ''}
+    <div class="header">
       ${logoBase64 ? `<img src="${logoBase64}" alt="Stratos Jets" class="logo">` : ''}
-      <div class="hero-text">
+      <div class="title-section">
         <h1>${aircraft.aircraft_type?.name || 'Luxury Aircraft'}</h1>
         ${aircraft.aircraft_type?.aircraft_class?.name ? `<p>${aircraft.aircraft_type.aircraft_class.name} Jet</p>` : ''}
       </div>
     </div>
+    ${heroImage ? `
+    <div class="hero">
+      <img src="${heroImage}" alt="Aircraft" class="hero-bg">
+    </div>` : ''}
     
     <div class="content">
       <div class="stats">
