@@ -591,8 +591,9 @@ export default function AircraftData() {
       font-size: 13px;
     }
     @media print {
-      @page { size: letter; margin: 0.3in; }
+      @page { size: letter; margin: 0.2in; }
       body { padding: 0; background: white; }
+      .container { max-width: 100%; width: 100%; margin: 0; }
       .header { padding: 20px; }
       .logo { height: 40px; }
       .title-section h1 { font-size: 22px; }
