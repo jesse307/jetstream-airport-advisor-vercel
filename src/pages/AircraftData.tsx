@@ -17,6 +17,7 @@ export default function AircraftData() {
   const [aircraftData, setAircraftData] = useState<any>(null);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [imagePosition, setImagePosition] = useState({ x: 50, y: 50 }); // Center by default
+  const [imageZoom, setImageZoom] = useState(100); // 100% zoom by default
   const [selectedAmenities, setSelectedAmenities] = useState<Record<string, boolean>>({});
   const [customAmenities, setCustomAmenities] = useState<string[]>(['', '', '']);
   const { toast } = useToast();
@@ -217,17 +218,17 @@ export default function AircraftData() {
     }
     .hero { 
       position: relative; 
-      width: 100%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      height: 320px;
+      overflow: hidden;
       background: #f9fafb;
     }
     .hero-bg { 
       width: 100%; 
-      height: auto;
-      max-height: 400px;
-      object-fit: contain;
+      height: 100%; 
+      object-fit: cover;
+      object-position: ${imagePosition.x}% ${imagePosition.y}%;
+      transform: scale(${imageZoom / 100});
+      transform-origin: ${imagePosition.x}% ${imagePosition.y}%;
     }
     .content { padding: 16px; }
     .stats { 
@@ -495,17 +496,17 @@ export default function AircraftData() {
     }
     .hero { 
       position: relative; 
-      width: 100%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      height: 400px;
+      overflow: hidden;
       background: #f9fafb;
     }
     .hero-bg { 
       width: 100%; 
-      height: auto;
-      max-height: 500px;
-      object-fit: contain;
+      height: 100%; 
+      object-fit: cover;
+      object-position: ${imagePosition.x}% ${imagePosition.y}%;
+      transform: scale(${imageZoom / 100});
+      transform-origin: ${imagePosition.x}% ${imagePosition.y}%;
     }
     .content { padding: 48px; }
     .stats { 
@@ -596,7 +597,7 @@ export default function AircraftData() {
       .logo { height: 40px; }
       .title-section h1 { font-size: 20px; }
       .title-section p { font-size: 10px; margin-top: 2px; }
-      .hero-bg { max-height: 280px; }
+      .hero { height: 260px; }
       .content { padding: 16px; }
       .stats { gap: 8px; margin-bottom: 16px; }
       .stat { padding: 12px; }
@@ -968,49 +969,75 @@ export default function AircraftData() {
             {/* Hero Image with Position Controls */}
             {aircraftData.images?.[0] && (
               <div className="relative">
-                <div className="no-print absolute top-4 right-4 z-10 flex gap-2 bg-background/90 p-3 rounded-lg shadow-lg">
-                  <Button 
-                    size="sm" 
-                    variant="outline"
-                    onClick={() => setImagePosition(prev => ({ ...prev, y: Math.max(0, prev.y - 5) }))}
-                  >
-                    ↑
-                  </Button>
-                  <Button 
-                    size="sm" 
-                    variant="outline"
-                    onClick={() => setImagePosition(prev => ({ ...prev, y: Math.min(100, prev.y + 5) }))}
-                  >
-                    ↓
-                  </Button>
-                  <Button 
-                    size="sm" 
-                    variant="outline"
-                    onClick={() => setImagePosition(prev => ({ ...prev, x: Math.max(0, prev.x - 5) }))}
-                  >
-                    ←
-                  </Button>
-                  <Button 
-                    size="sm" 
-                    variant="outline"
-                    onClick={() => setImagePosition(prev => ({ ...prev, x: Math.min(100, prev.x + 5) }))}
-                  >
-                    →
-                  </Button>
+                <div className="no-print absolute top-4 right-4 z-10 flex flex-col gap-2 bg-background/90 p-3 rounded-lg shadow-lg">
+                  <div className="flex gap-2">
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => setImagePosition(prev => ({ ...prev, y: Math.max(0, prev.y - 5) }))}
+                    >
+                      ↑
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => setImagePosition(prev => ({ ...prev, y: Math.min(100, prev.y + 5) }))}
+                    >
+                      ↓
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => setImagePosition(prev => ({ ...prev, x: Math.max(0, prev.x - 5) }))}
+                    >
+                      ←
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => setImagePosition(prev => ({ ...prev, x: Math.min(100, prev.x + 5) }))}
+                    >
+                      →
+                    </Button>
+                  </div>
+                  <div className="flex gap-2 items-center">
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => setImageZoom(prev => Math.max(50, prev - 10))}
+                    >
+                      -
+                    </Button>
+                    <span className="text-xs font-medium min-w-[50px] text-center">{imageZoom}%</span>
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => setImageZoom(prev => Math.min(200, prev + 10))}
+                    >
+                      +
+                    </Button>
+                  </div>
                   <Button 
                     size="sm" 
                     variant="secondary"
-                    onClick={() => setImagePosition({ x: 50, y: 50 })}
+                    onClick={() => {
+                      setImagePosition({ x: 50, y: 50 });
+                      setImageZoom(100);
+                    }}
                   >
                     Reset
                   </Button>
                 </div>
-                <div className="relative h-80 overflow-hidden">
+                <div className="relative h-80 overflow-hidden bg-muted">
                   <img 
                     src={aircraftData.images[0].media.path} 
                     alt="Aircraft exterior"
                     className="w-full h-full object-cover transition-all duration-200"
-                    style={{ objectPosition: `${imagePosition.x}% ${imagePosition.y}%` }}
+                    style={{ 
+                      objectPosition: `${imagePosition.x}% ${imagePosition.y}%`,
+                      transform: `scale(${imageZoom / 100})`,
+                      transformOrigin: `${imagePosition.x}% ${imagePosition.y}%`
+                    }}
                   />
                 </div>
               </div>
