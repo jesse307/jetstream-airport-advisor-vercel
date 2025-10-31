@@ -102,36 +102,53 @@ export default function AircraftData() {
     if (!aircraft) return;
 
     toast({
-      title: "Generating Email",
-      description: "Loading images..."
+      title: "Uploading Images",
+      description: "Preparing email..."
     });
 
-    // Get up to 3 cabin images
-    const cabinImages = aircraft.aircraft_images?.filter(
-      (img: any) => img.image_type?.name?.toLowerCase().includes('cabin')
-    ).slice(0, 3) || [];
+    try {
+      // Get up to 3 cabin images
+      const cabinImages = aircraft.aircraft_images?.filter(
+        (img: any) => img.image_type?.name?.toLowerCase().includes('cabin')
+      ).slice(0, 3) || [];
 
-    // Convert images to base64
-    const imagePromises = cabinImages.map(async (img: any) => {
-      try {
-        const response = await fetch(img.image_url);
-        const blob = await response.blob();
-        return new Promise<string>((resolve) => {
-          const reader = new FileReader();
-          reader.onloadend = () => resolve(reader.result as string);
-          reader.readAsDataURL(blob);
-        });
-      } catch (error) {
-        console.error('Failed to load image:', error);
-        return '';
+      // Upload images to Supabase Storage and get public URLs
+      const hostedImageUrls: string[] = [];
+      
+      for (let i = 0; i < cabinImages.length; i++) {
+        const img = cabinImages[i];
+        try {
+          // Fetch the image
+          const response = await fetch(img.image_url);
+          const blob = await response.blob();
+          
+          // Generate a unique filename
+          const filename = `aircraft-email-${aircraft.registration_number || Date.now()}-${i}.jpg`;
+          const filePath = `email-images/${filename}`;
+          
+          // Upload to Supabase Storage
+          const { data, error } = await supabase.storage
+            .from('email-assets')
+            .upload(filePath, blob, {
+              contentType: 'image/jpeg',
+              upsert: true
+            });
+          
+          if (error) throw error;
+          
+          // Get public URL
+          const { data: { publicUrl } } = supabase.storage
+            .from('email-assets')
+            .getPublicUrl(filePath);
+          
+          hostedImageUrls.push(publicUrl);
+        } catch (error) {
+          console.error('Failed to upload image:', error);
+        }
       }
-    });
 
-    const base64Images = await Promise.all(imagePromises);
-    const validImages = base64Images.filter(img => img);
-
-    // Generate compact email HTML
-    const emailHTML = `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden;">
+      // Generate compact email HTML with hosted images
+      const emailHTML = `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden;">
   <div style="background: #f9fafb; padding: 20px; text-align: center; border-bottom: 1px solid #e5e7eb;">
     <h1 style="margin: 0; font-size: 24px; font-weight: 600; color: #111827; letter-spacing: 1px;">${aircraft.aircraft_type?.name || 'Luxury Aircraft'}</h1>
     ${aircraft.aircraft_type?.aircraft_class?.name ? `<p style="margin: 8px 0 0 0; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: #6b7280;">${aircraft.aircraft_type.aircraft_class.name} Jet</p>` : ''}
@@ -158,12 +175,12 @@ export default function AircraftData() {
       </tr>
     </table>
     
-    ${validImages.length > 0 ? `
+    ${hostedImageUrls.length > 0 ? `
     <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
       <tr>
-        ${validImages.map((imgData: string) => `
+        ${hostedImageUrls.map((url: string) => `
         <td style="padding: 4px;">
-          <img src="${imgData}" alt="Interior" style="width: 100%; height: auto; border-radius: 6px; display: block;">
+          <img src="${url}" alt="Interior" style="width: 100%; height: auto; border-radius: 6px; display: block;">
         </td>
         `).join('')}
       </tr>
@@ -192,8 +209,7 @@ export default function AircraftData() {
   </div>
 </div>`;
 
-    // Copy to clipboard in a Gmail-friendly way
-    try {
+      // Copy to clipboard
       const type = "text/html";
       const blob = new Blob([emailHTML], { type });
       const data = [new ClipboardItem({ [type]: blob })];
@@ -201,14 +217,14 @@ export default function AircraftData() {
       
       toast({
         title: "Copied!",
-        description: "Paste into Gmail using Ctrl/Cmd+V"
+        description: "Images hosted - paste into Gmail now"
       });
     } catch (err) {
-      // Fallback to plain text
-      navigator.clipboard.writeText(emailHTML);
+      console.error('Error:', err);
       toast({
-        title: "HTML Copied",
-        description: "Paste into Gmail's HTML editor"
+        title: "Error",
+        description: "Failed to prepare email",
+        variant: "destructive"
       });
     }
   };
