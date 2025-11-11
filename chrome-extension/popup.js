@@ -188,7 +188,7 @@ async function handleCapture() {
       
       setTimeout(() => {
         chrome.tabs.create({
-          url: `${baseUrl}/leads/${result.leadId}`
+          url: `${baseUrl}/lead-analysis/${result.leadId}`
         });
       }, 1500);
     } else {
