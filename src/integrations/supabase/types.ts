@@ -242,6 +242,105 @@ export type Database = {
         }
         Relationships: []
       }
+      aviapages_database: {
+        Row: {
+          adult_critical_care: string | null
+          base_airport: string | null
+          beds: string | null
+          cabin_crew: string | null
+          cabin_height: string | null
+          cabin_length: string | null
+          cabin_width: string | null
+          city: string | null
+          class: string | null
+          company: string | null
+          country: string | null
+          divan_seats: string | null
+          entertainment_system: string | null
+          hot_meal: string | null
+          lavatory: string | null
+          luggage_volume: string | null
+          medical_ramp: string | null
+          owners_approval_required: string | null
+          passengers_max: string | null
+          pediatric_critical_care: string | null
+          pets_allowed: string | null
+          registration_number: string | null
+          satellite_phone: string | null
+          serial_number: string | null
+          shower: string | null
+          sleeping_places: string | null
+          smoking: string | null
+          type: string | null
+          wireless_internet: string | null
+          year_of_production: string | null
+        }
+        Insert: {
+          adult_critical_care?: string | null
+          base_airport?: string | null
+          beds?: string | null
+          cabin_crew?: string | null
+          cabin_height?: string | null
+          cabin_length?: string | null
+          cabin_width?: string | null
+          city?: string | null
+          class?: string | null
+          company?: string | null
+          country?: string | null
+          divan_seats?: string | null
+          entertainment_system?: string | null
+          hot_meal?: string | null
+          lavatory?: string | null
+          luggage_volume?: string | null
+          medical_ramp?: string | null
+          owners_approval_required?: string | null
+          passengers_max?: string | null
+          pediatric_critical_care?: string | null
+          pets_allowed?: string | null
+          registration_number?: string | null
+          satellite_phone?: string | null
+          serial_number?: string | null
+          shower?: string | null
+          sleeping_places?: string | null
+          smoking?: string | null
+          type?: string | null
+          wireless_internet?: string | null
+          year_of_production?: string | null
+        }
+        Update: {
+          adult_critical_care?: string | null
+          base_airport?: string | null
+          beds?: string | null
+          cabin_crew?: string | null
+          cabin_height?: string | null
+          cabin_length?: string | null
+          cabin_width?: string | null
+          city?: string | null
+          class?: string | null
+          company?: string | null
+          country?: string | null
+          divan_seats?: string | null
+          entertainment_system?: string | null
+          hot_meal?: string | null
+          lavatory?: string | null
+          luggage_volume?: string | null
+          medical_ramp?: string | null
+          owners_approval_required?: string | null
+          passengers_max?: string | null
+          pediatric_critical_care?: string | null
+          pets_allowed?: string | null
+          registration_number?: string | null
+          satellite_phone?: string | null
+          serial_number?: string | null
+          shower?: string | null
+          sleeping_places?: string | null
+          smoking?: string | null
+          type?: string | null
+          wireless_internet?: string | null
+          year_of_production?: string | null
+        }
+        Relationships: []
+      }
       email_templates: {
         Row: {
           created_at: string
@@ -694,10 +793,7 @@ export type Database = {
         }
         Returns: boolean
       }
-      normalize_route: {
-        Args: { arr: string; dep: string }
-        Returns: string
-      }
+      normalize_route: { Args: { arr: string; dep: string }; Returns: string }
     }
     Enums: {
       app_role: "admin" | "user"
