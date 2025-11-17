@@ -43,8 +43,10 @@ async function handleCapture() {
   
   captureBtn.disabled = true;
   const originalText = captureBtn.textContent;
-  captureBtn.innerHTML = '<span class="loader"></span>Processing...';
-  status.className = 'status';
+  
+  // Update status
+  captureBtn.innerHTML = '<span class="loader"></span>Capturing page...';
+  status.className = 'status info';
   status.style.display = 'none';
 
   try {
@@ -59,6 +61,12 @@ async function handleCapture() {
 
     const pageData = results[0].result;
     
+    // Update status
+    captureBtn.innerHTML = '<span class="loader"></span>Processing lead...';
+    status.className = 'status info';
+    status.textContent = '📄 Page captured successfully';
+    status.style.display = 'block';
+    
     // Get Charter Pro app tabs - check both preview and production
     let appTabs = await chrome.tabs.query({ 
       url: "https://300e3d3f-6393-4fa8-9ea2-e17c21482f24.lovableproject.com/*" 
@@ -72,6 +80,9 @@ async function handleCapture() {
     
     // Store Charter Pro tab ID for navigation
     const charterProTabId = appTabs.length > 0 ? appTabs[0].id : null;
+    
+    // Update status
+    captureBtn.innerHTML = '<span class="loader"></span>Authenticating...';
     
     // Get user ID directly from Charter Pro localStorage
     let userId = null;
@@ -146,20 +157,16 @@ async function handleCapture() {
     }
 
     if (!userId) {
-      status.className = 'status error';
-      status.textContent = '⚠ Please log in to Charter Pro first.';
-      status.style.display = 'block';
-      console.error('No user ID retrieved from app tab');
-      
-      setTimeout(() => {
-        chrome.tabs.create({
-          url: 'https://300e3d3f-6393-4fa8-9ea2-e17c21482f24.lovableproject.com/auth'
-        });
-      }, 1500);
-      return;
+      throw new Error('Not authenticated. Please log in to Charter Pro first.');
     }
+
+    console.log('Processing lead with user ID:', userId);
     
-    console.log('Sending request with user ID:', userId);
+    // Update status
+    captureBtn.innerHTML = '<span class="loader"></span>Creating lead...';
+    status.textContent = '🔐 Authenticated successfully';
+    status.className = 'status info';
+    status.style.display = 'block';
 
     // Send to process-lead-complete endpoint for automatic parsing and creation
     const response = await fetch(`https://hwemookrxvflpinfpkrj.supabase.co/functions/v1/process-lead-complete`, {
@@ -175,20 +182,29 @@ async function handleCapture() {
     });
 
     console.log('Response status:', response.status);
-    const result = await response.json();
-    console.log('Response data:', result);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('API Error:', errorText);
+      throw new Error(`Failed to process lead: ${errorText}`);
+    }
 
-    if (response.ok && result.leadId) {
-      status.className = 'status success';
-      status.textContent = '✓ Lead created successfully!';
-      status.style.display = 'block';
-      
-      showSuccess('Lead captured successfully!');
+    const result = await response.json();
+    console.log('Lead processed successfully:', result);
+
+    captureBtn.innerHTML = '✅ Success!';
+    status.className = 'status success';
+    status.textContent = '✅ Lead captured and created successfully!';
+    status.style.display = 'block';
       
       // Use the same URL pattern as the app tab we found
       const baseUrl = appTabs[0].url.includes('lovable.app') 
         ? 'https://id-preview--300e3d3f-6393-4fa8-9ea2-e17c21482f24.lovable.app'
         : 'https://300e3d3f-6393-4fa8-9ea2-e17c21482f24.lovableproject.com';
+      
+      // Show final success status
+      captureBtn.innerHTML = '✅ Opening lead...';
+      status.textContent = '✅ Lead created! Opening in Charter Pro...';
       
       // Navigate in the existing Charter Pro tab instead of creating a new one
       setTimeout(() => {
@@ -203,17 +219,26 @@ async function handleCapture() {
           });
         }
       }, 500);
-    } else {
-      console.error('Error response:', result);
-      throw new Error(result.error || `Failed to create lead (Status: ${response.status})`);
-    }
   } catch (error) {
+    console.error('Capture error:', error);
+    captureBtn.innerHTML = '❌ Failed';
     status.className = 'status error';
-    status.textContent = '✗ Error: ' + error.message;
+    status.textContent = '❌ ' + error.message;
     status.style.display = 'block';
+    
+    // Reset button after 2 seconds
+    setTimeout(() => {
+      captureBtn.disabled = false;
+      captureBtn.textContent = originalText;
+    }, 2000);
   } finally {
-    captureBtn.disabled = false;
-    captureBtn.textContent = originalText;
+    // Only reset if not showing error
+    if (!status.classList.contains('error')) {
+      setTimeout(() => {
+        captureBtn.disabled = false;
+        captureBtn.textContent = originalText;
+      }, 2000);
+    }
   }
 }
 
