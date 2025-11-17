@@ -70,6 +70,9 @@ async function handleCapture() {
       });
     }
     
+    // Store Charter Pro tab ID for navigation
+    const charterProTabId = appTabs.length > 0 ? appTabs[0].id : null;
+    
     // Get user ID directly from Charter Pro localStorage
     let userId = null;
     if (appTabs.length > 0) {
@@ -180,17 +183,26 @@ async function handleCapture() {
       status.textContent = '✓ Lead created successfully!';
       status.style.display = 'block';
       
-      // Open the Lead Analysis page for this specific lead
+      showSuccess('Lead captured successfully!');
+      
       // Use the same URL pattern as the app tab we found
       const baseUrl = appTabs[0].url.includes('lovable.app') 
         ? 'https://id-preview--300e3d3f-6393-4fa8-9ea2-e17c21482f24.lovable.app'
         : 'https://300e3d3f-6393-4fa8-9ea2-e17c21482f24.lovableproject.com';
       
+      // Navigate in the existing Charter Pro tab instead of creating a new one
       setTimeout(() => {
-        chrome.tabs.create({
-          url: `${baseUrl}/lead-analysis/${result.leadId}`
-        });
-      }, 1500);
+        if (charterProTabId) {
+          chrome.tabs.update(charterProTabId, {
+            url: `${baseUrl}/lead-analysis/${result.leadId}`,
+            active: true
+          });
+        } else {
+          chrome.tabs.create({
+            url: `${baseUrl}/lead-analysis/${result.leadId}`
+          });
+        }
+      }, 500);
     } else {
       console.error('Error response:', result);
       throw new Error(result.error || `Failed to create lead (Status: ${response.status})`);
