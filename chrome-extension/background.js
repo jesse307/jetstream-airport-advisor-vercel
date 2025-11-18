@@ -1,3 +1,47 @@
+// Queue management for offline captures
+const QUEUE_KEY = 'capture_queue';
+
+async function getQueue() {
+  const result = await chrome.storage.local.get(QUEUE_KEY);
+  return result[QUEUE_KEY] || [];
+}
+
+async function addToQueue(pageData, userId) {
+  const queue = await getQueue();
+  queue.push({ pageData, userId, timestamp: Date.now() });
+  await chrome.storage.local.set({ [QUEUE_KEY]: queue });
+  return queue.length;
+}
+
+async function removeFromQueue(index) {
+  const queue = await getQueue();
+  queue.splice(index, 1);
+  await chrome.storage.local.set({ [QUEUE_KEY]: queue });
+}
+
+async function processQueue() {
+  const queue = await getQueue();
+  if (queue.length === 0) return;
+
+  chrome.notifications.create({
+    type: 'basic',
+    iconUrl: 'icon48.png',
+    title: 'Processing Queued Captures',
+    message: `Processing ${queue.length} queued capture(s)...`
+  });
+
+  for (let i = queue.length - 1; i >= 0; i--) {
+    try {
+      const item = queue[i];
+      await processCaptureRequest(item.pageData, item.userId);
+      await removeFromQueue(i);
+    } catch (error) {
+      console.error('Failed to process queued item:', error);
+      // Keep in queue for next retry
+    }
+  }
+}
+
 // Retry function with exponential backoff
 async function retryWithBackoff(fn, maxRetries = 3, baseDelay = 1000) {
   let lastError;
@@ -36,6 +80,41 @@ async function retryWithBackoff(fn, maxRetries = 3, baseDelay = 1000) {
   
   throw lastError;
 }
+
+// Process capture request (extracted for reuse)
+async function processCaptureRequest(pageData, userId) {
+  const result = await retryWithBackoff(async () => {
+    const response = await fetch(`https://hwemookrxvflpinfpkrj.supabase.co/functions/v1/process-lead-complete`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3ZW1vb2tyeHZmbHBpbmZwa3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg5MTQ5MTksImV4cCI6MjA3NDQ5MDkxOX0.TTCRQZbm_cIGAusk8C3AhTbH6BPWmbsFr02mxLQ0-iY',
+      },
+      body: JSON.stringify({
+        rawData: pageData,
+        userId: userId
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to process lead: ${response.status}`);
+    }
+
+    return await response.json();
+  });
+
+  return result;
+}
+
+// Listen for online/offline events
+self.addEventListener('online', async () => {
+  console.log('Connection restored, processing queue...');
+  await processQueue();
+});
+
+self.addEventListener('offline', () => {
+  console.log('Connection lost, captures will be queued');
+});
 
 // Listen for keyboard command
 chrome.commands.onCommand.addListener(async (command) => {
@@ -121,26 +200,20 @@ async function handleCaptureCommand() {
       return;
     }
 
-    // Send to process-lead-complete endpoint with retry logic
-    const result = await retryWithBackoff(async () => {
-      const response = await fetch(`https://hwemookrxvflpinfpkrj.supabase.co/functions/v1/process-lead-complete`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3ZW1vb2tyeHZmbHBpbmZwa3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg5MTQ5MTksImV4cCI6MjA3NDQ5MDkxOX0.TTCRQZbm_cIGAusk8C3AhTbH6BPWmbsFr02mxLQ0-iY',
-        },
-        body: JSON.stringify({
-          rawData: pageData,
-          userId: userId
-        })
+    // Check if offline
+    if (!navigator.onLine) {
+      const queueLength = await addToQueue(pageData, userId);
+      chrome.notifications.create({
+        type: 'basic',
+        iconUrl: 'icon48.png',
+        title: 'Capture Queued (Offline)',
+        message: `Lead capture queued. ${queueLength} item(s) will be processed when connection is restored.`
       });
+      return;
+    }
 
-      if (!response.ok) {
-        throw new Error(`Failed to process lead: ${response.status}`);
-      }
-
-      return await response.json();
-    });
+    // Send to process-lead-complete endpoint
+    const result = await processCaptureRequest(pageData, userId);
 
     // Show success notification
     chrome.notifications.create({
