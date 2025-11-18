@@ -5,7 +5,8 @@
   "description": "Capture lead data from Salesforce and send to your system",
   "permissions": [
     "activeTab",
-    "scripting"
+    "scripting",
+    "notifications"
   ],
   "host_permissions": [
     "https://*.salesforce.com/*",
@@ -28,6 +29,18 @@
     "16": "icon16.png",
     "48": "icon48.png",
     "128": "icon128.png"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "commands": {
+    "capture-lead": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+C",
+        "mac": "Command+Shift+C"
+      },
+      "description": "Capture lead from current page"
+    }
   },
   "content_scripts": [
     {

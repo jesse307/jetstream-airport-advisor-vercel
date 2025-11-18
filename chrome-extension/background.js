@@ -1,0 +1,174 @@
+// Listen for keyboard command
+chrome.commands.onCommand.addListener(async (command) => {
+  if (command === 'capture-lead') {
+    await handleCaptureCommand();
+  }
+});
+
+async function handleCaptureCommand() {
+  try {
+    // Show notification that capture is starting
+    chrome.notifications.create({
+      type: 'basic',
+      iconUrl: 'icon48.png',
+      title: 'Lead Capture',
+      message: 'Capturing page data...'
+    });
+
+    // Get the active tab
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    
+    // Execute script to capture page content
+    const results = await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      func: capturePage
+    });
+
+    const pageData = results[0].result;
+    
+    // Get Charter Pro app tabs - check both preview and production
+    let appTabs = await chrome.tabs.query({ 
+      url: "https://300e3d3f-6393-4fa8-9ea2-e17c21482f24.lovableproject.com/*" 
+    });
+    
+    if (appTabs.length === 0) {
+      appTabs = await chrome.tabs.query({ 
+        url: "https://id-preview--300e3d3f-6393-4fa8-9ea2-e17c21482f24.lovable.app/*" 
+      });
+    }
+    
+    // Get user ID directly from Charter Pro localStorage
+    let userId = null;
+    if (appTabs.length > 0) {
+      try {
+        const userResults = await chrome.scripting.executeScript({
+          target: { tabId: appTabs[0].id },
+          func: () => {
+            for (let i = 0; i < localStorage.length; i++) {
+              const key = localStorage.key(i);
+              if (key && key.startsWith('sb-') && key.includes('auth-token')) {
+                const session = localStorage.getItem(key);
+                if (session) {
+                  try {
+                    const parsed = JSON.parse(session);
+                    if (parsed.user?.id) {
+                      return parsed.user.id;
+                    } else if (parsed.currentSession?.user?.id) {
+                      return parsed.currentSession.user.id;
+                    }
+                  } catch (e) {
+                    console.error('Parse error:', e);
+                  }
+                }
+              }
+            }
+            return null;
+          }
+        });
+        
+        userId = userResults[0]?.result;
+      } catch (error) {
+        console.error('Error getting user ID:', error);
+      }
+    }
+
+    if (!userId) {
+      chrome.notifications.create({
+        type: 'basic',
+        iconUrl: 'icon48.png',
+        title: 'Lead Capture Failed',
+        message: 'Please log in to Charter Pro first'
+      });
+      return;
+    }
+
+    // Send to process-lead-complete endpoint
+    const response = await fetch(`https://hwemookrxvflpinfpkrj.supabase.co/functions/v1/process-lead-complete`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3ZW1vb2tyeHZmbHBpbmZwa3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg5MTQ5MTksImV4cCI6MjA3NDQ5MDkxOX0.TTCRQZbm_cIGAusk8C3AhTbH6BPWmbsFr02mxLQ0-iY',
+      },
+      body: JSON.stringify({
+        rawData: pageData,
+        userId: userId
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to process lead');
+    }
+
+    const result = await response.json();
+
+    // Show success notification
+    chrome.notifications.create({
+      type: 'basic',
+      iconUrl: 'icon48.png',
+      title: 'Lead Captured!',
+      message: 'Opening lead in Charter Pro...'
+    });
+
+    // Use the same URL pattern as the app tab we found
+    const baseUrl = appTabs[0].url.includes('lovable.app') 
+      ? 'https://id-preview--300e3d3f-6393-4fa8-9ea2-e17c21482f24.lovable.app'
+      : 'https://300e3d3f-6393-4fa8-9ea2-e17c21482f24.lovableproject.com';
+    
+    // Navigate in the existing Charter Pro tab or create a new one
+    if (appTabs.length > 0) {
+      chrome.tabs.update(appTabs[0].id, {
+        url: `${baseUrl}/lead-analysis/${result.leadId}`,
+        active: true
+      });
+    } else {
+      chrome.tabs.create({
+        url: `${baseUrl}/lead-analysis/${result.leadId}`
+      });
+    }
+  } catch (error) {
+    console.error('Capture error:', error);
+    chrome.notifications.create({
+      type: 'basic',
+      iconUrl: 'icon48.png',
+      title: 'Lead Capture Failed',
+      message: error.message || 'An error occurred'
+    });
+  }
+}
+
+// This function runs in the context of the web page
+function capturePage() {
+  const pageTitle = document.title;
+  const pageUrl = window.location.href;
+  
+  // Try to get all visible text
+  let pageText = document.body.innerText;
+  
+  // Try to extract structured data from Salesforce if available
+  const salesforceData = [];
+  
+  // Look for Salesforce field labels and values
+  const fields = document.querySelectorAll('.slds-form-element, .dataCol, .labelCol');
+  fields.forEach(field => {
+    const text = field.innerText?.trim();
+    if (text && text.length < 500) {
+      salesforceData.push(text);
+    }
+  });
+  
+  // Combine all data
+  let capturedData = `Page: ${pageTitle}\nURL: ${pageUrl}\n\n`;
+  
+  if (salesforceData.length > 0) {
+    capturedData += 'Salesforce Fields:\n' + salesforceData.join('\n') + '\n\n';
+  }
+  
+  capturedData += 'Full Page Content:\n' + pageText;
+  
+  // Limit size to prevent issues
+  if (capturedData.length > 50000) {
+    capturedData = capturedData.substring(0, 50000) + '\n\n[Content truncated]';
+  }
+  
+  return capturedData;
+}
