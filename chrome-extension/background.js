@@ -1,3 +1,42 @@
+// Retry function with exponential backoff
+async function retryWithBackoff(fn, maxRetries = 3, baseDelay = 1000) {
+  let lastError;
+  
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error;
+      
+      // Don't retry on non-network errors
+      if (error.message.includes('401') || error.message.includes('403') || error.message.includes('log in')) {
+        throw error;
+      }
+      
+      // If this was the last attempt, throw the error
+      if (attempt === maxRetries) {
+        throw error;
+      }
+      
+      // Calculate delay with exponential backoff: baseDelay * 2^attempt
+      const delay = baseDelay * Math.pow(2, attempt);
+      
+      // Show retry notification
+      chrome.notifications.create({
+        type: 'basic',
+        iconUrl: 'icon48.png',
+        title: 'Retrying Lead Capture',
+        message: `Network error. Retrying in ${delay / 1000}s... (Attempt ${attempt + 1}/${maxRetries})`
+      });
+      
+      // Wait before retrying
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+  
+  throw lastError;
+}
+
 // Listen for keyboard command
 chrome.commands.onCommand.addListener(async (command) => {
   if (command === 'capture-lead') {
@@ -82,24 +121,26 @@ async function handleCaptureCommand() {
       return;
     }
 
-    // Send to process-lead-complete endpoint
-    const response = await fetch(`https://hwemookrxvflpinfpkrj.supabase.co/functions/v1/process-lead-complete`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3ZW1vb2tyeHZmbHBpbmZwa3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg5MTQ5MTksImV4cCI6MjA3NDQ5MDkxOX0.TTCRQZbm_cIGAusk8C3AhTbH6BPWmbsFr02mxLQ0-iY',
-      },
-      body: JSON.stringify({
-        rawData: pageData,
-        userId: userId
-      })
+    // Send to process-lead-complete endpoint with retry logic
+    const result = await retryWithBackoff(async () => {
+      const response = await fetch(`https://hwemookrxvflpinfpkrj.supabase.co/functions/v1/process-lead-complete`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3ZW1vb2tyeHZmbHBpbmZwa3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg5MTQ5MTksImV4cCI6MjA3NDQ5MDkxOX0.TTCRQZbm_cIGAusk8C3AhTbH6BPWmbsFr02mxLQ0-iY',
+        },
+        body: JSON.stringify({
+          rawData: pageData,
+          userId: userId
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to process lead: ${response.status}`);
+      }
+
+      return await response.json();
     });
-
-    if (!response.ok) {
-      throw new Error('Failed to process lead');
-    }
-
-    const result = await response.json();
 
     // Show success notification
     chrome.notifications.create({
