@@ -1159,11 +1159,10 @@ export default function LeadAnalysis() {
                     </a>
                   </div>
                 )}
-                
-                <Separator />
-
-            </CardContent>
+              </CardContent>
             </Card>
+
+            </div>
 
             {/* Consolidated Trip Information */}
             <Card className="bg-gradient-to-br from-primary/5 to-accent/5">
