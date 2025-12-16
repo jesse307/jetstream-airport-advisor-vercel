@@ -638,15 +638,15 @@ export default function LeadAnalysis() {
   useEffect(() => {
     const validateEmail = async () => {
       if (!lead?.email) return;
-      
+
       // If we already have validation from database, use it
       if (lead.email_valid !== null && lead.email_valid !== undefined) {
         setEmailValidation({ isValid: lead.email_valid, loading: false });
         return;
       }
-      
+
       setEmailValidation({ isValid: null, loading: true });
-      
+
       try {
         const { data, error } = await supabase.functions.invoke('validate-email', {
           body: { email: lead.email }
@@ -654,15 +654,25 @@ export default function LeadAnalysis() {
 
         if (error) {
           console.error('Email validation error:', error);
-          // On error, assume valid (benefit of the doubt)
-          setEmailValidation({ isValid: true, loading: false });
+          // On error, show null (no icon)
+          setEmailValidation({ isValid: null, loading: false });
           return;
         }
 
-        const isValid = data?.isValid ?? true; // Default to true if validation fails
-        setEmailValidation({ 
-          isValid, 
-          loading: false 
+        // Check if the function returned success: false
+        if (data?.success === false) {
+          console.error('Email validation failed:', data.error);
+          // On validation failure, show null (no icon)
+          setEmailValidation({ isValid: null, loading: false });
+          return;
+        }
+
+        const isValid = data?.isValid ?? null;
+        console.log('Email validation result for', lead.email, ':', isValid, 'data:', data);
+
+        setEmailValidation({
+          isValid,
+          loading: false
         });
 
         // Check if both email and phone are invalid
@@ -671,15 +681,17 @@ export default function LeadAnalysis() {
           setIsSpam(true);
         }
 
-        // Update database with validation result
-        await supabase
-          .from('leads')
-          .update({ email_valid: isValid })
-          .eq('id', lead.id);
+        // Update database with validation result (only if we got a valid result)
+        if (isValid !== null) {
+          await supabase
+            .from('leads')
+            .update({ email_valid: isValid })
+            .eq('id', lead.id);
+        }
       } catch (error) {
         console.error('Email validation error:', error);
-        // On error, assume valid (benefit of the doubt)
-        setEmailValidation({ isValid: true, loading: false });
+        // On error, show null (no icon)
+        setEmailValidation({ isValid: null, loading: false });
       }
     };
 
@@ -689,15 +701,15 @@ export default function LeadAnalysis() {
   useEffect(() => {
     const validatePhone = async () => {
       if (!lead?.phone) return;
-      
+
       // If we already have validation from database, use it
       if (lead.phone_valid !== null && lead.phone_valid !== undefined) {
         setPhoneValidation({ isValid: lead.phone_valid, loading: false });
         return;
       }
-      
+
       setPhoneValidation({ isValid: null, loading: true });
-      
+
       try {
         const { data, error } = await supabase.functions.invoke('validate-phone', {
           body: { phone: lead.phone }
@@ -705,15 +717,25 @@ export default function LeadAnalysis() {
 
         if (error) {
           console.error('Phone validation error:', error);
-          // On error, assume valid (benefit of the doubt)
-          setPhoneValidation({ isValid: true, loading: false });
+          // On error, show null (no icon)
+          setPhoneValidation({ isValid: null, loading: false });
           return;
         }
 
-        const isValid = data?.isValid ?? true; // Default to true if validation fails
-        setPhoneValidation({ 
-          isValid, 
-          loading: false 
+        // Check if the function returned success: false
+        if (data?.success === false) {
+          console.error('Phone validation failed:', data.error);
+          // On validation failure, show null (no icon)
+          setPhoneValidation({ isValid: null, loading: false });
+          return;
+        }
+
+        const isValid = data?.isValid ?? null;
+        console.log('Phone validation result for', lead.phone, ':', isValid, 'data:', data);
+
+        setPhoneValidation({
+          isValid,
+          loading: false
         });
 
         // Check if both email and phone are invalid
@@ -722,15 +744,17 @@ export default function LeadAnalysis() {
           setIsSpam(true);
         }
 
-        // Update database with validation result
-        await supabase
-          .from('leads')
-          .update({ phone_valid: isValid })
-          .eq('id', lead.id);
+        // Update database with validation result (only if we got a valid result)
+        if (isValid !== null) {
+          await supabase
+            .from('leads')
+            .update({ phone_valid: isValid })
+            .eq('id', lead.id);
+        }
       } catch (error) {
         console.error('Phone validation error:', error);
-        // On error, assume valid (benefit of the doubt)
-        setPhoneValidation({ isValid: true, loading: false });
+        // On error, show null (no icon)
+        setPhoneValidation({ isValid: null, loading: false });
       }
     };
 
