@@ -7,6 +7,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import AirportSearch from "@/components/AirportSearch";
 
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -63,6 +66,9 @@ export default function OpportunityDetail() {
   const [arrivalAirportData, setArrivalAirportData] = useState<Airport | null>(null);
   const [loading, setLoading] = useState(true);
   const [distance, setDistance] = useState<number>(0);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editedOpportunity, setEditedOpportunity] = useState<Partial<Opportunity>>({});
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -202,6 +208,77 @@ export default function OpportunityDetail() {
     }
   };
 
+  const handleSaveChanges = async () => {
+    if (!opportunity) return;
+
+    setIsSaving(true);
+    try {
+      const updates: any = {};
+
+      // Only update fields that have been edited
+      if (editedOpportunity.departure_airport !== undefined) {
+        updates.departure_airport = editedOpportunity.departure_airport;
+      }
+      if (editedOpportunity.arrival_airport !== undefined) {
+        updates.arrival_airport = editedOpportunity.arrival_airport;
+      }
+      if (editedOpportunity.departure_date !== undefined) {
+        updates.departure_date = editedOpportunity.departure_date;
+      }
+      if (editedOpportunity.departure_datetime !== undefined) {
+        updates.departure_datetime = editedOpportunity.departure_datetime;
+      }
+      if (editedOpportunity.return_date !== undefined) {
+        updates.return_date = editedOpportunity.return_date;
+      }
+      if (editedOpportunity.return_datetime !== undefined) {
+        updates.return_datetime = editedOpportunity.return_datetime;
+      }
+      if (editedOpportunity.passengers !== undefined) {
+        updates.passengers = editedOpportunity.passengers;
+      }
+
+      if (Object.keys(updates).length === 0) {
+        setIsEditMode(false);
+        return;
+      }
+
+      const { error } = await supabase
+        .from('opportunities')
+        .update(updates)
+        .eq('id', opportunity.id);
+
+      if (error) throw error;
+
+      // Update local state
+      setOpportunity({ ...opportunity, ...updates });
+      setEditedOpportunity({});
+      setIsEditMode(false);
+      toast.success('Trip information updated successfully');
+
+      // Refetch airport data if airports changed
+      if (updates.departure_airport || updates.arrival_airport) {
+        const [depAirport, arrAirport] = await Promise.all([
+          updates.departure_airport ? fetchAirportData(updates.departure_airport) : Promise.resolve(departureAirportData),
+          updates.arrival_airport ? fetchAirportData(updates.arrival_airport) : Promise.resolve(arrivalAirportData)
+        ]);
+
+        if (depAirport) setDepartureAirportData(depAirport);
+        if (arrAirport) setArrivalAirportData(arrAirport);
+      }
+    } catch (error) {
+      console.error('Error updating opportunity:', error);
+      toast.error('Failed to update trip information');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditedOpportunity({});
+    setIsEditMode(false);
+  };
+
   const getStageColor = (stage: string) => {
     switch (stage) {
       case "prospecting": return "bg-blue-100 text-blue-800";
@@ -324,11 +401,39 @@ export default function OpportunityDetail() {
 
             {/* Trip Information */}
             <Card className="bg-gradient-to-br from-primary/5 to-accent/5">
-              <CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
                 <CardTitle className="flex items-center gap-2">
                   <Plane className="h-5 w-5 text-primary" />
                   Trip Information
                 </CardTitle>
+                <Button
+                  variant={isEditMode ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => {
+                    if (isEditMode) {
+                      handleSaveChanges();
+                    } else {
+                      setIsEditMode(true);
+                      setEditedOpportunity({
+                        departure_airport: opportunity.departure_airport,
+                        arrival_airport: opportunity.arrival_airport,
+                        departure_date: opportunity.departure_date,
+                        departure_datetime: opportunity.departure_datetime,
+                        return_date: opportunity.return_date,
+                        return_datetime: opportunity.return_datetime,
+                        passengers: opportunity.passengers,
+                      });
+                    }
+                  }}
+                  disabled={isSaving}
+                >
+                  {isSaving ? "Saving..." : isEditMode ? "Save Changes" : "Edit"}
+                </Button>
+                {isEditMode && (
+                  <Button variant="ghost" size="sm" onClick={handleCancelEdit}>
+                    Cancel
+                  </Button>
+                )}
               </CardHeader>
               <CardContent>
                 {/* Route Visualization */}
@@ -403,22 +508,119 @@ export default function OpportunityDetail() {
                 <Separator className="my-4" />
 
                 {/* Trip Details */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-muted-foreground text-xs">Departure</p>
-                    <p className="font-semibold">{formatDate(opportunity.departure_date)}</p>
-                  </div>
-                  {opportunity.trip_type === "round-trip" && opportunity.return_date && (
+                {!isEditMode ? (
+                  <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <p className="text-muted-foreground text-xs">Return</p>
-                      <p className="font-semibold">{formatDate(opportunity.return_date)}</p>
+                      <p className="text-muted-foreground text-xs">Departure</p>
+                      <p className="font-semibold">
+                        {formatDate(opportunity.departure_date)}
+                        {opportunity.departure_datetime && (
+                          <span className="text-sm text-muted-foreground ml-2">
+                            @ {format(new Date(opportunity.departure_datetime), 'h:mm a')}
+                          </span>
+                        )}
+                      </p>
                     </div>
-                  )}
-                  <div>
-                    <p className="text-muted-foreground text-xs">Passengers</p>
-                    <p className="font-semibold">{opportunity.passengers} Passenger{opportunity.passengers !== 1 ? 's' : ''}</p>
+                    {opportunity.trip_type === "round-trip" && opportunity.return_date && (
+                      <div>
+                        <p className="text-muted-foreground text-xs">Return</p>
+                        <p className="font-semibold">
+                          {formatDate(opportunity.return_date)}
+                          {opportunity.return_datetime && (
+                            <span className="text-sm text-muted-foreground ml-2">
+                              @ {format(new Date(opportunity.return_datetime), 'h:mm a')}
+                            </span>
+                          )}
+                        </p>
+                      </div>
+                    )}
+                    <div>
+                      <p className="text-muted-foreground text-xs">Passengers</p>
+                      <p className="font-semibold">{opportunity.passengers} Passenger{opportunity.passengers !== 1 ? 's' : ''}</p>
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label>Departure Airport</Label>
+                        <AirportSearch
+                          value={editedOpportunity.departure_airport || opportunity.departure_airport}
+                          onSelect={(airport) => {
+                            setEditedOpportunity({
+                              ...editedOpportunity,
+                              departure_airport: airport.code
+                            });
+                          }}
+                          placeholder="Search departure airport"
+                        />
+                      </div>
+                      <div>
+                        <Label>Arrival Airport</Label>
+                        <AirportSearch
+                          value={editedOpportunity.arrival_airport || opportunity.arrival_airport}
+                          onSelect={(airport) => {
+                            setEditedOpportunity({
+                              ...editedOpportunity,
+                              arrival_airport: airport.code
+                            });
+                          }}
+                          placeholder="Search arrival airport"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label>Departure Date & Time</Label>
+                        <Input
+                          type="datetime-local"
+                          value={editedOpportunity.departure_datetime || opportunity.departure_datetime || ''}
+                          onChange={(e) => {
+                            const datetime = e.target.value;
+                            setEditedOpportunity({
+                              ...editedOpportunity,
+                              departure_datetime: datetime,
+                              departure_date: datetime.split('T')[0]
+                            });
+                          }}
+                        />
+                      </div>
+                      {opportunity.trip_type === 'round-trip' && (
+                        <div>
+                          <Label>Return Date & Time</Label>
+                          <Input
+                            type="datetime-local"
+                            value={editedOpportunity.return_datetime || opportunity.return_datetime || ''}
+                            onChange={(e) => {
+                              const datetime = e.target.value;
+                              setEditedOpportunity({
+                                ...editedOpportunity,
+                                return_datetime: datetime,
+                                return_date: datetime.split('T')[0]
+                              });
+                            }}
+                          />
+                        </div>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label>Passengers</Label>
+                        <Input
+                          type="number"
+                          min="1"
+                          value={editedOpportunity.passengers !== undefined ? editedOpportunity.passengers : opportunity.passengers}
+                          onChange={(e) => {
+                            setEditedOpportunity({
+                              ...editedOpportunity,
+                              passengers: parseInt(e.target.value)
+                            });
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
