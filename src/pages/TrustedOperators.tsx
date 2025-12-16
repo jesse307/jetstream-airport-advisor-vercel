@@ -43,6 +43,9 @@ export default function TrustedOperators() {
   const [searchTerm, setSearchTerm] = useState("");
   const [searchingOperator, setSearchingOperator] = useState(false);
   const [refreshingOperator, setRefreshingOperator] = useState<string | null>(null);
+  const [searchResults, setSearchResults] = useState<string[]>([]);
+  const [showSearchResults, setShowSearchResults] = useState(false);
+  const [selectedOperatorName, setSelectedOperatorName] = useState<string | null>(null);
 
   const loadOperators = async () => {
     try {
@@ -82,35 +85,65 @@ export default function TrustedOperators() {
     }
   };
 
-  const handleSearchAndAdd = async () => {
-    const trimmedName = searchTerm.trim();
-    if (!trimmedName) {
-      toast.error("Please enter an operator name");
+  const handleSearchInput = async (value: string) => {
+    setSearchTerm(value);
+    setSelectedOperatorName(null);
+
+    if (value.trim().length < 2) {
+      setSearchResults([]);
+      setShowSearchResults(false);
       return;
     }
 
-    if (trimmedName.length > 100) {
-      toast.error("Operator name too long (max 100 characters)");
+    try {
+      // Search for matching operators in aviapages_database
+      const { data, error } = await supabase
+        .from('aviapages_database')
+        .select('company')
+        .ilike('company', `%${value.trim()}%`)
+        .limit(20);
+
+      if (error) throw error;
+
+      // Get unique company names
+      const uniqueCompanies = Array.from(new Set(data?.map(d => d.company).filter(Boolean))) as string[];
+      setSearchResults(uniqueCompanies);
+      setShowSearchResults(uniqueCompanies.length > 0);
+    } catch (error) {
+      console.error("Error searching operators:", error);
+    }
+  };
+
+  const handleSelectOperator = (operatorName: string) => {
+    setSelectedOperatorName(operatorName);
+    setSearchTerm(operatorName);
+    setShowSearchResults(false);
+  };
+
+  const handleSearchAndAdd = async () => {
+    const operatorToAdd = selectedOperatorName || searchTerm.trim();
+
+    if (!operatorToAdd) {
+      toast.error("Please select an operator");
       return;
     }
 
     setSearchingOperator(true);
     try {
-      // Search for the operator in local aviapages_database
+      // Search for the exact operator in local aviapages_database
       const { data: aircraftData, error: searchError } = await supabase
         .from('aviapages_database')
         .select('*')
-        .ilike('company', `%${trimmedName}%`)
-        .limit(100);
+        .eq('company', operatorToAdd);
 
       if (searchError) throw searchError;
 
       if (!aircraftData || aircraftData.length === 0) {
-        toast.error(`No operator found with name: ${trimmedName}`);
+        toast.error(`No aircraft found for: ${operatorToAdd}`);
         return;
       }
 
-      // Get the operator name from the first result
+      // Get the operator details from the first result
       const operatorName = aircraftData[0].company;
       const operatorCountry = aircraftData[0].country;
 
@@ -308,6 +341,14 @@ export default function TrustedOperators() {
     loadOperators();
   }, []);
 
+  useEffect(() => {
+    const handleClickOutside = () => setShowSearchResults(false);
+    if (showSearchResults) {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  }, [showSearchResults]);
+
   const totalAircraft = operators.reduce((sum, op) => sum + op.aircraft.length, 0);
   const totalOperators = operators.length;
 
@@ -367,26 +408,44 @@ export default function TrustedOperators() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex gap-2">
-              <Input
-                placeholder="Enter operator name (e.g., NetJets, Flexjet)"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSearchAndAdd()}
-                maxLength={100}
-              />
-              <Button
-                onClick={handleSearchAndAdd}
-                disabled={searchingOperator}
-                className="gap-2"
-              >
-                {searchingOperator ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Plus className="h-4 w-4" />
-                )}
-                Add Operator
-              </Button>
+            <div className="relative">
+              <div className="flex gap-2">
+                <div className="flex-1 relative">
+                  <Input
+                    placeholder="Type to search operators (e.g., Baker, NetJets)"
+                    value={searchTerm}
+                    onChange={(e) => handleSearchInput(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSearchAndAdd()}
+                    onFocus={() => searchResults.length > 0 && setShowSearchResults(true)}
+                    maxLength={100}
+                  />
+                  {showSearchResults && searchResults.length > 0 && (
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-background border rounded-md shadow-lg z-50 max-h-60 overflow-y-auto">
+                      {searchResults.map((operatorName, index) => (
+                        <div
+                          key={index}
+                          className="px-4 py-2 hover:bg-muted cursor-pointer text-sm"
+                          onClick={() => handleSelectOperator(operatorName)}
+                        >
+                          {operatorName}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <Button
+                  onClick={handleSearchAndAdd}
+                  disabled={searchingOperator || !searchTerm.trim()}
+                  className="gap-2"
+                >
+                  {searchingOperator ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Plus className="h-4 w-4" />
+                  )}
+                  Add Operator
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
