@@ -133,11 +133,17 @@ export const ConvertLeadDialog = ({ lead, open, onOpenChange, onSuccess }: Conve
       if (lead.departure_datetime) {
         opportunityInsert.departure_datetime = lead.departure_datetime;
       }
+      if (lead.departure_time) {
+        opportunityInsert.departure_time = lead.departure_time;
+      }
       if (lead.return_datetime) {
         opportunityInsert.return_datetime = lead.return_datetime;
       }
       if (lead.return_date) {
         opportunityInsert.return_date = lead.return_date;
+      }
+      if (lead.return_time) {
+        opportunityInsert.return_time = lead.return_time;
       }
 
       const { error: opportunityError } = await supabase
