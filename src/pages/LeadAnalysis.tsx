@@ -12,12 +12,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AirportSearch } from "@/components/AirportSearch";
 import { CallNotesDialog } from "@/components/CallNotesDialog";
-import { AircraftSuggestions } from "@/components/AircraftSuggestions";
 import { EmailComposer } from "@/components/EmailComposer";
 import { LeadChatbot } from "@/components/LeadChatbot";
-import { AircraftClassRecommendations } from "@/components/AircraftClassRecommendations";
-import { CharterQuoteRequest } from "@/components/CharterQuoteRequest";
-import { QuoteComposer } from "@/components/QuoteComposer";
 import { ConvertLeadDialog } from "@/components/ConvertLeadDialog";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -1165,197 +1161,16 @@ export default function LeadAnalysis() {
                 )}
                 
                 <Separator />
-                
-                {/* Flight TL;DR */}
-                <div className="space-y-2 bg-primary/5 p-3 rounded-lg border border-primary/10">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Plane className="h-4 w-4 text-primary" />
-                    <span className="text-xs font-semibold text-primary uppercase tracking-wide">Flight Summary</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-primary">
-                        {departureAirportData?.code || (lead.departure_airport.includes(' - ') 
-                          ? lead.departure_airport.split(' - ')[0] 
-                          : lead.departure_airport)}
-                      </span>
-                      <ArrowRight className="h-3 w-3 text-muted-foreground" />
-                      <span className="font-bold text-primary">
-                        {arrivalAirportData?.code || (lead.arrival_airport.includes(' - ')
-                          ? lead.arrival_airport.split(' - ')[0]
-                          : lead.arrival_airport)}
-                      </span>
-                    </div>
-                    <Badge variant="outline" className="text-xs">
-                      {lead.trip_type}
-                    </Badge>
-                  </div>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <Calendar className="h-3 w-3" />
-                    <span>{formatDate(lead.departure_datetime, lead.departure_date)} @ {formatTime(getTime(lead.departure_datetime, lead.departure_time))}</span>
-                  </div>
-                  {lead.trip_type === "Round Trip" && (lead.return_datetime || lead.return_date) && (
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <Calendar className="h-3 w-3" />
-                      <span>{formatDate(lead.return_datetime, lead.return_date)} @ {formatTime(getTime(lead.return_datetime, lead.return_time))}</span>
-                    </div>
-                  )}
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <Users className="h-3 w-3" />
-                    <span>{lead.passengers} Passenger{lead.passengers !== 1 ? 's' : ''}</span>
-                  </div>
-                </div>
-              </CardContent>
+
+            </CardContent>
             </Card>
 
-            {/* Route Overview with Distance */}
+            {/* Consolidated Trip Information */}
             <Card className="bg-gradient-to-br from-primary/5 to-accent/5">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="flex items-center gap-2">
-                  <Plane className="h-5 w-5 text-primary" />
-                  Route Overview
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-
-                <div className="flex items-center justify-between mb-6">
-                  <div className="text-center flex-1">
-                    <div className="text-3xl font-bold text-primary mb-1">
-                      {departureAirportData?.code || (lead.departure_airport.includes(' - ')
-                        ? lead.departure_airport.split(' - ')[0]
-                        : lead.departure_airport)}
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      {departureAirportData?.city || 'Departure'}
-                    </div>
-                    {departureAirportData?.runwayLength && (
-                      <div className={`text-xs font-semibold mt-1 ${
-                        departureAirportData.runwayLength >= 6000 
-                          ? 'text-green-600' 
-                          : departureAirportData.runwayLength >= 5000 
-                          ? 'text-yellow-600' 
-                          : 'text-red-600'
-                      }`}>
-                        RWY: {departureAirportData.runwayLength.toLocaleString()}ft
-                      </div>
-                    )}
-                  </div>
-                  
-                  <div className="flex-1 flex flex-col items-center px-4">
-                    <div className="text-center mb-3">
-                      <div className="text-lg font-bold text-foreground mb-1">
-                        {formatDate(lead.departure_datetime, lead.departure_date)}
-                      </div>
-                      <div className="text-base font-semibold text-primary">
-                        {lead.departure_time ? formatTime(getTime(lead.departure_datetime, lead.departure_time)) : 'TBD'}
-                      </div>
-                    </div>
-                    <div className="w-full h-px bg-border relative mb-2">
-                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-                        <Plane className="h-4 w-4 text-primary rotate-90" />
-                      </div>
-                    </div>
-                    <div className="text-center mt-2">
-                      <div className="text-xl font-bold text-foreground">
-                        {distance > 0 ? distance.toLocaleString() : '---'}
-                      </div>
-                      <div className="text-xs text-muted-foreground">nautical miles</div>
-                      {distance > 0 && (
-                        <div className="text-sm font-semibold text-primary mt-2">
-                          {formatFlightTime()}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  
-                  <div className="text-center flex-1">
-                    <div className="text-3xl font-bold text-primary mb-1">
-                      {arrivalAirportData?.code || (lead.arrival_airport.includes(' - ')
-                        ? lead.arrival_airport.split(' - ')[0]
-                        : lead.arrival_airport)}
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      {arrivalAirportData?.city || 'Arrival'}
-                    </div>
-                    {arrivalAirportData?.runwayLength && (
-                      <div className={`text-xs font-semibold mt-1 ${
-                        arrivalAirportData.runwayLength >= 6000 
-                          ? 'text-green-600' 
-                          : arrivalAirportData.runwayLength >= 5000 
-                          ? 'text-yellow-600' 
-                          : 'text-red-600'
-                      }`}>
-                        RWY: {arrivalAirportData.runwayLength.toLocaleString()}ft
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Return Route for Round Trips */}
-                {lead.trip_type === "Round Trip" && (lead.return_datetime || lead.return_date) && (
-                  <div className="flex items-center justify-between mb-6 pt-4 border-t">
-                    <div className="text-center flex-1">
-                      <div className="text-3xl font-bold text-secondary mb-1">
-                        {arrivalAirportData?.code || (lead.arrival_airport.includes(' - ')
-                          ? lead.arrival_airport.split(' - ')[0]
-                          : lead.arrival_airport)}
-                      </div>
-                      <div className="text-sm text-muted-foreground">
-                        Return From
-                      </div>
-                    </div>
-                    
-                    <div className="flex-1 flex flex-col items-center px-4">
-                      <div className="text-center mb-3">
-                        <div className="text-lg font-bold text-foreground mb-1">
-                          {formatDate(lead.return_datetime, lead.return_date)}
-                        </div>
-                        <div className="text-base font-semibold text-secondary">
-                          {lead.return_time ? formatTime(getTime(lead.return_datetime, lead.return_time)) : 'TBD'}
-                        </div>
-                      </div>
-                      <div className="w-full h-px bg-border relative mb-2">
-                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-                          <Plane className="h-4 w-4 text-secondary -rotate-90" />
-                        </div>
-                      </div>
-                      <div className="text-center mt-2">
-                        <div className="text-xl font-bold text-foreground">
-                          {distance > 0 ? distance.toLocaleString() : '---'}
-                        </div>
-                        <div className="text-xs text-muted-foreground">nautical miles</div>
-                        {distance > 0 && (
-                          <div className="text-sm font-semibold text-secondary mt-2">
-                            {formatFlightTime()}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    
-                    <div className="text-center flex-1">
-                      <div className="text-3xl font-bold text-secondary mb-1">
-                        {departureAirportData?.code || (lead.departure_airport.includes(' - ')
-                          ? lead.departure_airport.split(' - ')[0]
-                          : lead.departure_airport)}
-                      </div>
-                      <div className="text-sm text-muted-foreground">
-                        Return To
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-              </CardContent>
-            </Card>
-
-            </div>
-
-            {/* Editable Trip Details */}
-            <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
                 <CardTitle className="flex items-center gap-2">
-                  <ClipboardList className="h-5 w-5 text-primary" />
-                  Trip Details
+                  <Plane className="h-5 w-5 text-primary" />
+                  Trip Information
                 </CardTitle>
                 <Button
                   variant={isEditMode ? "default" : "outline"}
@@ -1387,133 +1202,184 @@ export default function LeadAnalysis() {
                   )}
                 </Button>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent>
                 {!isEditMode ? (
                   <>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label className="text-muted-foreground text-xs">Departure Airport</Label>
-                        <p className="font-semibold">{lead.departure_airport}</p>
+                    {/* Route Visualization */}
+                    <div className="flex items-center justify-between mb-6">
+                      <div className="text-center flex-1">
+                        <div className="text-3xl font-bold text-primary mb-1">
+                          {departureAirportData?.code || (lead.departure_airport.includes(' - ')
+                            ? lead.departure_airport.split(' - ')[0]
+                            : lead.departure_airport)}
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          {departureAirportData?.city || 'Departure'}
+                        </div>
+                        {departureAirportData?.runwayLength && (
+                          <div className={`text-xs font-semibold mt-1 ${
+                            departureAirportData.runwayLength >= 6000
+                              ? 'text-green-600'
+                              : departureAirportData.runwayLength >= 5000
+                              ? 'text-yellow-600'
+                              : 'text-red-600'
+                          }`}>
+                            RWY: {departureAirportData.runwayLength.toLocaleString()}ft
+                          </div>
+                        )}
                       </div>
-                      <div>
-                        <Label className="text-muted-foreground text-xs">Arrival Airport</Label>
-                        <p className="font-semibold">{lead.arrival_airport}</p>
+
+                      <div className="flex-1 flex flex-col items-center px-4">
+                        <Badge variant="outline" className="mb-3">{lead.trip_type}</Badge>
+                        <div className="w-full h-px bg-border relative mb-2">
+                          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+                            <Plane className="h-4 w-4 text-primary rotate-90" />
+                          </div>
+                        </div>
+                        <div className="text-center mt-2">
+                          <div className="text-xl font-bold text-foreground">
+                            {distance > 0 ? distance.toLocaleString() : '---'}
+                          </div>
+                          <div className="text-xs text-muted-foreground">nautical miles</div>
+                          {distance > 0 && (
+                            <div className="text-sm font-semibold text-primary mt-2">
+                              {formatFlightTime()}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="text-center flex-1">
+                        <div className="text-3xl font-bold text-primary mb-1">
+                          {arrivalAirportData?.code || (lead.arrival_airport.includes(' - ')
+                            ? lead.arrival_airport.split(' - ')[0]
+                            : lead.arrival_airport)}
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          {arrivalAirportData?.city || 'Arrival'}
+                        </div>
+                        {arrivalAirportData?.runwayLength && (
+                          <div className={`text-xs font-semibold mt-1 ${
+                            arrivalAirportData.runwayLength >= 6000
+                              ? 'text-green-600'
+                              : arrivalAirportData.runwayLength >= 5000
+                              ? 'text-yellow-600'
+                              : 'text-red-600'
+                          }`}>
+                            RWY: {arrivalAirportData.runwayLength.toLocaleString()}ft
+                          </div>
+                        )}
                       </div>
                     </div>
+
+                    <Separator className="my-4" />
+
+                    {/* Trip Details */}
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <Label className="text-muted-foreground text-xs">Departure Date</Label>
-                        <p className="font-semibold">{formatDate(lead.departure_datetime, lead.departure_date)}</p>
+                        <Label className="text-muted-foreground text-xs">Departure</Label>
+                        <p className="font-semibold">{formatDate(lead.departure_datetime, lead.departure_date)} @ {formatTime(getTime(lead.departure_datetime, lead.departure_time))}</p>
                       </div>
+                      {lead.trip_type === "Round Trip" && (lead.return_datetime || lead.return_date) && (
+                        <div>
+                          <Label className="text-muted-foreground text-xs">Return</Label>
+                          <p className="font-semibold">{formatDate(lead.return_datetime, lead.return_date)} @ {formatTime(getTime(lead.return_datetime, lead.return_time))}</p>
+                        </div>
+                      )}
                       <div>
-                        <Label className="text-muted-foreground text-xs">Departure Time</Label>
-                        <p className="font-semibold">{formatTime(getTime(lead.departure_datetime, lead.departure_time))}</p>
+                        <Label className="text-muted-foreground text-xs">Passengers</Label>
+                        <p className="font-semibold">{lead.passengers} Passenger{lead.passengers !== 1 ? 's' : ''}</p>
                       </div>
-                    </div>
-                    {lead.trip_type === "Round Trip" && (
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <Label className="text-muted-foreground text-xs">Return Date</Label>
-                          <p className="font-semibold">{lead.return_date ? formatDate(lead.return_datetime, lead.return_date) : 'N/A'}</p>
-                        </div>
-                        <div>
-                          <Label className="text-muted-foreground text-xs">Return Time</Label>
-                          <p className="font-semibold">{lead.return_time ? formatTime(getTime(lead.return_datetime, lead.return_time)) : 'N/A'}</p>
-                        </div>
-                      </div>
-                    )}
-                    <div>
-                      <Label className="text-muted-foreground text-xs">Passengers</Label>
-                      <p className="font-semibold">{lead.passengers}</p>
                     </div>
                   </>
                 ) : (
                   <>
-                    <div className="space-y-2">
-                      <Label>Departure Airport</Label>
-                      <AirportSearch
-                        value={editedData.departureAirport}
-                        onChange={(value) => setEditedData({ ...editedData, departureAirport: value })}
-                        placeholder="Search departure airport..."
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Arrival Airport</Label>
-                      <AirportSearch
-                        value={editedData.arrivalAirport}
-                        onChange={(value) => setEditedData({ ...editedData, arrivalAirport: value })}
-                        placeholder="Search arrival airport..."
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-4">
                       <div className="space-y-2">
-                        <Label>Departure Date</Label>
-                        <Input
-                          type="date"
-                          value={editedData.departureDate}
-                          onChange={(e) => setEditedData({ ...editedData, departureDate: e.target.value })}
+                        <Label>Departure Airport</Label>
+                        <AirportSearch
+                          value={editedData.departureAirport}
+                          onChange={(value) => setEditedData({ ...editedData, departureAirport: value })}
+                          placeholder="Search departure airport..."
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label>Departure Time</Label>
-                        <Input
-                          type="time"
-                          value={editedData.departureTime}
-                          onChange={(e) => setEditedData({ ...editedData, departureTime: e.target.value })}
+                        <Label>Arrival Airport</Label>
+                        <AirportSearch
+                          value={editedData.arrivalAirport}
+                          onChange={(value) => setEditedData({ ...editedData, arrivalAirport: value })}
+                          placeholder="Search arrival airport..."
                         />
                       </div>
-                    </div>
-                    {lead.trip_type === "Round Trip" && (
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                          <Label>Return Date</Label>
+                          <Label>Departure Date</Label>
                           <Input
                             type="date"
-                            value={editedData.returnDate}
-                            onChange={(e) => setEditedData({ ...editedData, returnDate: e.target.value })}
+                            value={editedData.departureDate}
+                            onChange={(e) => setEditedData({ ...editedData, departureDate: e.target.value })}
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label>Return Time</Label>
+                          <Label>Departure Time</Label>
                           <Input
                             type="time"
-                            value={editedData.returnTime}
-                            onChange={(e) => setEditedData({ ...editedData, returnTime: e.target.value })}
+                            value={editedData.departureTime}
+                            onChange={(e) => setEditedData({ ...editedData, departureTime: e.target.value })}
                           />
                         </div>
                       </div>
-                    )}
-                    <div className="space-y-2">
-                      <Label>Passengers</Label>
-                      <Input
-                        type="number"
-                        min="1"
-                        value={editedData.passengers}
-                        onChange={(e) => setEditedData({ ...editedData, passengers: parseInt(e.target.value) || 1 })}
-                      />
+                      {lead.trip_type === "Round Trip" && (
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label>Return Date</Label>
+                            <Input
+                              type="date"
+                              value={editedData.returnDate}
+                              onChange={(e) => setEditedData({ ...editedData, returnDate: e.target.value })}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Return Time</Label>
+                            <Input
+                              type="time"
+                              value={editedData.returnTime}
+                              onChange={(e) => setEditedData({ ...editedData, returnTime: e.target.value })}
+                            />
+                          </div>
+                        </div>
+                      )}
+                      <div className="space-y-2">
+                        <Label>Passengers</Label>
+                        <Input
+                          type="number"
+                          min="1"
+                          value={editedData.passengers}
+                          onChange={(e) => setEditedData({ ...editedData, passengers: parseInt(e.target.value) || 1 })}
+                        />
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="w-full"
+                        onClick={() => {
+                          setIsEditMode(false);
+                          if (lead) {
+                            setEditedData({
+                              departureAirport: lead.departure_airport,
+                              arrivalAirport: lead.arrival_airport,
+                              departureDate: lead.departure_date,
+                              departureTime: lead.departure_time,
+                              returnDate: lead.return_date || '',
+                              returnTime: lead.return_time || '',
+                              passengers: lead.passengers
+                            });
+                          }
+                        }}
+                      >
+                        Cancel
+                      </Button>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="w-full"
-                      onClick={() => {
-                        setIsEditMode(false);
-                        // Reset to original values
-                        if (lead) {
-                          setEditedData({
-                            departureAirport: lead.departure_airport,
-                            arrivalAirport: lead.arrival_airport,
-                            departureDate: lead.departure_date,
-                            departureTime: lead.departure_time,
-                            returnDate: lead.return_date || '',
-                            returnTime: lead.return_time || '',
-                            passengers: lead.passengers
-                          });
-                        }
-                      }}
-                    >
-                      Cancel
-                    </Button>
                   </>
                 )}
               </CardContent>
@@ -1662,46 +1528,6 @@ export default function LeadAnalysis() {
               </Card>
             )}
 
-            {/* Aircraft Class Recommendations */}
-            <Card>
-            <CardHeader>
-              <CardTitle>Aircraft Class Recommendations</CardTitle>
-              <p className="text-sm text-muted-foreground">
-                Minimum and optimal aircraft classes for this route
-              </p>
-            </CardHeader>
-            <CardContent>
-              {!loading && (!departureAirportData || !arrivalAirportData || distance === 0) ? (
-                <div className="text-center py-8">
-                  <p className="text-muted-foreground">Could not load complete airport data. Please check the airport codes.</p>
-                  <p className="text-sm text-muted-foreground mt-2">
-                    Departure: {lead.departure_airport} {departureAirportData ? '✓' : '✗'}<br/>
-                    Arrival: {lead.arrival_airport} {arrivalAirportData ? '✓' : '✗'}
-                  </p>
-                </div>
-              ) : departureAirportData && arrivalAirportData && distance > 0 ? (
-                <AircraftClassRecommendations
-                  distance={distance}
-                  passengers={lead.passengers}
-                  minRunway={Math.min(
-                    departureAirportData?.runwayLength || 10000,
-                    arrivalAirportData?.runwayLength || 10000
-                  )}
-                />
-              ) : (
-                <div className="text-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-                  <p className="text-muted-foreground">Loading airport data for analysis...</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Charter Quote Request */}
-          <CharterQuoteRequest leadData={lead} />
-
-          {/* Quote Email Composer */}
-          <QuoteComposer />
           </div>
 
           {/* Right Column - Chatbot & Actions */}
