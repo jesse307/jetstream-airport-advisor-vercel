@@ -1,59 +1,79 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, RefreshCw, Trash2, Plane, MapPin, Building2, Loader2, Search } from "lucide-react";
+import { ArrowLeft, RefreshCw, Trash2, Plane, Building2, Loader2, Plus, ChevronDown, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 
-interface TrustedOperator {
+interface Aircraft {
   id: string;
   tail_number: string;
-  operator_name: string | null;
+  aircraft_type: string | null;
   home_airport_icao: string | null;
   home_airport_iata: string | null;
   home_airport_name: string | null;
-  aircraft_type: string | null;
-  country_code: string | null;
   last_updated: string;
-  notes: string | null;
   floating_fleet: boolean;
 }
 
-interface USCarrier {
+interface TrustedOperator {
+  id: string;
   company_id: string;
   name: string;
-  country_name: string;
+  country_name: string | null;
   website: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+  aircraft: Aircraft[];
 }
 
 export default function TrustedOperators() {
+  const { user } = useAuth();
   const [operators, setOperators] = useState<TrustedOperator[]>([]);
   const [loading, setLoading] = useState(true);
-  const [usCarriers, setUSCarriers] = useState<USCarrier[]>([]);
-  const [loadingCarriers, setLoadingCarriers] = useState(false);
-  const [selectedCarriers, setSelectedCarriers] = useState<Set<string>>(new Set());
-  const [adding, setAdding] = useState(false);
-  const [updating, setUpdating] = useState(false);
-  const [showCarriers, setShowCarriers] = useState(false);
-  const [manualOperatorName, setManualOperatorName] = useState("");
+  const [expandedOperators, setExpandedOperators] = useState<Set<string>>(new Set());
+  const [searchTerm, setSearchTerm] = useState("");
   const [searchingOperator, setSearchingOperator] = useState(false);
+  const [refreshingOperator, setRefreshingOperator] = useState<string | null>(null);
 
   const loadOperators = async () => {
     try {
-      const { data, error } = await supabase
-        .from('aircraft_locations')
+      // Fetch all trusted operators for this user
+      const { data: operatorsData, error: operatorsError } = await supabase
+        .from('trusted_operators')
         .select('*')
-        .eq('is_trusted', true)
-        .order('operator_name', { ascending: true });
+        .eq('user_id', user?.id)
+        .order('name', { ascending: true });
 
-      if (error) throw error;
-      setOperators(data || []);
+      if (operatorsError) throw operatorsError;
+
+      // For each operator, fetch their aircraft
+      const operatorsWithAircraft = await Promise.all(
+        (operatorsData || []).map(async (operator) => {
+          const { data: aircraftData, error: aircraftError } = await supabase
+            .from('aircraft_locations')
+            .select('*')
+            .eq('operator_id', operator.id)
+            .order('tail_number', { ascending: true });
+
+          if (aircraftError) {
+            console.error(`Error loading aircraft for ${operator.name}:`, aircraftError);
+            return { ...operator, aircraft: [] };
+          }
+
+          return { ...operator, aircraft: aircraftData || [] };
+        })
+      );
+
+      setOperators(operatorsWithAircraft);
     } catch (error: any) {
       console.error("Error loading operators:", error);
       toast.error("Failed to load operators");
@@ -62,163 +82,8 @@ export default function TrustedOperators() {
     }
   };
 
-  const loadUSCarriers = async () => {
-    setLoadingCarriers(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('search-operator-aircraft', {
-        body: { listUSCarriers: true }
-      });
-
-      if (error) throw error;
-
-      if (data.success && data.operators) {
-        setUSCarriers(data.operators);
-        toast.success(`Loaded ${data.operators.length} US charter operators`);
-      }
-    } catch (error: any) {
-      console.error("Error loading US carriers:", error);
-      if (error.message?.includes('rate_limit') || error.message?.includes('429')) {
-        toast.error("Rate limit exceeded. Please wait a few minutes and try again.");
-      } else {
-        toast.error("Failed to load US carriers");
-      }
-    } finally {
-      setLoadingCarriers(false);
-    }
-  };
-
-  const handleToggleCarrier = (carrierId: string) => {
-    const newSelection = new Set(selectedCarriers);
-    if (newSelection.has(carrierId)) {
-      newSelection.delete(carrierId);
-    } else {
-      newSelection.add(carrierId);
-    }
-    setSelectedCarriers(newSelection);
-  };
-
-  const handleAddSelectedCarriers = async () => {
-    if (selectedCarriers.size === 0) {
-      toast.error("Please select at least one carrier");
-      return;
-    }
-
-    setAdding(true);
-    try {
-      const selectedCarrierNames = usCarriers
-        .filter(c => selectedCarriers.has(c.company_id))
-        .map(c => c.name);
-
-      let totalAdded = 0;
-
-      for (const carrierName of selectedCarrierNames) {
-        try {
-          // Fetch aircraft for this carrier
-          const { data, error } = await supabase.functions.invoke('search-operator-aircraft', {
-            body: { operatorName: carrierName }
-          });
-
-          if (error) throw error;
-
-          if (data.success && data.aircraft && data.aircraft.length > 0) {
-            // Add all aircraft for this operator
-            const tailNumbers = data.aircraft.map((ac: any) => ac.tailNumber);
-            
-            const { data: updateData, error: updateError } = await supabase.functions.invoke('update-trusted-operators', {
-              body: { tailNumbers }
-            });
-
-            if (updateError) throw updateError;
-
-            const successCount = updateData.results?.filter((r: any) => r.success).length || 0;
-            totalAdded += successCount;
-          }
-        } catch (err: any) {
-          console.error(`Error adding ${carrierName}:`, err);
-        }
-      }
-
-      if (totalAdded > 0) {
-        toast.success(`Added ${totalAdded} aircraft from ${selectedCarriers.size} operators`);
-        await loadOperators();
-        setSelectedCarriers(new Set());
-        setShowCarriers(false);
-      } else {
-        toast.error("Failed to add any aircraft");
-      }
-    } catch (error: any) {
-      console.error("Error adding carriers:", error);
-      toast.error(error.message || "Failed to add carriers");
-    } finally {
-      setAdding(false);
-    }
-  };
-
-  const handleToggleFloatingFleet = async (operatorId: string, currentValue: boolean) => {
-    try {
-      const { error } = await supabase
-        .from('aircraft_locations')
-        .update({ floating_fleet: !currentValue })
-        .eq('id', operatorId);
-
-      if (error) throw error;
-
-      toast.success(`Updated floating fleet status`);
-      await loadOperators();
-    } catch (error: any) {
-      console.error("Error updating floating fleet:", error);
-      toast.error("Failed to update floating fleet");
-    }
-  };
-
-  const handleRefreshAll = async () => {
-    if (operators.length === 0) {
-      toast.error("No operators to refresh");
-      return;
-    }
-
-    setUpdating(true);
-    try {
-      const tailNumberArray = operators.map(op => op.tail_number);
-
-      const { data, error } = await supabase.functions.invoke('update-trusted-operators', {
-        body: { tailNumbers: tailNumberArray }
-      });
-
-      if (error) throw error;
-
-      if (data) {
-        const successCount = data.results?.filter((r: any) => r.success).length || 0;
-        toast.success(`Refreshed ${successCount} of ${operators.length} aircraft`);
-        await loadOperators();
-      }
-    } catch (error: any) {
-      console.error("Error refreshing operators:", error);
-      toast.error(error.message || "Failed to refresh");
-    } finally {
-      setUpdating(false);
-    }
-  };
-
-  const handleDelete = async (id: string) => {
-    try {
-      const { error } = await supabase
-        .from('aircraft_locations')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
-
-      toast.success("Aircraft removed");
-      await loadOperators();
-    } catch (error: any) {
-      console.error("Error deleting operator:", error);
-      toast.error("Failed to remove aircraft");
-    }
-  };
-
-  const handleManualSearch = async () => {
-    const trimmedName = manualOperatorName.trim();
+  const handleSearchAndAdd = async () => {
+    const trimmedName = searchTerm.trim();
     if (!trimmedName) {
       toast.error("Please enter an operator name");
       return;
@@ -231,33 +96,77 @@ export default function TrustedOperators() {
 
     setSearchingOperator(true);
     try {
+      // Search for the operator in Aviapages
       const { data, error } = await supabase.functions.invoke('search-operator-aircraft', {
         body: { operatorName: trimmedName }
       });
 
       if (error) throw error;
 
-      if (data.success && data.aircraft && data.aircraft.length > 0) {
-        const tailNumbers = data.aircraft.map((ac: any) => ac.tailNumber);
-        
-        const { data: updateData, error: updateError } = await supabase.functions.invoke('update-trusted-operators', {
-          body: { tailNumbers }
-        });
+      if (!data.success || !data.operator) {
+        toast.error(`No operator found with name: ${trimmedName}`);
+        return;
+      }
 
-        if (updateError) throw updateError;
+      // Check if operator already exists
+      const { data: existing } = await supabase
+        .from('trusted_operators')
+        .select('id')
+        .eq('company_id', data.operator.id)
+        .eq('user_id', user?.id)
+        .single();
 
-        const successCount = updateData.results?.filter((r: any) => r.success).length || 0;
-        
-        if (successCount > 0) {
-          toast.success(`Added ${successCount} aircraft from ${data.operator.name}`);
-          await loadOperators();
-          setManualOperatorName("");
+      if (existing) {
+        toast.error(`${data.operator.name} is already in your trusted operators list`);
+        return;
+      }
+
+      // Create the trusted operator
+      const { data: newOperator, error: operatorError } = await supabase
+        .from('trusted_operators')
+        .insert({
+          company_id: data.operator.id,
+          name: data.operator.name,
+          country_name: data.operator.country,
+          website: data.operator.website,
+          user_id: user?.id
+        })
+        .select()
+        .single();
+
+      if (operatorError) throw operatorError;
+
+      // Add all aircraft for this operator
+      if (data.aircraft && data.aircraft.length > 0) {
+        const aircraftToInsert = data.aircraft.map((ac: any) => ({
+          tail_number: ac.tailNumber,
+          aircraft_type: ac.aircraftType,
+          home_airport_icao: ac.homeAirportIcao,
+          home_airport_iata: ac.homeAirportIata,
+          home_airport_name: ac.homeAirportName,
+          country_code: ac.countryCode,
+          operator_name: data.operator.name,
+          operator_id: newOperator.id,
+          is_trusted: true,
+          floating_fleet: false
+        }));
+
+        const { error: aircraftError } = await supabase
+          .from('aircraft_locations')
+          .insert(aircraftToInsert);
+
+        if (aircraftError) {
+          console.error("Error adding aircraft:", aircraftError);
+          toast.error("Operator added but some aircraft failed to import");
         } else {
-          toast.error("Failed to add any aircraft");
+          toast.success(`Added ${data.operator.name} with ${data.aircraft.length} aircraft`);
         }
       } else {
-        toast.error(`No aircraft found for operator: ${trimmedName}`);
+        toast.success(`Added ${data.operator.name} (no aircraft found)`);
       }
+
+      setSearchTerm("");
+      await loadOperators();
     } catch (error: any) {
       console.error("Error searching operator:", error);
       if (error.message?.includes('rate_limit') || error.message?.includes('429')) {
@@ -270,13 +179,119 @@ export default function TrustedOperators() {
     }
   };
 
+  const handleRefreshOperator = async (operator: TrustedOperator) => {
+    setRefreshingOperator(operator.id);
+    try {
+      // Fetch updated aircraft list from Aviapages
+      const { data, error } = await supabase.functions.invoke('search-operator-aircraft', {
+        body: { operatorName: operator.name }
+      });
+
+      if (error) throw error;
+
+      if (data.success && data.aircraft) {
+        // Delete existing aircraft for this operator
+        await supabase
+          .from('aircraft_locations')
+          .delete()
+          .eq('operator_id', operator.id);
+
+        // Add updated aircraft
+        const aircraftToInsert = data.aircraft.map((ac: any) => ({
+          tail_number: ac.tailNumber,
+          aircraft_type: ac.aircraftType,
+          home_airport_icao: ac.homeAirportIcao,
+          home_airport_iata: ac.homeAirportIata,
+          home_airport_name: ac.homeAirportName,
+          country_code: ac.countryCode,
+          operator_name: operator.name,
+          operator_id: operator.id,
+          is_trusted: true,
+          floating_fleet: false
+        }));
+
+        if (aircraftToInsert.length > 0) {
+          await supabase
+            .from('aircraft_locations')
+            .insert(aircraftToInsert);
+        }
+
+        // Update the operator's updated_at timestamp
+        await supabase
+          .from('trusted_operators')
+          .update({ updated_at: new Date().toISOString() })
+          .eq('id', operator.id);
+
+        toast.success(`Refreshed ${operator.name} - ${aircraftToInsert.length} aircraft`);
+        await loadOperators();
+      }
+    } catch (error: any) {
+      console.error("Error refreshing operator:", error);
+      toast.error(error.message || "Failed to refresh operator");
+    } finally {
+      setRefreshingOperator(null);
+    }
+  };
+
+  const handleDeleteOperator = async (operatorId: string, operatorName: string) => {
+    if (!confirm(`Are you sure you want to remove ${operatorName} and all their aircraft?`)) {
+      return;
+    }
+
+    try {
+      // Delete all aircraft for this operator first
+      await supabase
+        .from('aircraft_locations')
+        .delete()
+        .eq('operator_id', operatorId);
+
+      // Delete the operator
+      const { error } = await supabase
+        .from('trusted_operators')
+        .delete()
+        .eq('id', operatorId);
+
+      if (error) throw error;
+
+      toast.success(`Removed ${operatorName}`);
+      await loadOperators();
+    } catch (error: any) {
+      console.error("Error deleting operator:", error);
+      toast.error("Failed to remove operator");
+    }
+  };
+
+  const handleUpdateNotes = async (operatorId: string, notes: string) => {
+    try {
+      const { error } = await supabase
+        .from('trusted_operators')
+        .update({ notes })
+        .eq('id', operatorId);
+
+      if (error) throw error;
+      toast.success("Notes updated");
+    } catch (error: any) {
+      console.error("Error updating notes:", error);
+      toast.error("Failed to update notes");
+    }
+  };
+
+  const toggleOperator = (operatorId: string) => {
+    const newExpanded = new Set(expandedOperators);
+    if (newExpanded.has(operatorId)) {
+      newExpanded.delete(operatorId);
+    } else {
+      newExpanded.add(operatorId);
+    }
+    setExpandedOperators(newExpanded);
+  };
+
   useEffect(() => {
     loadOperators();
   }, []);
 
-  const totalAircraft = operators.length;
-  const uniqueOperators = new Set(operators.map(op => op.operator_name).filter(Boolean)).size;
-  const floatingFleets = operators.filter(op => op.floating_fleet).length;
+  const totalAircraft = operators.reduce((sum, op) => sum + op.aircraft.length, 0);
+  const totalOperators = operators.length;
 
   return (
     <div className="min-h-screen bg-background">
@@ -293,7 +308,7 @@ export default function TrustedOperators() {
               <div>
                 <h1 className="text-2xl font-bold">Trusted Operators</h1>
                 <p className="text-sm text-muted-foreground">
-                  Manage aircraft operators and their fleets
+                  Manage charter operators and their aircraft fleets
                 </p>
               </div>
             </div>
@@ -304,7 +319,16 @@ export default function TrustedOperators() {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8 space-y-6">
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Trusted Operators</CardTitle>
+              <Building2 className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{totalOperators}</div>
+            </CardContent>
+          </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">Total Aircraft</CardTitle>
@@ -314,267 +338,192 @@ export default function TrustedOperators() {
               <div className="text-2xl font-bold">{totalAircraft}</div>
             </CardContent>
           </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Operators</CardTitle>
-              <Building2 className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{uniqueOperators}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Floating Fleets</CardTitle>
-              <MapPin className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{floatingFleets}</div>
-            </CardContent>
-          </Card>
         </div>
 
-        {/* Manual Search Form */}
+        {/* Add Operator Form */}
         <Card>
           <CardHeader>
-            <CardTitle>Add Operator Manually</CardTitle>
+            <CardTitle>Add Operator</CardTitle>
             <CardDescription>
-              Search for a specific operator by name and add all their aircraft
+              Search for a charter operator by name and add them to your trusted list
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="flex gap-2">
               <Input
-                placeholder="Enter operator name (e.g., NetJets)"
-                value={manualOperatorName}
-                onChange={(e) => setManualOperatorName(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleManualSearch()}
+                placeholder="Enter operator name (e.g., NetJets, Flexjet)"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSearchAndAdd()}
                 maxLength={100}
               />
-              <Button 
-                onClick={handleManualSearch} 
+              <Button
+                onClick={handleSearchAndAdd}
                 disabled={searchingOperator}
                 className="gap-2"
               >
                 {searchingOperator ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
-                  <Search className="h-4 w-4" />
+                  <Plus className="h-4 w-4" />
                 )}
-                Search & Add
+                Add Operator
               </Button>
             </div>
           </CardContent>
         </Card>
 
-        {/* Action Buttons */}
-        <div className="flex gap-2">
-          {!showCarriers ? (
-            <Button 
-              onClick={() => {
-                setShowCarriers(true);
-                if (usCarriers.length === 0) {
-                  loadUSCarriers();
-                }
-              }} 
-              className="gap-2"
-            >
-              <Building2 className="h-4 w-4" />
-              Add US Operators
-            </Button>
-          ) : (
-            <Button onClick={() => setShowCarriers(false)} variant="outline" className="gap-2">
-              Hide Operators List
-            </Button>
-          )}
-          <Button onClick={handleRefreshAll} variant="outline" disabled={updating} className="gap-2">
-            <RefreshCw className={`h-4 w-4 ${updating ? 'animate-spin' : ''}`} />
-            Refresh All
-          </Button>
-        </div>
-
-        {/* US Carriers List */}
-        {showCarriers && (
-          <Card>
-            <CardHeader>
-              <CardTitle>US Charter Operators</CardTitle>
-              <CardDescription>
-                Select operators to add all their aircraft to your trusted list
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-muted-foreground">
-                  {selectedCarriers.size} of {usCarriers.length} selected
-                </p>
-                <div className="flex gap-2">
-                  <Button
-                    onClick={handleAddSelectedCarriers}
-                    disabled={selectedCarriers.size === 0 || adding}
-                    className="gap-2"
-                  >
-                    {adding ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                    Add Selected ({selectedCarriers.size})
-                  </Button>
-                  {loadingCarriers && (
-                    <Button disabled variant="outline" className="gap-2">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Loading...
-                    </Button>
-                  )}
-                </div>
-              </div>
-
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-12">Select</TableHead>
-                      <TableHead>Operator Name</TableHead>
-                      <TableHead>Website</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {loadingCarriers ? (
-                      <TableRow>
-                        <TableCell colSpan={3} className="text-center py-8">
-                          <Loader2 className="h-6 w-6 animate-spin mx-auto" />
-                        </TableCell>
-                      </TableRow>
-                    ) : usCarriers.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
-                          No US carriers loaded
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      usCarriers.map((carrier) => (
-                        <TableRow key={carrier.company_id}>
-                          <TableCell>
-                            <Checkbox
-                              checked={selectedCarriers.has(carrier.company_id)}
-                              onCheckedChange={() => handleToggleCarrier(carrier.company_id)}
-                            />
-                          </TableCell>
-                          <TableCell className="font-medium">{carrier.name}</TableCell>
-                          <TableCell>
-                            {carrier.website ? (
-                              <a 
-                                href={carrier.website} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="text-primary hover:underline text-sm"
-                              >
-                                {carrier.website}
-                              </a>
-                            ) : (
-                              <span className="text-muted-foreground text-sm">-</span>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Current Operators Table */}
+        {/* Operators List */}
         <Card>
           <CardHeader>
-            <CardTitle>Current Trusted Operators</CardTitle>
+            <CardTitle>Your Trusted Operators</CardTitle>
             <CardDescription>
-              Aircraft currently in your trusted operators list
+              Click on an operator to view their aircraft fleet
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Tail Number</TableHead>
-                    <TableHead>Operator</TableHead>
-                    <TableHead>Aircraft Type</TableHead>
-                    <TableHead>Homebase</TableHead>
-                    <TableHead>Floating Fleet</TableHead>
-                    <TableHead>Last Updated</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {loading ? (
-                    <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8">
-                        <Loader2 className="h-6 w-6 animate-spin mx-auto" />
-                      </TableCell>
-                    </TableRow>
-                  ) : operators.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                        No trusted operators yet. Add some to get started.
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    operators.map((op) => (
-                      <TableRow key={op.id}>
-                        <TableCell className="font-mono">{op.tail_number}</TableCell>
-                        <TableCell>
-                          {op.operator_name ? (
-                            <div className="flex items-center gap-2">
-                              <span>{op.operator_name}</span>
-                              {op.country_code && (
-                                <Badge variant="outline" className="text-xs">
-                                  {op.country_code}
-                                </Badge>
+            {loading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin" />
+              </div>
+            ) : operators.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                No trusted operators yet. Add one to get started.
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {operators.map((operator) => (
+                  <Collapsible
+                    key={operator.id}
+                    open={expandedOperators.has(operator.id)}
+                    onOpenChange={() => toggleOperator(operator.id)}
+                  >
+                    <Card>
+                      <CollapsibleTrigger asChild>
+                        <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              {expandedOperators.has(operator.id) ? (
+                                <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                              ) : (
+                                <ChevronRight className="h-5 w-5 text-muted-foreground" />
                               )}
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <CardTitle className="text-lg">{operator.name}</CardTitle>
+                                  {operator.country_name && (
+                                    <Badge variant="outline">{operator.country_name}</Badge>
+                                  )}
+                                </div>
+                                <CardDescription>
+                                  {operator.aircraft.length} aircraft
+                                  {operator.website && (
+                                    <>
+                                      {" • "}
+                                      <a
+                                        href={operator.website}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-primary hover:underline"
+                                        onClick={(e) => e.stopPropagation()}
+                                      >
+                                        {operator.website}
+                                      </a>
+                                    </>
+                                  )}
+                                </CardDescription>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleRefreshOperator(operator)}
+                                disabled={refreshingOperator === operator.id}
+                                title="Refresh aircraft list"
+                              >
+                                <RefreshCw className={`h-4 w-4 ${refreshingOperator === operator.id ? 'animate-spin' : ''}`} />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDeleteOperator(operator.id, operator.name)}
+                                title="Remove operator"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        </CardHeader>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent>
+                        <CardContent className="space-y-4 pt-4">
+                          {/* Notes Section */}
+                          <div>
+                            <label className="text-sm font-medium mb-2 block">Notes</label>
+                            <Textarea
+                              placeholder="Add notes about this operator..."
+                              defaultValue={operator.notes || ""}
+                              onBlur={(e) => handleUpdateNotes(operator.id, e.target.value)}
+                              rows={2}
+                            />
+                          </div>
+
+                          {/* Aircraft Table */}
+                          {operator.aircraft.length === 0 ? (
+                            <div className="text-center py-4 text-muted-foreground text-sm">
+                              No aircraft found for this operator
                             </div>
                           ) : (
-                            <span className="text-muted-foreground">Unknown</span>
-                          )}
-                        </TableCell>
-                        <TableCell>{op.aircraft_type || "-"}</TableCell>
-                        <TableCell>
-                          {op.home_airport_icao || op.home_airport_iata ? (
-                            <div className="flex flex-col">
-                              <span className="font-mono text-sm">
-                                {op.home_airport_icao || op.home_airport_iata}
-                              </span>
-                              {op.home_airport_name && (
-                                <span className="text-xs text-muted-foreground">
-                                  {op.home_airport_name}
-                                </span>
-                              )}
+                            <div className="rounded-md border">
+                              <Table>
+                                <TableHeader>
+                                  <TableRow>
+                                    <TableHead>Tail Number</TableHead>
+                                    <TableHead>Aircraft Type</TableHead>
+                                    <TableHead>Home Base</TableHead>
+                                    <TableHead>Last Updated</TableHead>
+                                  </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                  {operator.aircraft.map((aircraft) => (
+                                    <TableRow key={aircraft.id}>
+                                      <TableCell className="font-mono font-medium">
+                                        {aircraft.tail_number}
+                                      </TableCell>
+                                      <TableCell>{aircraft.aircraft_type || "-"}</TableCell>
+                                      <TableCell>
+                                        {aircraft.home_airport_icao || aircraft.home_airport_iata ? (
+                                          <div className="flex flex-col">
+                                            <span className="font-mono text-sm">
+                                              {aircraft.home_airport_icao || aircraft.home_airport_iata}
+                                            </span>
+                                            {aircraft.home_airport_name && (
+                                              <span className="text-xs text-muted-foreground">
+                                                {aircraft.home_airport_name}
+                                              </span>
+                                            )}
+                                          </div>
+                                        ) : (
+                                          <span className="text-muted-foreground">-</span>
+                                        )}
+                                      </TableCell>
+                                      <TableCell className="text-sm text-muted-foreground">
+                                        {new Date(aircraft.last_updated).toLocaleDateString()}
+                                      </TableCell>
+                                    </TableRow>
+                                  ))}
+                                </TableBody>
+                              </Table>
                             </div>
-                          ) : (
-                            <span className="text-muted-foreground">-</span>
                           )}
-                        </TableCell>
-                        <TableCell>
-                          <Switch
-                            checked={op.floating_fleet}
-                            onCheckedChange={() => handleToggleFloatingFleet(op.id, op.floating_fleet)}
-                          />
-                        </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {new Date(op.last_updated).toLocaleDateString()}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleDelete(op.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
+                        </CardContent>
+                      </CollapsibleContent>
+                    </Card>
+                  </Collapsible>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </main>
