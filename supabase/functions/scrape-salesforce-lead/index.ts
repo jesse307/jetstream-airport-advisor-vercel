@@ -62,36 +62,56 @@ module.exports = async ({ page }) => {
   const username = '${salesforceUsername}';
   const password = '${salesforcePassword}';
   const targetUrl = '${salesforceUrl}';
+  const loginUrl = 'https://fms.stratosjets.com';
 
   console.log('Navigating to Salesforce URL:', targetUrl);
 
   // Navigate to the Salesforce URL
   await page.goto(targetUrl, { waitUntil: 'networkidle0', timeout: 60000 });
 
-  // Check if we need to log in
+  // Check if we need to log in (check for redirect to login page or login form)
   const needsLogin = await page.evaluate(() => {
     return document.querySelector('input[type="password"]') !== null ||
            document.querySelector('input[name="username"]') !== null ||
-           window.location.href.includes('login');
+           document.querySelector('input[id="username"]') !== null ||
+           window.location.href.includes('login') ||
+           window.location.href === 'https://fms.stratosjets.com/' ||
+           window.location.href === 'https://fms.stratosjets.com';
   });
 
   if (needsLogin) {
-    console.log('Login required, authenticating...');
+    console.log('Login required, authenticating to fms.stratosjets.com...');
+
+    // If not on login page already, navigate to it
+    if (!window.location.href.includes('fms.stratosjets.com')) {
+      console.log('Navigating to login page...');
+      await page.goto(loginUrl, { waitUntil: 'networkidle0', timeout: 60000 });
+    }
 
     // Wait for username field and enter credentials
-    await page.waitForSelector('input[name="username"], input[type="email"]', { timeout: 10000 });
-    await page.type('input[name="username"], input[type="email"]', username);
+    // Try multiple selectors for username field
+    await page.waitForSelector('input[name="username"], input[type="email"], input[id="username"]', { timeout: 10000 });
+    const usernameField = await page.$('input[name="username"]') || await page.$('input[type="email"]') || await page.$('input[id="username"]');
+    await usernameField.type(username);
 
     // Enter password
-    await page.waitForSelector('input[name="pw"], input[type="password"]', { timeout: 10000 });
-    await page.type('input[name="pw"], input[type="password"]', password);
+    // Try multiple selectors for password field
+    await page.waitForSelector('input[name="pw"], input[type="password"], input[id="password"]', { timeout: 10000 });
+    const passwordField = await page.$('input[name="pw"]') || await page.$('input[type="password"]') || await page.$('input[id="password"]');
+    await passwordField.type(password);
 
     // Click login button
-    await page.click('input[type="submit"], button[type="submit"]');
+    await page.click('input[type="submit"], button[type="submit"], input[name="Login"], button[name="Login"]');
 
     // Wait for navigation after login
     await page.waitForNavigation({ waitUntil: 'networkidle0', timeout: 60000 });
     console.log('Login successful');
+
+    // Navigate to the target URL if we're not already there
+    if (page.url() !== targetUrl) {
+      console.log('Navigating to target URL after login...');
+      await page.goto(targetUrl, { waitUntil: 'networkidle0', timeout: 60000 });
+    }
   } else {
     console.log('Already authenticated or no login required');
   }
