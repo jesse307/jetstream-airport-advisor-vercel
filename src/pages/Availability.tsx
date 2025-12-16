@@ -178,20 +178,47 @@ const Availability = () => {
       });
     }
 
-    // Filter by search term
+    // Filter by search term with special syntax support
     if (searchTerm) {
-      const search = searchTerm.toLowerCase();
-      filtered = filtered.filter((leg) => {
-        const parsedRoute = parseRoute(leg.route).toLowerCase();
-        return (
-          leg.aircraft_type?.toLowerCase().includes(search) ||
-          leg.operator_name?.toLowerCase().includes(search) ||
-          leg.route?.toLowerCase().includes(search) ||
-          parsedRoute.includes(search) ||
-          leg.tail_number?.toLowerCase().includes(search) ||
-          leg.notes?.toLowerCase().includes(search)
-        );
-      });
+      const search = searchTerm.toLowerCase().trim();
+
+      // Check for special route search syntax
+      const fromMatch = search.match(/from:(\S+)/i);
+      const toMatch = search.match(/to:(\S+)/i);
+
+      if (fromMatch || toMatch) {
+        // Route-specific search
+        filtered = filtered.filter((leg) => {
+          const parsedRoute = parseRoute(leg.route).toLowerCase();
+          const routeParts = parsedRoute.split('→').map(p => p.trim());
+
+          if (fromMatch && toMatch) {
+            // Both from and to specified
+            return routeParts[0]?.includes(fromMatch[1].toLowerCase()) &&
+                   routeParts[1]?.includes(toMatch[1].toLowerCase());
+          } else if (fromMatch) {
+            // Only from specified
+            return routeParts[0]?.includes(fromMatch[1].toLowerCase());
+          } else if (toMatch) {
+            // Only to specified
+            return routeParts[1]?.includes(toMatch[1].toLowerCase());
+          }
+          return false;
+        });
+      } else {
+        // Regular search across all fields
+        filtered = filtered.filter((leg) => {
+          const parsedRoute = parseRoute(leg.route).toLowerCase();
+          return (
+            leg.aircraft_type?.toLowerCase().includes(search) ||
+            leg.operator_name?.toLowerCase().includes(search) ||
+            leg.route?.toLowerCase().includes(search) ||
+            parsedRoute.includes(search) ||
+            leg.tail_number?.toLowerCase().includes(search) ||
+            leg.notes?.toLowerCase().includes(search)
+          );
+        });
+      }
     }
 
     setFilteredLegs(filtered);
@@ -309,7 +336,7 @@ const Availability = () => {
                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input
                       id="search"
-                      placeholder="Aircraft, operator, route..."
+                      placeholder="Search or use from:TEB to:MIA..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                       className="pl-8"
