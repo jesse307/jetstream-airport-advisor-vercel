@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import AirportSearch from "@/components/AirportSearch";
+import { AirportSearch } from "@/components/AirportSearch";
 
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -546,10 +546,10 @@ export default function OpportunityDetail() {
                         <Label>Departure Airport</Label>
                         <AirportSearch
                           value={editedOpportunity.departure_airport || opportunity.departure_airport}
-                          onSelect={(airport) => {
+                          onChange={(value, airport) => {
                             setEditedOpportunity({
                               ...editedOpportunity,
-                              departure_airport: airport.code
+                              departure_airport: airport?.code || value
                             });
                           }}
                           placeholder="Search departure airport"
@@ -559,10 +559,10 @@ export default function OpportunityDetail() {
                         <Label>Arrival Airport</Label>
                         <AirportSearch
                           value={editedOpportunity.arrival_airport || opportunity.arrival_airport}
-                          onSelect={(airport) => {
+                          onChange={(value, airport) => {
                             setEditedOpportunity({
                               ...editedOpportunity,
-                              arrival_airport: airport.code
+                              arrival_airport: airport?.code || value
                             });
                           }}
                           placeholder="Search arrival airport"
