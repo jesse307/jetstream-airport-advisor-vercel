@@ -1,3 +1,4 @@
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -7,6 +8,99 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Max-Age": "86400",
 };
+
+// Function to parse quotes using AI
+async function parseQuotesWithAI(emailContent: string): Promise<any[]> {
+  const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+
+  if (!LOVABLE_API_KEY) {
+    console.log('No LOVABLE_API_KEY found, skipping AI parsing');
+    return [];
+  }
+
+  console.log('Parsing quotes with AI...');
+
+  try {
+    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'google/gemini-2.5-flash',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a quote extraction assistant. Extract charter aircraft quote information from emails (which may contain HTML). For each quote option, extract: aircraft_type, price (numeric only, no currency symbols or commas), passengers, category (Light/Mid/Heavy Jet, Turboprop, etc.), certifications (ARGUS, Wyvern, etc.), operator name, tail_number if mentioned, and any URLs. Remove all HTML tags and formatting. Return clean, structured data.'
+          },
+          {
+            role: 'user',
+            content: `Extract all quote options from this email. Look for multiple aircraft options with their details:\n\n${emailContent}`
+          }
+        ],
+        tools: [
+          {
+            type: 'function',
+            function: {
+              name: 'extract_quotes',
+              description: 'Extract structured quote data from email content',
+              parameters: {
+                type: 'object',
+                properties: {
+                  quotes: {
+                    type: 'array',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        aircraft_type: { type: 'string', description: 'Aircraft model (e.g., Citation Ultra, Gulfstream G450)' },
+                        price: { type: 'number', description: 'Quote price as number only, no commas or currency symbols' },
+                        currency: { type: 'string', description: 'Currency code (default: USD)' },
+                        passengers: { type: 'number', description: 'Number of passengers' },
+                        category: { type: 'string', description: 'Aircraft category (Light Jet, Mid Jet, Heavy Jet, Turboprop, etc.)' },
+                        certifications: { type: 'string', description: 'Safety certifications (ARGUS, Wyvern, etc.)' },
+                        operator: { type: 'string', description: 'Operator/charter company name if mentioned' },
+                        tail_number: { type: 'string', description: 'Aircraft tail number/registration if mentioned (e.g., N12345)' },
+                        route: { type: 'string', description: 'Flight route if mentioned' },
+                        dates: { type: 'string', description: 'Travel dates if mentioned' },
+                        url: { type: 'string', description: 'URL link to detailed quote if present' }
+                      },
+                      required: ['aircraft_type']
+                    }
+                  }
+                },
+                required: ['quotes']
+              }
+            }
+          }
+        ],
+        tool_choice: { type: 'function', function: { name: 'extract_quotes' } }
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('AI gateway error:', response.status, errorText);
+      return [];
+    }
+
+    const data = await response.json();
+    const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
+
+    if (!toolCall) {
+      console.log('No tool call in AI response');
+      return [];
+    }
+
+    const parsedQuotes = JSON.parse(toolCall.function.arguments);
+    console.log(`AI extracted ${parsedQuotes.quotes?.length || 0} quotes`);
+
+    return parsedQuotes.quotes || [];
+  } catch (error) {
+    console.error('Error parsing with AI:', error);
+    return [];
+  }
+}
 
 const handler = async (req: Request): Promise<Response> => {
   console.log("Quote email webhook received - Method:", req.method);
@@ -32,15 +126,19 @@ const handler = async (req: Request): Promise<Response> => {
     
     // Always read as text first to handle Make.com's inconsistent formatting
     const textBody = await req.text();
-    console.log("Raw body (first 200 chars):", textBody.substring(0, 200));
-    
+    console.log("Raw body (first 500 chars):", textBody.substring(0, 500));
+
     let emailData: any = {};
-    
+    let rawContent = textBody;
+
     // Try to parse as JSON if it looks like JSON
     if (textBody.trim().startsWith("{") || textBody.trim().startsWith("[")) {
       try {
         emailData = JSON.parse(textBody);
         console.log("Successfully parsed as JSON");
+
+        // Extract raw email content for AI parsing
+        rawContent = emailData.html || emailData.body || emailData.text || textBody;
       } catch (e) {
         console.log("Failed to parse as JSON:", e);
         emailData = { raw_text: textBody };
@@ -50,11 +148,19 @@ const handler = async (req: Request): Promise<Response> => {
       console.log("Non-JSON content received");
       emailData = { raw_text: textBody };
     }
-    
+
     console.log("Received email data:", JSON.stringify(emailData).substring(0, 200));
 
-    // Check if JSON contains quotes array directly
-    const quotesArray = emailData.quotes || [];
+    // Check if JSON already contains parsed quotes array (from Make.com)
+    let quotesArray = emailData.quotes || [];
+
+    // If no pre-parsed quotes, use AI to extract them
+    if (quotesArray.length === 0) {
+      console.log('No pre-parsed quotes found, using AI to extract...');
+      quotesArray = await parseQuotesWithAI(rawContent);
+    } else {
+      console.log(`Found ${quotesArray.length} pre-parsed quotes`);
+    }
     
     // Handle Resend inbound email format for backward compatibility
     const senderEmail = emailData.from?.address || emailData.from || emailData.sender || emailData.From || emailData.sender_email || null;
@@ -88,9 +194,9 @@ const handler = async (req: Request): Promise<Response> => {
     console.log("Quote record created:", quoteRecord.id, "with", quotesArray.length, "quotes");
 
     return new Response(
-      JSON.stringify({ 
-        success: true, 
-        message: "Quotes received and processed",
+      JSON.stringify({
+        success: true,
+        message: "Quotes received and processed with AI",
         quoteId: quoteRecord.id,
         quotesExtracted: quotesArray.length
       }),
