@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, ArrowRight, User, Phone, Mail, Calendar, Clock, Plane, Users, MapPin, CheckCircle2, XCircle, Settings, ClipboardList, Send, Trophy, Edit2, Save, MessageSquare } from "lucide-react";
+import { ArrowLeft, ArrowRight, User, Phone, Mail, Calendar, Clock, Plane, Users, MapPin, CheckCircle2, XCircle, Settings, ClipboardList, Send, Trophy, Edit2, Save, MessageSquare, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,6 +18,7 @@ import { LeadChatbot } from "@/components/LeadChatbot";
 import { AircraftClassRecommendations } from "@/components/AircraftClassRecommendations";
 import { CharterQuoteRequest } from "@/components/CharterQuoteRequest";
 import { QuoteComposer } from "@/components/QuoteComposer";
+import { ConvertLeadDialog } from "@/components/ConvertLeadDialog";
 
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -47,6 +48,8 @@ interface Lead {
   email_valid?: boolean | null;
   phone_valid?: boolean | null;
   source_url?: string | null;
+  converted_to_account_id?: string | null;
+  converted_at?: string | null;
 }
 
 interface Airport {
@@ -101,6 +104,7 @@ export default function LeadAnalysis() {
     passengers: 1
   });
   const [isSaving, setIsSaving] = useState(false);
+  const [convertDialogOpen, setConvertDialogOpen] = useState(false);
 
   // Helper function to format date from timestamp
   const formatDate = (datetime: string | undefined, fallbackDate?: string) => {
@@ -1727,8 +1731,8 @@ export default function LeadAnalysis() {
                   </div>
                 )}
                 <div className="pt-4 space-y-2">
-                  <Button 
-                    className="w-full" 
+                  <Button
+                    className="w-full"
                     variant="default"
                     onClick={handleStartProcess}
                     disabled={isExporting}
@@ -1736,24 +1740,33 @@ export default function LeadAnalysis() {
                     <Phone className="h-4 w-4 mr-2" />
                     {isExporting ? 'Starting...' : 'Call + Email'}
                   </Button>
-                  <Button 
-                    className="w-full" 
+                  <Button
+                    className="w-full"
                     variant="default"
                     onClick={() => setShowEmailComposer(true)}
                   >
                     <Mail className="h-4 w-4 mr-2" />
                     Email
                   </Button>
-                  <Button 
-                    className="w-full" 
+                  <Button
+                    className="w-full"
+                    variant="default"
+                    onClick={() => setConvertDialogOpen(true)}
+                    disabled={!!lead.converted_to_account_id}
+                  >
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    {lead.converted_to_account_id ? 'Converted to Account' : 'Convert to Account'}
+                  </Button>
+                  <Button
+                    className="w-full"
                     variant="default"
                     onClick={handleOpenAviapagesPreview}
                   >
                     <Send className="h-4 w-4 mr-2" />
                     Post to Aviapages
                   </Button>
-                  <Button 
-                    className="w-full" 
+                  <Button
+                    className="w-full"
                     variant="outline"
                     onClick={handleAddToTripBoard}
                     disabled={lead.status === 'qualified'}
@@ -1899,6 +1912,18 @@ export default function LeadAnalysis() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ConvertLeadDialog
+        lead={lead}
+        open={convertDialogOpen}
+        onOpenChange={setConvertDialogOpen}
+        onSuccess={() => {
+          // Refresh lead data after conversion
+          if (id) {
+            fetchLead(id);
+          }
+        }}
+      />
     </div>
   );
 }

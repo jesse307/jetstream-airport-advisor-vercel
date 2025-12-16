@@ -11,6 +11,7 @@ import LeadIntake from "./pages/LeadIntake";
 import LeadImport from "./pages/LeadImport";
 import ImportHistory from "./pages/ImportHistory";
 import CRM from "./pages/CRM";
+import Accounts from "./pages/Accounts";
 import LeadAnalysis from "./pages/LeadAnalysis";
 import MobileCapture from "./pages/MobileCapture";
 import AircraftTracking from "./pages/AircraftTracking";
@@ -35,6 +36,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
             <Route path="/crm" element={<ProtectedRoute><CRM /></ProtectedRoute>} />
+            <Route path="/accounts" element={<ProtectedRoute><Accounts /></ProtectedRoute>} />
             <Route path="/leads/new" element={<ProtectedRoute><LeadIntake /></ProtectedRoute>} />
             <Route path="/leads/import" element={<ProtectedRoute><LeadImport /></ProtectedRoute>} />
             <Route path="/leads/import-history" element={<ProtectedRoute><ImportHistory /></ProtectedRoute>} />

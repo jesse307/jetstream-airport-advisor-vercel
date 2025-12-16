@@ -7,9 +7,10 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Search, UserPlus, Mail, Phone, Calendar, MapPin, Eye } from "lucide-react";
+import { ArrowLeft, Search, UserPlus, Mail, Phone, Calendar, MapPin, Eye, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
+import { ConvertLeadDialog } from "@/components/ConvertLeadDialog";
 
 interface Lead {
   id: string;
@@ -25,6 +26,8 @@ interface Lead {
   trip_type: string;
   created_at: string;
   source: string | null;
+  converted_to_account_id: string | null;
+  converted_at: string | null;
 }
 
 const CRM = () => {
@@ -35,6 +38,8 @@ const CRM = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [convertDialogOpen, setConvertDialogOpen] = useState(false);
+  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
 
   useEffect(() => {
     fetchLeads();
@@ -109,6 +114,16 @@ const CRM = () => {
     return new Date(dateString).toLocaleDateString();
   };
 
+  const handleConvertClick = (lead: Lead, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedLead(lead);
+    setConvertDialogOpen(true);
+  };
+
+  const handleConversionSuccess = () => {
+    fetchLeads();
+  };
+
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-7xl mx-auto">
@@ -125,10 +140,15 @@ const CRM = () => {
               </p>
             </div>
           </div>
-          <Button onClick={() => navigate("/leads/new")}>
-            <UserPlus className="h-4 w-4 mr-2" />
-            New Lead
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => navigate("/accounts")}>
+              View Accounts
+            </Button>
+            <Button onClick={() => navigate("/leads/new")}>
+              <UserPlus className="h-4 w-4 mr-2" />
+              New Lead
+            </Button>
+          </div>
         </div>
 
         {/* Filters */}
@@ -226,6 +246,7 @@ const CRM = () => {
                       <TableHead>Passengers</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Source</TableHead>
+                      <TableHead>Converted</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -276,17 +297,37 @@ const CRM = () => {
                         <TableCell>
                           <Badge variant="outline">{lead.source || "manual"}</Badge>
                         </TableCell>
+                        <TableCell>
+                          {lead.converted_to_account_id ? (
+                            <Badge variant="secondary" className="bg-green-100 text-green-800">
+                              Converted
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground text-sm">-</span>
+                          )}
+                        </TableCell>
                         <TableCell className="text-right">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              navigate(`/leads/${lead.id}`);
-                            }}
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
+                          <div className="flex gap-1 justify-end">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/leads/${lead.id}`);
+                              }}
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => handleConvertClick(lead, e)}
+                              title="Convert to Account"
+                              disabled={!!lead.converted_to_account_id}
+                            >
+                              <RefreshCw className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -297,6 +338,13 @@ const CRM = () => {
           </CardContent>
         </Card>
       </div>
+
+      <ConvertLeadDialog
+        lead={selectedLead}
+        open={convertDialogOpen}
+        onOpenChange={setConvertDialogOpen}
+        onSuccess={handleConversionSuccess}
+      />
     </div>
   );
 };
