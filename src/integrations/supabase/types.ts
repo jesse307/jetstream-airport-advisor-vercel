@@ -14,6 +14,65 @@ export type Database = {
   }
   public: {
     Tables: {
+      accounts: {
+        Row: {
+          billing_address: string | null
+          company: string | null
+          created_at: string
+          description: string | null
+          email: string | null
+          id: string
+          industry: string | null
+          lead_id: string | null
+          name: string | null
+          phone: string | null
+          shipping_address: string | null
+          updated_at: string
+          user_id: string
+          website: string | null
+        }
+        Insert: {
+          billing_address?: string | null
+          company?: string | null
+          created_at?: string
+          description?: string | null
+          email?: string | null
+          id?: string
+          industry?: string | null
+          lead_id?: string | null
+          name?: string | null
+          phone?: string | null
+          shipping_address?: string | null
+          updated_at?: string
+          user_id: string
+          website?: string | null
+        }
+        Update: {
+          billing_address?: string | null
+          company?: string | null
+          created_at?: string
+          description?: string | null
+          email?: string | null
+          id?: string
+          industry?: string | null
+          lead_id?: string | null
+          name?: string | null
+          phone?: string | null
+          shipping_address?: string | null
+          updated_at?: string
+          user_id?: string
+          website?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "accounts_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       aircraft: {
         Row: {
           aviapages_name: string | null
@@ -163,6 +222,7 @@ export type Database = {
       }
       aircraft_locations: {
         Row: {
+          aircraft_category: string | null
           aircraft_type: string | null
           country_code: string | null
           created_at: string
@@ -174,10 +234,12 @@ export type Database = {
           is_trusted: boolean | null
           last_updated: string
           notes: string | null
+          operator_id: string | null
           operator_name: string | null
           tail_number: string
         }
         Insert: {
+          aircraft_category?: string | null
           aircraft_type?: string | null
           country_code?: string | null
           created_at?: string
@@ -189,10 +251,12 @@ export type Database = {
           is_trusted?: boolean | null
           last_updated?: string
           notes?: string | null
+          operator_id?: string | null
           operator_name?: string | null
           tail_number: string
         }
         Update: {
+          aircraft_category?: string | null
           aircraft_type?: string | null
           country_code?: string | null
           created_at?: string
@@ -204,10 +268,19 @@ export type Database = {
           is_trusted?: boolean | null
           last_updated?: string
           notes?: string | null
+          operator_id?: string | null
           operator_name?: string | null
           tail_number?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "aircraft_locations_operator_id_fkey"
+            columns: ["operator_id"]
+            isOneToOne: false
+            referencedRelation: "trusted_operators"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       aircraft_operators: {
         Row: {
@@ -433,6 +506,8 @@ export type Database = {
           analysis_data: Json | null
           arrival_airport: string
           call_notes: string | null
+          converted_at: string | null
+          converted_to_account_id: string | null
           created_at: string
           departure_airport: string
           departure_date: string
@@ -461,6 +536,8 @@ export type Database = {
           analysis_data?: Json | null
           arrival_airport: string
           call_notes?: string | null
+          converted_at?: string | null
+          converted_to_account_id?: string | null
           created_at?: string
           departure_airport: string
           departure_date: string
@@ -489,6 +566,8 @@ export type Database = {
           analysis_data?: Json | null
           arrival_airport?: string
           call_notes?: string | null
+          converted_at?: string | null
+          converted_to_account_id?: string | null
           created_at?: string
           departure_airport?: string
           departure_date?: string
@@ -513,7 +592,15 @@ export type Database = {
           updated_at?: string
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "leads_converted_to_account_id_fkey"
+            columns: ["converted_to_account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       nfl_teams: {
         Row: {
@@ -617,6 +704,74 @@ export type Database = {
         }
         Relationships: []
       }
+      opportunities: {
+        Row: {
+          account_id: string
+          amount: number | null
+          arrival_airport: string | null
+          closed_at: string | null
+          created_at: string
+          departure_airport: string | null
+          departure_date: string | null
+          description: string | null
+          expected_close_date: string | null
+          id: string
+          name: string | null
+          passengers: number | null
+          probability: number | null
+          stage: string
+          trip_type: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          account_id: string
+          amount?: number | null
+          arrival_airport?: string | null
+          closed_at?: string | null
+          created_at?: string
+          departure_airport?: string | null
+          departure_date?: string | null
+          description?: string | null
+          expected_close_date?: string | null
+          id?: string
+          name?: string | null
+          passengers?: number | null
+          probability?: number | null
+          stage?: string
+          trip_type?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          account_id?: string
+          amount?: number | null
+          arrival_airport?: string | null
+          closed_at?: string | null
+          created_at?: string
+          departure_airport?: string | null
+          departure_date?: string | null
+          description?: string | null
+          expected_close_date?: string | null
+          id?: string
+          name?: string | null
+          passengers?: number | null
+          probability?: number | null
+          stage?: string
+          trip_type?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "opportunities_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pending_lead_imports: {
         Row: {
           created_at: string
@@ -710,6 +865,48 @@ export type Database = {
           subject?: string | null
           updated_at?: string
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      trusted_operators: {
+        Row: {
+          company_id: string
+          contact_email: string | null
+          country_name: string | null
+          created_at: string
+          fleet_type: string | null
+          id: string
+          name: string
+          notes: string | null
+          updated_at: string
+          user_id: string | null
+          website: string | null
+        }
+        Insert: {
+          company_id: string
+          contact_email?: string | null
+          country_name?: string | null
+          created_at?: string
+          fleet_type?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          updated_at?: string
+          user_id?: string | null
+          website?: string | null
+        }
+        Update: {
+          company_id?: string
+          contact_email?: string | null
+          country_name?: string | null
+          created_at?: string
+          fleet_type?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          updated_at?: string
+          user_id?: string | null
+          website?: string | null
         }
         Relationships: []
       }
