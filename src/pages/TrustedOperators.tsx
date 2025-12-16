@@ -18,6 +18,7 @@ interface Aircraft {
   id: string;
   tail_number: string;
   aircraft_type: string | null;
+  aircraft_category: string | null;
   home_airport_icao: string | null;
   home_airport_iata: string | null;
   home_airport_name: string | null;
@@ -192,6 +193,7 @@ export default function TrustedOperators() {
         .map((ac: any) => ({
           tail_number: ac.registration_number,
           aircraft_type: ac.type || null,
+          aircraft_category: ac.class || null,
           home_airport_icao: ac.base_airport || null,
           home_airport_iata: null,
           home_airport_name: ac.city || null,
@@ -251,6 +253,7 @@ export default function TrustedOperators() {
           .map((ac: any) => ({
             tail_number: ac.registration_number,
             aircraft_type: ac.type || null,
+            aircraft_category: ac.class || null,
             home_airport_icao: ac.base_airport || null,
             home_airport_iata: null,
             home_airport_name: ac.city || null,
@@ -611,6 +614,7 @@ export default function TrustedOperators() {
                                   <TableRow>
                                     <TableHead>Tail Number</TableHead>
                                     <TableHead>Aircraft Type</TableHead>
+                                    <TableHead>Category</TableHead>
                                     <TableHead>Home Base</TableHead>
                                     <TableHead>Last Updated</TableHead>
                                   </TableRow>
@@ -622,6 +626,15 @@ export default function TrustedOperators() {
                                         {aircraft.tail_number}
                                       </TableCell>
                                       <TableCell>{aircraft.aircraft_type || "-"}</TableCell>
+                                      <TableCell>
+                                        {aircraft.aircraft_category ? (
+                                          <Badge variant="secondary" className="text-xs">
+                                            {aircraft.aircraft_category}
+                                          </Badge>
+                                        ) : (
+                                          "-"
+                                        )}
+                                      </TableCell>
                                       <TableCell>
                                         {aircraft.home_airport_icao || aircraft.home_airport_iata ? (
                                           <div className="flex flex-col">
