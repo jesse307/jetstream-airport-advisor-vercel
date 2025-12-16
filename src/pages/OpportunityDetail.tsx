@@ -70,8 +70,46 @@ export default function OpportunityDetail() {
     }
   }, [id]);
 
-  const fetchAirportData = async (airportCode: string): Promise<Airport | null> => {
+  const extractAirportCode = async (airportString: string): Promise<string | null> => {
     try {
+      // Try simple extraction first - match 3-4 letter uppercase codes anywhere in string
+      // Handles formats: "SEA", "JFK (New York)", "Teterboro - TEB", "KJFK", etc.
+      const simpleMatch = airportString.match(/\b([A-Z]{3,4})\b/);
+      if (simpleMatch) {
+        return simpleMatch[1];
+      }
+
+      // If that doesn't work, use AI to extract
+      console.log('Using AI to extract airport code from:', airportString);
+      const { data, error } = await supabase.functions.invoke('extract-airports', {
+        body: { text: `Extract airport code from: ${airportString}` }
+      });
+
+      if (error || data.error) {
+        console.error('Error extracting airport code:', error || data.error);
+        return null;
+      }
+
+      // Return the first code extracted (departure or arrival, doesn't matter which)
+      return data.departure || data.arrival || null;
+    } catch (error) {
+      console.error('Error extracting airport code:', error);
+      return null;
+    }
+  };
+
+  const fetchAirportData = async (airportString: string): Promise<Airport | null> => {
+    try {
+      // Extract clean airport code using AI if needed
+      const airportCode = await extractAirportCode(airportString);
+
+      if (!airportCode) {
+        console.error('Could not extract airport code from:', airportString);
+        return null;
+      }
+
+      console.log('Extracted airport code:', airportCode, 'from:', airportString);
+
       const { data, error } = await supabase.functions.invoke('search-airports', {
         body: { query: airportCode }
       });
@@ -81,6 +119,7 @@ export default function OpportunityDetail() {
         return null;
       }
 
+      // Find the matching airport from results
       const airports = data.airports || [];
       const matchingAirport = airports.find((airport: Airport) =>
         airport.code === airportCode ||
@@ -296,7 +335,9 @@ export default function OpportunityDetail() {
                 <div className="flex items-center justify-between mb-6">
                   <div className="text-center flex-1">
                     <div className="text-3xl font-bold text-primary mb-1">
-                      {departureAirportData?.code || opportunity.departure_airport}
+                      {departureAirportData?.code || (opportunity.departure_airport.includes(' - ')
+                        ? opportunity.departure_airport.split(' - ')[0]
+                        : opportunity.departure_airport)}
                     </div>
                     <div className="text-sm text-muted-foreground">
                       {departureAirportData?.city || 'Departure'}
@@ -338,7 +379,9 @@ export default function OpportunityDetail() {
 
                   <div className="text-center flex-1">
                     <div className="text-3xl font-bold text-primary mb-1">
-                      {arrivalAirportData?.code || opportunity.arrival_airport}
+                      {arrivalAirportData?.code || (opportunity.arrival_airport.includes(' - ')
+                        ? opportunity.arrival_airport.split(' - ')[0]
+                        : opportunity.arrival_airport)}
                     </div>
                     <div className="text-sm text-muted-foreground">
                       {arrivalAirportData?.city || 'Arrival'}
