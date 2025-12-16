@@ -118,7 +118,8 @@ export const ConvertLeadDialog = ({ lead, open, onOpenChange, onSuccess }: Conve
         stage: "qualification",
         amount: opportunityData.amount ? parseFloat(opportunityData.amount) : null,
         probability: parseInt(opportunityData.probability),
-        expected_close_date: opportunityData.expectedCloseDate || null,
+        // Set expected_close_date to the departure date if not provided
+        expected_close_date: opportunityData.expectedCloseDate || lead.departure_date,
         description: opportunityData.description || null,
         departure_airport: lead.departure_airport,
         arrival_airport: lead.arrival_airport,
