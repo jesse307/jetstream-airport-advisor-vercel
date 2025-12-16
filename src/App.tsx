@@ -21,6 +21,7 @@ import Templates from "./pages/Templates";
 import TrustedOperators from "./pages/TrustedOperators";
 import AircraftData from "./pages/AircraftData";
 import EmailTemplates from "./pages/EmailTemplates";
+import OpportunityDetail from "./pages/OpportunityDetail";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -41,6 +42,7 @@ const App = () => (
             <Route path="/leads/import" element={<ProtectedRoute><LeadImport /></ProtectedRoute>} />
             <Route path="/leads/import-history" element={<ProtectedRoute><ImportHistory /></ProtectedRoute>} />
             <Route path="/leads/:id" element={<ProtectedRoute><LeadAnalysis /></ProtectedRoute>} />
+            <Route path="/opportunities/:id" element={<ProtectedRoute><OpportunityDetail /></ProtectedRoute>} />
             <Route path="/mobile-capture" element={<ProtectedRoute><MobileCapture /></ProtectedRoute>} />
             <Route path="/aircraft-tracking" element={<ProtectedRoute><AircraftTracking /></ProtectedRoute>} />
             <Route path="/quotes" element={<ProtectedRoute><Quotes /></ProtectedRoute>} />

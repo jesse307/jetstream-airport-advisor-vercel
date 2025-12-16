@@ -347,7 +347,11 @@ const Accounts = () => {
                           </TableHeader>
                           <TableBody>
                             {opportunities[account.id].map((opp) => (
-                              <TableRow key={opp.id}>
+                              <TableRow
+                                key={opp.id}
+                                className="cursor-pointer hover:bg-muted/50"
+                                onClick={() => navigate(`/opportunities/${opp.id}`)}
+                              >
                                 <TableCell className="font-medium">{opp.name}</TableCell>
                                 <TableCell>
                                   {opp.departure_airport && opp.arrival_airport ? (
