@@ -32,6 +32,7 @@ interface TrustedOperator {
   name: string;
   country_name: string | null;
   website: string | null;
+  contact_email: string | null;
   notes: string | null;
   fleet_type: 'floating' | 'fixed';
   created_at: string;
@@ -365,6 +366,29 @@ export default function TrustedOperators() {
     }
   };
 
+  const handleUpdateContactEmail = async (operatorId: string, contactEmail: string) => {
+    try {
+      const { error } = await supabase
+        .from('trusted_operators')
+        .update({ contact_email: contactEmail || null })
+        .eq('id', operatorId);
+
+      if (error) throw error;
+
+      // Update local state
+      setOperators(prevOperators =>
+        prevOperators.map(op =>
+          op.id === operatorId ? { ...op, contact_email: contactEmail || null } : op
+        )
+      );
+
+      toast.success("Contact email updated");
+    } catch (error: any) {
+      console.error("Error updating contact email:", error);
+      toast.error("Failed to update contact email");
+    }
+  };
+
   const handleUpdateFleetType = async (operatorId: string, fleetType: 'floating' | 'fixed') => {
     try {
       const { error } = await supabase
@@ -621,6 +645,34 @@ export default function TrustedOperators() {
                                 ? 'Aircraft available for charter to various destinations'
                                 : 'Dedicated aircraft for specific clients or routes'}
                             </p>
+                          </div>
+
+                          {/* Contact Email */}
+                          <div>
+                            <Label htmlFor={`contact-email-${operator.id}`} className="text-sm font-medium mb-2 block">
+                              Contact Email
+                            </Label>
+                            <div className="flex gap-2 items-center">
+                              <Input
+                                id={`contact-email-${operator.id}`}
+                                type="email"
+                                placeholder="contact@operator.com"
+                                defaultValue={operator.contact_email || ""}
+                                onBlur={(e) => handleUpdateContactEmail(operator.id, e.target.value)}
+                                className="flex-1"
+                              />
+                              {operator.contact_email && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  asChild
+                                >
+                                  <a href={`mailto:${operator.contact_email}`}>
+                                    Send Email
+                                  </a>
+                                </Button>
+                              )}
+                            </div>
                           </div>
 
                           {/* Notes Section */}
