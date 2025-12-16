@@ -519,17 +519,17 @@ export default function Quotes() {
           Quotes received via email webhook
         </p>
         <div className="mt-4 p-4 bg-muted rounded-lg">
-          <p className="text-sm font-medium mb-2">📧 Resend Inbound Email Setup:</p>
+          <p className="text-sm font-medium mb-2">📧 Make.com Email Webhook Setup:</p>
           <ol className="text-sm space-y-2 mb-3">
-            <li>1. Go to <a href="https://resend.com/domains" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Resend Domains</a></li>
-            <li>2. Add an inbound route for your domain</li>
-            <li>3. Forward emails to this webhook URL:</li>
+            <li>1. Create a Make.com scenario with an Email trigger (Mailhook)</li>
+            <li>2. Get the unique email address from Make.com</li>
+            <li>3. Configure the HTTP module to POST to:</li>
           </ol>
           <code className="text-xs bg-background p-2 rounded block break-all">
             https://hwemookrxvflpinfpkrj.supabase.co/functions/v1/receive-quote-email
           </code>
           <p className="text-xs text-muted-foreground mt-3">
-            💡 Once set up, forward Salesforce quote emails to your Resend address and they'll appear here with URLs extracted!
+            💡 Forward Salesforce quote emails to your Make.com email address and AI will automatically parse them into clean, formatted quotes!
           </p>
         </div>
       </div>
