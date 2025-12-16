@@ -105,6 +105,13 @@ export const ConvertLeadDialog = ({ lead, open, onOpenChange, onSuccess }: Conve
       if (accountError) throw accountError;
 
       // Create opportunity with complete trip information from lead
+      // Convert trip_type from lead format ("One Way", "Round Trip") to opportunity format ("one-way", "round-trip")
+      const convertTripType = (tripType: string): string => {
+        if (tripType === "One Way") return "one-way";
+        if (tripType === "Round Trip") return "round-trip";
+        return tripType.toLowerCase().replace(/\s+/g, '-');
+      };
+
       const opportunityInsert: any = {
         name: opportunityData.name || `${lead.departure_airport} to ${lead.arrival_airport} - ${lead.first_name} ${lead.last_name}`,
         account_id: account.id,
@@ -117,7 +124,7 @@ export const ConvertLeadDialog = ({ lead, open, onOpenChange, onSuccess }: Conve
         arrival_airport: lead.arrival_airport,
         departure_date: lead.departure_date,
         passengers: lead.passengers,
-        trip_type: lead.trip_type,
+        trip_type: convertTripType(lead.trip_type),
         user_id: user.id,
       };
 
