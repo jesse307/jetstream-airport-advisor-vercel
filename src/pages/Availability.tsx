@@ -56,15 +56,59 @@ const Availability = () => {
 
   const fetchOpenLegs = async () => {
     try {
-      const { data, error } = await supabase
+      // Fetch from database
+      const { data: dbData, error: dbError } = await supabase
         .from("open_legs")
         .select("*, updated_at")
         .order("availability_start_date", { ascending: true, nullsFirst: false })
         .order("departure_date", { ascending: true, nullsFirst: false });
 
-      if (error) throw error;
+      if (dbError) throw dbError;
 
-      setOpenLegs(data || []);
+      // Fetch from Aviapages API
+      let aviapagesLegs: any[] = [];
+      try {
+        const { data: aviapagesData, error: aviapagesError } = await supabase.functions.invoke(
+          'fetch-aviapages-openlegs'
+        );
+
+        if (aviapagesError) {
+          console.error("Error fetching Aviapages data:", aviapagesError);
+        } else if (aviapagesData?.success) {
+          aviapagesLegs = aviapagesData.openLegs || [];
+          console.log(`Fetched ${aviapagesLegs.length} open legs from Aviapages`);
+        }
+      } catch (aviapagesError) {
+        console.error("Error calling Aviapages function:", aviapagesError);
+      }
+
+      // Merge data: Use email-based deduplication
+      // If same operator email exists, prefer database version (email source)
+      const dbLegsMap = new Map();
+      (dbData || []).forEach((leg: OpenLeg) => {
+        const key = `${leg.operator_name}-${leg.departure_airport}-${leg.arrival_airport}-${leg.departure_date}`;
+        dbLegsMap.set(key, leg);
+      });
+
+      // Add Aviapages legs that don't conflict with database legs
+      const mergedLegs = [...(dbData || [])];
+      aviapagesLegs.forEach((apiLeg: any) => {
+        const key = `${apiLeg.operator_name}-${apiLeg.departure_airport}-${apiLeg.arrival_airport}-${apiLeg.departure_date}`;
+
+        // If this leg is not in database, add it
+        if (!dbLegsMap.has(key)) {
+          // Generate a unique ID for API legs
+          const uniqueId = `aviapages-${apiLeg.external_id || Math.random().toString(36).substr(2, 9)}`;
+          mergedLegs.push({
+            id: uniqueId,
+            ...apiLeg,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          });
+        }
+      });
+
+      setOpenLegs(mergedLegs);
     } catch (error: any) {
       console.error("Error fetching open legs:", error);
       toast({
