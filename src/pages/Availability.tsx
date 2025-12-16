@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { format, isWithinInterval, parseISO } from "date-fns";
+import { format, isWithinInterval, parseISO, formatDistanceToNow } from "date-fns";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -95,6 +95,45 @@ const Availability = () => {
     return "Evening";
   };
 
+  const parseRoute = (route: string | null): string => {
+    if (!route) return "—";
+
+    // Try to extract airport codes from various formats
+    // Examples: "TETERBORO - MIAMI", "TEB-MIA", "TEB to MIA", "KTEB → KMIA"
+    const cleanRoute = route.toUpperCase()
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    // Split by common delimiters
+    const parts = cleanRoute.split(/[-–—>→TO]+/i).map(p => p.trim());
+
+    if (parts.length >= 2) {
+      // Extract first 3-4 characters that look like airport codes
+      const fromCode = parts[0].match(/[A-Z]{3,4}/)?.[0] || parts[0].substring(0, 4);
+      const toCode = parts[1].match(/[A-Z]{3,4}/)?.[0] || parts[1].substring(0, 4);
+      return `${fromCode} → ${toCode}`;
+    }
+
+    return route;
+  };
+
+  const formatRelativeTime = (dateString: string | null): string => {
+    if (!dateString) return "—";
+    try {
+      const date = parseISO(dateString);
+      return formatDistanceToNow(date, { addSuffix: true })
+        .replace('about ', '')
+        .replace('less than ', '<')
+        .replace('minute', 'min')
+        .replace('hour', 'hr')
+        .replace('day', 'd')
+        .replace('month', 'mo')
+        .replace('year', 'yr');
+    } catch {
+      return "—";
+    }
+  };
+
   const filterLegs = () => {
     let filtered = [...openLegs];
 
@@ -142,14 +181,17 @@ const Availability = () => {
     // Filter by search term
     if (searchTerm) {
       const search = searchTerm.toLowerCase();
-      filtered = filtered.filter(
-        (leg) =>
+      filtered = filtered.filter((leg) => {
+        const parsedRoute = parseRoute(leg.route).toLowerCase();
+        return (
           leg.aircraft_type?.toLowerCase().includes(search) ||
           leg.operator_name?.toLowerCase().includes(search) ||
           leg.route?.toLowerCase().includes(search) ||
+          parsedRoute.includes(search) ||
           leg.tail_number?.toLowerCase().includes(search) ||
           leg.notes?.toLowerCase().includes(search)
-      );
+        );
+      });
     }
 
     setFilteredLegs(filtered);
@@ -417,7 +459,9 @@ const Availability = () => {
                           </div>
                         </TableCell>
                         <TableCell>
-                          {leg.route || "—"}
+                          <span className="font-mono text-sm">
+                            {parseRoute(leg.route)}
+                          </span>
                         </TableCell>
                         <TableCell>{leg.operator_name || "—"}</TableCell>
                         <TableCell>
@@ -431,8 +475,8 @@ const Availability = () => {
                           {leg.price ? `$${leg.price.toLocaleString()}` : "—"}
                         </TableCell>
                         <TableCell>
-                          <span className="text-sm text-muted-foreground">
-                            {formatDate(leg.updated_at || leg.created_at)}
+                          <span className="text-xs text-muted-foreground whitespace-nowrap">
+                            {formatRelativeTime(leg.updated_at || leg.created_at)}
                           </span>
                         </TableCell>
                         <TableCell className="max-w-xs">
