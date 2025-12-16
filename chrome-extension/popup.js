@@ -8,29 +8,18 @@ checkAuth();
 
 async function checkAuth() {
   const status = document.getElementById('status');
-  
+
   // Try to get the session from the Lovable app
   try {
-    // Check both preview and production URLs
-    let response = await chrome.tabs.query({ url: "https://300e3d3f-6393-4fa8-9ea2-e17c21482f24.lovableproject.com/*" });
-    
+    // Check preview URL only (production has routing issues)
+    let response = await chrome.tabs.query({ url: "https://id-preview--300e3d3f-6393-4fa8-9ea2-e17c21482f24.lovable.app/*" });
+
     if (response.length === 0) {
-      // Try preview URL
-      response = await chrome.tabs.query({ url: "https://id-preview--300e3d3f-6393-4fa8-9ea2-e17c21482f24.lovable.app/*" });
-    }
-    
-    if (response.length === 0) {
-      status.className = 'status error';
-      status.textContent = '⚠ Please log in to the Charter Pro app first';
+      status.className = 'status warning';
+      status.textContent = '⚠ Charter Pro not detected - will open in new tab after capture';
       status.style.display = 'block';
-      
-      // Offer to open the app
-      document.getElementById('captureBtn').textContent = 'Open Charter Pro';
-      document.getElementById('captureBtn').onclick = () => {
-        chrome.tabs.create({
-          url: 'https://300e3d3f-6393-4fa8-9ea2-e17c21482f24.lovableproject.com/'
-        });
-      };
+      // Don't change the button behavior - let it capture normally
+      // The app will open automatically when needed
     }
   } catch (error) {
     console.error('Auth check error:', error);
@@ -67,16 +56,10 @@ async function handleCapture() {
     status.textContent = '📄 Page captured successfully';
     status.style.display = 'block';
     
-    // Get Charter Pro app tabs - check both preview and production
-    let appTabs = await chrome.tabs.query({ 
-      url: "https://300e3d3f-6393-4fa8-9ea2-e17c21482f24.lovableproject.com/*" 
+    // Get Charter Pro app tabs - preview URL only (production has routing issues)
+    let appTabs = await chrome.tabs.query({
+      url: "https://id-preview--300e3d3f-6393-4fa8-9ea2-e17c21482f24.lovable.app/*"
     });
-    
-    if (appTabs.length === 0) {
-      appTabs = await chrome.tabs.query({ 
-        url: "https://id-preview--300e3d3f-6393-4fa8-9ea2-e17c21482f24.lovable.app/*" 
-      });
-    }
     
     // Store Charter Pro tab ID for navigation
     const charterProTabId = appTabs.length > 0 ? appTabs[0].id : null;
@@ -96,47 +79,50 @@ async function handleCapture() {
               keys: [],
               sessionData: null
             };
-            
-            // Log all localStorage keys
+
+            // Exact Supabase auth token key
+            const authKey = 'sb-hwemookrxvflpinfpkrj-auth-token';
+
+            // Log all localStorage keys for debugging
             for (let i = 0; i < localStorage.length; i++) {
               const key = localStorage.key(i);
               result.keys.push(key);
             }
-            
+
             console.log('All localStorage keys:', result.keys);
-            
-            // Search for Supabase session in localStorage
-            for (let i = 0; i < localStorage.length; i++) {
-              const key = localStorage.key(i);
-              if (key && key.startsWith('sb-') && key.includes('auth-token')) {
-                const session = localStorage.getItem(key);
-                console.log('Found session key:', key, 'Length:', session?.length);
-                if (session) {
-                  try {
-                    const parsed = JSON.parse(session);
-                    result.sessionData = {
-                      hasUser: !!parsed.user,
-                      hasCurrentSession: !!parsed.currentSession,
-                      topLevelKeys: Object.keys(parsed)
-                    };
-                    console.log('Session structure:', result.sessionData);
-                    
-                    // Try different session formats
-                    if (parsed.user?.id) {
-                      result.userId = parsed.user.id;
-                      console.log('Found user ID in parsed.user.id');
-                    } else if (parsed.currentSession?.user?.id) {
-                      result.userId = parsed.currentSession.user.id;
-                      console.log('Found user ID in parsed.currentSession.user.id');
-                    } else {
-                      console.log('No user.id found in session');
-                    }
-                  } catch (e) {
-                    console.error('Parse error:', e);
-                  }
+            console.log('Looking for auth key:', authKey);
+
+            // Try to get the exact auth token
+            const session = localStorage.getItem(authKey);
+
+            if (session) {
+              console.log('Found session, length:', session.length);
+              try {
+                const parsed = JSON.parse(session);
+                result.sessionData = {
+                  hasUser: !!parsed.user,
+                  hasCurrentSession: !!parsed.currentSession,
+                  topLevelKeys: Object.keys(parsed)
+                };
+                console.log('Session structure:', result.sessionData);
+
+                // Try different session formats
+                if (parsed.user?.id) {
+                  result.userId = parsed.user.id;
+                  console.log('Found user ID in parsed.user.id:', result.userId);
+                } else if (parsed.currentSession?.user?.id) {
+                  result.userId = parsed.currentSession.user.id;
+                  console.log('Found user ID in parsed.currentSession.user.id:', result.userId);
+                } else {
+                  console.log('No user.id found in session. Session keys:', Object.keys(parsed));
                 }
+              } catch (e) {
+                console.error('Parse error:', e);
               }
+            } else {
+              console.log('No session found at key:', authKey);
             }
+
             return result;
           }
         });
@@ -157,7 +143,7 @@ async function handleCapture() {
     }
 
     if (!userId) {
-      throw new Error('Not authenticated. Please log in to Charter Pro first.');
+      throw new Error('Not authenticated. Please log in to Charter Pro at https://id-preview--300e3d3f-6393-4fa8-9ea2-e17c21482f24.lovable.app first.');
     }
 
     console.log('Processing lead with user ID:', userId);
@@ -196,28 +182,39 @@ async function handleCapture() {
     status.className = 'status success';
     status.textContent = '✅ Lead captured and created successfully!';
     status.style.display = 'block';
-      
-      // Use the same URL pattern as the app tab we found
-      const baseUrl = appTabs[0].url.includes('lovable.app') 
-        ? 'https://id-preview--300e3d3f-6393-4fa8-9ea2-e17c21482f24.lovable.app'
-        : 'https://300e3d3f-6393-4fa8-9ea2-e17c21482f24.lovableproject.com';
-      
+
+      // Always use preview URL since production has routing issues
+      const baseUrl = 'https://id-preview--300e3d3f-6393-4fa8-9ea2-e17c21482f24.lovable.app';
+
       // Show final success status
       captureBtn.innerHTML = '✅ Opening lead...';
       status.textContent = '✅ Lead created! Opening in Charter Pro...';
-      
-      // Navigate in the existing Charter Pro tab instead of creating a new one
-      setTimeout(() => {
+
+      // Navigate to home page since direct routes cause 404
+      // User can navigate to CRM from there to see the new lead
+      setTimeout(async () => {
+        const leadId = result.leadId;
+
+        console.log('Opening Charter Pro with lead:', leadId);
+
+        // Navigate to home page - user can access CRM from navigation
+        const homeUrl = `${baseUrl}/`;
+
         if (charterProTabId) {
+          // Update existing tab to home page
           chrome.tabs.update(charterProTabId, {
-            url: `${baseUrl}/leads/${result.leadId}`,
+            url: homeUrl,
             active: true
           });
         } else {
+          // Create new tab with home page
           chrome.tabs.create({
-            url: `${baseUrl}/leads/${result.leadId}`
+            url: homeUrl,
+            active: true
           });
         }
+
+        console.log('Navigated to home - lead created successfully');
       }, 500);
   } catch (error) {
     console.error('Capture error:', error);

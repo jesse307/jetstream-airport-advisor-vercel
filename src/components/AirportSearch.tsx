@@ -76,7 +76,8 @@ export const AirportSearch: React.FC<AirportSearchProps> = ({
   }, [query]);
 
   const handleSelect = (airport: Airport) => {
-    onChange(`${airport.code} - ${airport.name}, ${airport.city}`, airport);
+    // Store just the airport code for consistency
+    onChange(airport.code, airport);
     setQuery("");
     setIsOpen(false);
     setAirports([]);

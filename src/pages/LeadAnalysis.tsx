@@ -739,8 +739,9 @@ export default function LeadAnalysis() {
 
   const extractAirportCode = async (airportString: string): Promise<string | null> => {
     try {
-      // Try simple extraction first - common formats: "SEA (Seattle)", "JFK - New York", etc.
-      const simpleMatch = airportString.match(/^([A-Z]{3})/);
+      // Try simple extraction first - match 3-4 letter uppercase codes anywhere in string
+      // Handles formats: "SEA", "JFK (New York)", "Teterboro - TEB", "KJFK", etc.
+      const simpleMatch = airportString.match(/\b([A-Z]{3,4})\b/);
       if (simpleMatch) {
         return simpleMatch[1];
       }

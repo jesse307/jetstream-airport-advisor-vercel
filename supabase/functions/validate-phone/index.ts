@@ -12,64 +12,107 @@ serve(async (req) => {
 
   try {
     const { phone } = await req.json();
-    
+
     if (!phone) {
       throw new Error('Phone number is required');
     }
 
-    const rapidApiKey = Deno.env.get('RAPIDAPI_KEY');
-    if (!rapidApiKey) {
-      throw new Error('RapidAPI key not configured');
+    // Support both Account SID + Auth Token and API Key authentication
+    const twilioAccountSid = Deno.env.get('TWILIO_ACCOUNT_SID');
+    const twilioAuthToken = Deno.env.get('TWILIO_AUTH_TOKEN');
+
+    if (!twilioAccountSid || !twilioAuthToken) {
+      throw new Error('Twilio credentials not configured');
     }
 
     console.log('Validating phone:', phone);
 
-    const response = await fetch(`https://veriphone.p.rapidapi.com/verify?phone=${encodeURIComponent(phone)}`, {
-      method: 'GET',
-      headers: {
-        'X-RapidAPI-Key': rapidApiKey,
-        'X-RapidAPI-Host': 'veriphone.p.rapidapi.com'
+    // Clean the phone number (remove spaces, dashes, etc.)
+    const cleanPhone = phone.replace(/[\s\-\(\)]/g, '');
+
+    // Determine auth method based on credential format
+    // API Keys start with "SK", Account SIDs start with "AC"
+    const authUsername = twilioAccountSid.startsWith('SK') ? twilioAccountSid : twilioAccountSid;
+    const authPassword = twilioAuthToken;
+
+    console.log('Auth username starts with:', authUsername.substring(0, 4));
+    console.log('Clean phone:', cleanPhone);
+
+    // Use Twilio Lookup API v2
+    const response = await fetch(
+      `https://lookups.twilio.com/v2/PhoneNumbers/${encodeURIComponent(cleanPhone)}?Fields=line_type_intelligence,caller_name`,
+      {
+        method: 'GET',
+        headers: {
+          'Authorization': 'Basic ' + btoa(`${authUsername}:${authPassword}`),
+        }
       }
-    });
+    );
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Veriphone API error:', response.status, errorText);
-      throw new Error(`Veriphone API request failed: ${response.status}`);
+      console.error('Twilio API error:', response.status, errorText);
+
+      // If phone is invalid, Twilio returns 404
+      if (response.status === 404) {
+        return new Response(
+          JSON.stringify({
+            success: true,
+            isValid: false,
+            reason: 'Phone number not found or invalid format'
+          }),
+          {
+            headers: {
+              ...corsHeaders,
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+      }
+
+      throw new Error(`Twilio API request failed: ${response.status}`);
     }
 
     const data = await response.json();
-    
+
     console.log('Phone validation result:', data);
+
+    // Extract relevant data from Twilio response
+    const lineTypeIntel = data.line_type_intelligence || {};
+    const callerName = data.caller_name || {};
 
     return new Response(
       JSON.stringify({
         success: true,
-        isValid: data.phone_valid === true,
-        country: data.country || null,
-        carrier: data.carrier || null,
-        lineType: data.phone_type || null,
-        international: data.international_number || null
+        isValid: data.valid || false,
+        phoneNumber: data.phone_number || phone, // E.164 formatted number
+        nationalFormat: data.national_format || null,
+        countryCode: data.country_code || null,
+        carrier: lineTypeIntel.carrier_name || null,
+        lineType: lineTypeIntel.type || null, // mobile, landline, voip
+        callerName: callerName.caller_name || null,
+        callerType: callerName.caller_type || null, // BUSINESS, CONSUMER
+        errorCode: lineTypeIntel.error_code || null
       }),
-      { 
-        headers: { 
+      {
+        headers: {
           ...corsHeaders,
-          'Content-Type': 'application/json' 
-        } 
+          'Content-Type': 'application/json'
+        }
       }
     );
 
   } catch (error) {
     console.error('Error validating phone:', error);
     return new Response(
-      JSON.stringify({ 
-        success: false, 
-        error: error.message 
+      JSON.stringify({
+        success: false,
+        error: error.message
       }),
-      { 
-        headers: { 
+      {
+        headers: {
           ...corsHeaders,
-          'Content-Type': 'application/json' 
+          'Content-Type': 'application/json'
         },
         status: 500
       }

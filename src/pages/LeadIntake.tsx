@@ -214,10 +214,10 @@ export default function LeadIntake() {
         validationPromises.push(
           supabase.functions.invoke('validate-email', {
             body: { email: data.email }
-          }).then(({ data: result, error }) => ({ 
-            email: error ? true : (result?.isValid ?? true) // Default to true on error
+          }).then(({ data: result, error }) => ({
+            email: error ? null : (result?.isValid ?? null) // Return null if validation fails
           }))
-          .catch(() => ({ email: true })) // Default to true on error
+          .catch(() => ({ email: null })) // Return null on error to require manual review
         );
       } else {
         validationPromises.push(Promise.resolve({ email: null }));
@@ -227,10 +227,10 @@ export default function LeadIntake() {
         validationPromises.push(
           supabase.functions.invoke('validate-phone', {
             body: { phone: data.phone }
-          }).then(({ data: result, error }) => ({ 
-            phone: error ? true : (result?.isValid ?? true) // Default to true on error
+          }).then(({ data: result, error }) => ({
+            phone: error ? null : (result?.isValid ?? null) // Return null if validation fails
           }))
-          .catch(() => ({ phone: true })) // Default to true on error
+          .catch(() => ({ phone: null })) // Return null on error to require manual review
         );
       } else {
         validationPromises.push(Promise.resolve({ phone: null }));

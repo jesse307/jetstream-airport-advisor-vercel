@@ -12,64 +12,76 @@ serve(async (req) => {
 
   try {
     const { email } = await req.json();
-    
+
     if (!email) {
       throw new Error('Email is required');
     }
 
-    const rapidApiKey = Deno.env.get('RAPIDAPI_KEY');
-    if (!rapidApiKey) {
-      throw new Error('RapidAPI key not configured');
+    const abstractApiKey = Deno.env.get('ABSTRACT_API_KEY');
+    if (!abstractApiKey) {
+      throw new Error('ABSTRACT_API_KEY not configured');
     }
 
     console.log('Validating email:', email);
 
-    const response = await fetch(`https://email-validator-api.p.rapidapi.com/verify?email=${encodeURIComponent(email)}`, {
-      method: 'POST',
-      headers: {
-        'X-RapidAPI-Key': rapidApiKey,
-        'X-RapidAPI-Host': 'email-validator-api.p.rapidapi.com',
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ email })
-    });
+    // Use AbstractAPI Email Reputation (not validation)
+    const response = await fetch(
+      `https://emailreputation.abstractapi.com/v1/?api_key=${abstractApiKey}&email=${encodeURIComponent(email)}`,
+      {
+        method: 'GET',
+      }
+    );
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Email validation API error:', response.status, errorText);
+      console.error('AbstractAPI error:', response.status, errorText);
       throw new Error(`Email validation API request failed: ${response.status}`);
     }
 
     const data = await response.json();
-    
+
     console.log('Email validation result:', data);
+
+    // Email Reputation API returns reputation score and other metrics
+    // Score ranges from 0.01 (very poor) to 0.99 (excellent)
+    const reputationScore = data.reputation || 0;
+    const isValid =
+      reputationScore >= 0.5 && // Good reputation threshold
+      data.is_valid_format?.value !== false &&
+      !data.is_disposable_email?.value;
 
     return new Response(
       JSON.stringify({
         success: true,
-        isValid: data.is_valid === true || data.valid === true,
-        status: data.status || null,
-        reason: data.reason || data.message || null
+        isValid: isValid,
+        reputation: reputationScore, // 0.01 to 0.99
+        isDisposable: data.is_disposable_email?.value || false,
+        isFreeEmail: data.is_free_email?.value || false,
+        isRoleEmail: data.is_role_email?.value || false, // info@, support@, etc.
+        qualityScore: reputationScore, // Using reputation as quality score
+        smtpValid: data.smtp_check?.value || null,
+        suggestion: data.autocorrect || null,
+        reason: reputationScore >= 0.5 ? 'Good reputation' : 'Poor reputation'
       }),
-      { 
-        headers: { 
+      {
+        headers: {
           ...corsHeaders,
-          'Content-Type': 'application/json' 
-        } 
+          'Content-Type': 'application/json'
+        }
       }
     );
 
   } catch (error) {
     console.error('Error validating email:', error);
     return new Response(
-      JSON.stringify({ 
-        success: false, 
-        error: error.message 
+      JSON.stringify({
+        success: false,
+        error: error.message
       }),
-      { 
-        headers: { 
+      {
+        headers: {
           ...corsHeaders,
-          'Content-Type': 'application/json' 
+          'Content-Type': 'application/json'
         },
         status: 500
       }

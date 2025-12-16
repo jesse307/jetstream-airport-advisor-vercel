@@ -58,7 +58,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Create Puppeteer script to scrape Salesforce
     const puppeteerScript = `
-module.exports = async ({ page }) => {
+export default async function ({ page }) {
   const username = '${salesforceUsername}';
   const password = '${salesforcePassword}';
   const targetUrl = '${salesforceUrl}';
@@ -81,43 +81,117 @@ module.exports = async ({ page }) => {
 
   if (needsLogin) {
     console.log('Login required, authenticating to fms.stratosjets.com...');
+    console.log('Current URL:', page.url());
 
-    // If not on login page already, navigate to it
-    if (!window.location.href.includes('fms.stratosjets.com')) {
-      console.log('Navigating to login page...');
+    // If we're on the lead page but need login, we were redirected - navigate to login
+    const currentUrl = page.url();
+    if (currentUrl.includes('/s/lead') || currentUrl === targetUrl) {
+      console.log('Redirected from lead page, navigating to login...');
       await page.goto(loginUrl, { waitUntil: 'networkidle0', timeout: 60000 });
+      await new Promise(resolve => setTimeout(resolve, 2000));
     }
 
-    // Wait for username field and enter credentials
-    // Try multiple selectors for username field
-    await page.waitForSelector('input[name="username"], input[type="email"], input[id="username"]', { timeout: 10000 });
-    const usernameField = await page.$('input[name="username"]') || await page.$('input[type="email"]') || await page.$('input[id="username"]');
-    await usernameField.type(username);
+    // Wait for page to settle and check what fields are available
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
-    // Enter password
-    // Try multiple selectors for password field
-    await page.waitForSelector('input[name="pw"], input[type="password"], input[id="password"]', { timeout: 10000 });
-    const passwordField = await page.$('input[name="pw"]') || await page.$('input[type="password"]') || await page.$('input[id="password"]');
-    await passwordField.type(password);
+    // Debug: log what we find on the page
+    const pageInfo = await page.evaluate(() => {
+      const allInputs = Array.from(document.querySelectorAll('input')).map(inp => ({
+        type: inp.type,
+        name: inp.name,
+        id: inp.id,
+        placeholder: inp.placeholder
+      }));
+      return {
+        url: window.location.href,
+        title: document.title,
+        inputs: allInputs
+      };
+    });
+    console.log('Page info:', JSON.stringify(pageInfo));
 
-    // Click login button
-    await page.click('input[type="submit"], button[type="submit"], input[name="Login"], button[name="Login"]');
+    // Try to find and fill the login form
+    try {
+      // Wait for any input field to appear
+      await page.waitForSelector('input', { timeout: 10000 });
 
-    // Wait for navigation after login
-    await page.waitForNavigation({ waitUntil: 'networkidle0', timeout: 60000 });
-    console.log('Login successful');
+      // Type username - try different approaches
+      const usernameTyped = await page.evaluate((user) => {
+        const usernameInput = document.querySelector('input[name="username"]') ||
+                              document.querySelector('input[type="email"]') ||
+                              document.querySelector('input[id="username"]') ||
+                              document.querySelector('input[type="text"]');
+        if (usernameInput) {
+          usernameInput.value = user;
+          usernameInput.dispatchEvent(new Event('input', { bubbles: true }));
+          usernameInput.dispatchEvent(new Event('change', { bubbles: true }));
+          return true;
+        }
+        return false;
+      }, username);
 
-    // Navigate to the target URL if we're not already there
-    if (page.url() !== targetUrl) {
-      console.log('Navigating to target URL after login...');
-      await page.goto(targetUrl, { waitUntil: 'networkidle0', timeout: 60000 });
+      if (!usernameTyped) {
+        throw new Error('Could not find username field');
+      }
+
+      // Type password
+      const passwordTyped = await page.evaluate((pass) => {
+        const passwordInput = document.querySelector('input[name="pw"]') ||
+                              document.querySelector('input[type="password"]') ||
+                              document.querySelector('input[id="password"]');
+        if (passwordInput) {
+          passwordInput.value = pass;
+          passwordInput.dispatchEvent(new Event('input', { bubbles: true }));
+          passwordInput.dispatchEvent(new Event('change', { bubbles: true }));
+          return true;
+        }
+        return false;
+      }, password);
+
+      if (!passwordTyped) {
+        throw new Error('Could not find password field');
+      }
+
+      // Click login button
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      const buttonClicked = await page.evaluate(() => {
+        const button = document.querySelector('input[type="submit"]') ||
+                       document.querySelector('button[type="submit"]') ||
+                       document.querySelector('input[name="Login"]') ||
+                       document.querySelector('button[name="Login"]') ||
+                       document.querySelector('button') ||
+                       document.querySelector('input[type="button"]');
+        if (button) {
+          button.click();
+          return true;
+        }
+        return false;
+      });
+
+      if (!buttonClicked) {
+        throw new Error('Could not find login button');
+      }
+
+      // Wait for navigation after login
+      await page.waitForNavigation({ waitUntil: 'networkidle0', timeout: 60000 });
+      console.log('Login successful, current URL:', page.url());
+
+      // Navigate to the target URL if we're not already there
+      if (page.url() !== targetUrl) {
+        console.log('Navigating to target URL after login...');
+        await page.goto(targetUrl, { waitUntil: 'networkidle0', timeout: 60000 });
+      }
+    } catch (loginError) {
+      console.error('Login error:', loginError.message);
+      throw new Error(\`Failed to login: \${loginError.message}\`);
     }
   } else {
     console.log('Already authenticated or no login required');
   }
 
   // Wait for page to load completely
-  await page.waitForTimeout(3000);
+  await new Promise(resolve => setTimeout(resolve, 3000));
 
   // Extract all text content and HTML
   const pageData = await page.evaluate(() => {
@@ -142,8 +216,11 @@ module.exports = async ({ page }) => {
 
   console.log('Page scraped successfully. Title:', pageData.title);
 
-  return pageData;
-};
+  return {
+    data: pageData,
+    type: 'application/json'
+  };
+}
     `;
 
     // Call Browserless.io API with Puppeteer script
@@ -153,12 +230,9 @@ module.exports = async ({ page }) => {
       {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
+          "Content-Type": "application/javascript",
         },
-        body: JSON.stringify({
-          code: puppeteerScript,
-          context: {},
-        }),
+        body: puppeteerScript,
       }
     );
 
@@ -168,7 +242,8 @@ module.exports = async ({ page }) => {
       throw new Error(`Browserless API error: ${errorText}`);
     }
 
-    const scrapedData = await browserlessResponse.json();
+    const browserlessResult = await browserlessResponse.json();
+    const scrapedData = browserlessResult.data || browserlessResult;
     console.log("Scraped data received:", scrapedData.title || "No title");
 
     // Combine text and HTML for AI parsing
@@ -185,7 +260,7 @@ module.exports = async ({ page }) => {
           "Authorization": `Bearer ${supabaseServiceKey}`,
         },
         body: JSON.stringify({
-          text: combinedContent,
+          unstructuredData: combinedContent,
         }),
       }
     );
@@ -197,24 +272,72 @@ module.exports = async ({ page }) => {
     }
 
     const parsedData = await parseResponse.json();
-    console.log("Parsed lead data:", JSON.stringify(parsedData).substring(0, 200));
+    console.log("Parsed lead data:", JSON.stringify(parsedData));
 
-    // Store the lead in the database
+    // Store the lead in the database using the parsed data
     console.log("Creating lead in database...");
+
+    // Map the parsed data to the leads table schema
+    // Normalize trip_type to match allowed values ('one-way' or 'round-trip')
+    let tripType = parsedData.trip_type || parsedData.tripType || "";
+    console.log("Original trip_type value:", tripType);
+
+    if (typeof tripType === 'string') {
+      tripType = tripType.toLowerCase().trim().replace(/[\s_]+/g, '-');
+    }
+
+    // Ensure it's one of the allowed values
+    if (tripType !== 'one-way' && tripType !== 'round-trip') {
+      // Default to one-way unless there's a return date
+      tripType = (parsedData.return_date || parsedData.returnDate) ? 'round-trip' : 'one-way';
+    }
+
+    console.log("Normalized trip_type:", tripType);
+
+    // Build lead data object with proper type checking
+    const leadData: any = {
+      first_name: parsedData.first_name || parsedData.firstName || "Unknown",
+      last_name: parsedData.last_name || parsedData.lastName || "Unknown",
+      email: parsedData.email || "unknown@example.com",
+      phone: parsedData.phone || parsedData.phoneNumber || null,
+      departure_airport: parsedData.departure_airport || parsedData.departureAirport || "TBD",
+      arrival_airport: parsedData.arrival_airport || parsedData.arrivalAirport || "TBD",
+      departure_date: parsedData.departure_date || parsedData.departureDate || new Date().toISOString().split('T')[0],
+      departure_time: parsedData.departure_time || parsedData.departureTime || null,
+      return_date: parsedData.return_date || parsedData.returnDate || null,
+      return_time: parsedData.return_time || parsedData.returnTime || null,
+      passengers: parsedData.passengers || 1,
+      status: "new",
+      notes: `Imported from Salesforce\nOriginal URL: ${salesforceUrl}\nRaw Title: ${scrapedData.title}\n\nRaw Data:\n${scrapedData.text.substring(0, 500)}...`,
+      analysis_data: {
+        salesforce_url: salesforceUrl,
+        scraped_at: new Date().toISOString(),
+        parsed_data: parsedData,
+        raw_title: scrapedData.title
+      },
+      source_url: salesforceUrl
+    };
+
+    // Set trip_type - must be 'One Way' or 'Round Trip' (title case with spaces)
+    if (tripType === 'round-trip' || tripType === 'Round Trip') {
+      leadData.trip_type = 'Round Trip';
+    } else {
+      leadData.trip_type = 'One Way';
+    }
+
+    console.log("Lead data to insert:", JSON.stringify(leadData).substring(0, 500));
+    console.log("Final trip_type value:", leadData.trip_type, "Type:", typeof leadData.trip_type);
+    console.log("All lead data keys:", Object.keys(leadData));
+
     const { data: lead, error: leadError } = await supabase
       .from("leads")
-      .insert({
-        raw_data: scrapedData.text,
-        parsed_data: parsedData,
-        source: "salesforce_automation",
-        salesforce_url: salesforceUrl,
-        status: "new",
-      })
+      .insert(leadData)
       .select()
       .single();
 
     if (leadError) {
       console.error("Error creating lead:", leadError);
+      console.error("Lead error details:", JSON.stringify(leadError));
       throw leadError;
     }
 
@@ -225,19 +348,61 @@ module.exports = async ({ page }) => {
     if (makeWebhookUrl) {
       console.log("Triggering Make.com webhook...");
       try {
-        await fetch(makeWebhookUrl, {
+        const webhookPayload = {
+          // Lead identification
+          leadId: lead.id,
+          source: "salesforce",
+          salesforceUrl: salesforceUrl,
+          createdAt: lead.created_at,
+
+          // Client information
+          client: {
+            firstName: lead.first_name,
+            lastName: lead.last_name,
+            fullName: `${lead.first_name} ${lead.last_name}`,
+            email: lead.email,
+            phone: lead.phone,
+          },
+
+          // Trip details
+          trip: {
+            type: lead.trip_type,
+            departureAirport: lead.departure_airport,
+            arrivalAirport: lead.arrival_airport,
+            departureDate: lead.departure_date,
+            departureTime: lead.departure_time,
+            returnDate: lead.return_date,
+            returnTime: lead.return_time,
+            passengers: lead.passengers,
+          },
+
+          // Additional data
+          status: lead.status,
+          notes: lead.notes,
+
+          // Raw parsed data for reference
+          rawParsedData: parsedData.parsedData || parsedData,
+        };
+
+        console.log("Sending webhook payload:", JSON.stringify(webhookPayload).substring(0, 300));
+
+        const webhookResponse = await fetch(makeWebhookUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            leadId: lead.id,
-            parsedData: parsedData,
-            salesforceUrl: salesforceUrl,
-          }),
+          body: JSON.stringify(webhookPayload),
         });
+
+        if (webhookResponse.ok) {
+          console.log("Make.com webhook triggered successfully");
+        } else {
+          console.error("Make.com webhook failed:", webhookResponse.status, await webhookResponse.text());
+        }
       } catch (webhookError) {
         console.error("Make.com webhook error:", webhookError);
         // Don't fail the whole request if webhook fails
       }
+    } else {
+      console.log("No MAKE_WEBHOOK_URL configured, skipping webhook");
     }
 
     return new Response(
