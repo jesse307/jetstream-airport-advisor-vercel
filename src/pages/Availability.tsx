@@ -98,6 +98,25 @@ const Availability = () => {
   const filterLegs = () => {
     let filtered = [...openLegs];
 
+    // Filter out expired availability (past end date)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Reset to start of day for comparison
+
+    filtered = filtered.filter((leg) => {
+      // Use availability_end_date if available, otherwise use departure_date
+      const dateToCheck = leg.availability_end_date || leg.departure_date;
+      if (!dateToCheck) return true; // Keep legs without dates
+
+      try {
+        const [year, month, day] = dateToCheck.split('-').map(Number);
+        const legDate = new Date(year, month - 1, day);
+        legDate.setHours(23, 59, 59, 999); // Set to end of day
+        return legDate >= today; // Only show if end date is today or in the future
+      } catch {
+        return true; // Keep if date parsing fails
+      }
+    });
+
     // Filter by date range
     if (startDate || endDate) {
       filtered = filtered.filter((leg) => {
