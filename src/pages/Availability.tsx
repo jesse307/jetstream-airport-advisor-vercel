@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
+import { AirportSearch } from "@/components/AirportSearch";
 
 interface OpenLeg {
   id: string;
@@ -41,7 +42,8 @@ const Availability = () => {
   const [loading, setLoading] = useState(true);
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [fromAirport, setFromAirport] = useState("");
+  const [toAirport, setToAirport] = useState("");
   const { toast } = useToast();
 
   useEffect(() => {
@@ -50,7 +52,7 @@ const Availability = () => {
 
   useEffect(() => {
     filterLegs();
-  }, [openLegs, startDate, endDate, searchTerm]);
+  }, [openLegs, startDate, endDate, fromAirport, toAirport]);
 
   const fetchOpenLegs = async () => {
     try {
@@ -178,47 +180,17 @@ const Availability = () => {
       });
     }
 
-    // Filter by search term with special syntax support
-    if (searchTerm) {
-      const search = searchTerm.toLowerCase().trim();
+    // Filter by airport routes
+    if (fromAirport || toAirport) {
+      filtered = filtered.filter((leg) => {
+        const parsedRoute = parseRoute(leg.route).toLowerCase();
+        const routeParts = parsedRoute.split('→').map(p => p.trim());
 
-      // Check for special route search syntax
-      const fromMatch = search.match(/from:(\S+)/i);
-      const toMatch = search.match(/to:(\S+)/i);
+        const fromMatch = fromAirport ? routeParts[0]?.includes(fromAirport.toLowerCase()) : true;
+        const toMatch = toAirport ? routeParts[1]?.includes(toAirport.toLowerCase()) : true;
 
-      if (fromMatch || toMatch) {
-        // Route-specific search
-        filtered = filtered.filter((leg) => {
-          const parsedRoute = parseRoute(leg.route).toLowerCase();
-          const routeParts = parsedRoute.split('→').map(p => p.trim());
-
-          if (fromMatch && toMatch) {
-            // Both from and to specified
-            return routeParts[0]?.includes(fromMatch[1].toLowerCase()) &&
-                   routeParts[1]?.includes(toMatch[1].toLowerCase());
-          } else if (fromMatch) {
-            // Only from specified
-            return routeParts[0]?.includes(fromMatch[1].toLowerCase());
-          } else if (toMatch) {
-            // Only to specified
-            return routeParts[1]?.includes(toMatch[1].toLowerCase());
-          }
-          return false;
-        });
-      } else {
-        // Regular search across all fields
-        filtered = filtered.filter((leg) => {
-          const parsedRoute = parseRoute(leg.route).toLowerCase();
-          return (
-            leg.aircraft_type?.toLowerCase().includes(search) ||
-            leg.operator_name?.toLowerCase().includes(search) ||
-            leg.route?.toLowerCase().includes(search) ||
-            parsedRoute.includes(search) ||
-            leg.tail_number?.toLowerCase().includes(search) ||
-            leg.notes?.toLowerCase().includes(search)
-          );
-        });
-      }
+        return fromMatch && toMatch;
+      });
     }
 
     setFilteredLegs(filtered);
@@ -227,7 +199,8 @@ const Availability = () => {
   const clearFilters = () => {
     setStartDate(undefined);
     setEndDate(undefined);
-    setSearchTerm("");
+    setFromAirport("");
+    setToAirport("");
   };
 
   return (
@@ -242,7 +215,7 @@ const Availability = () => {
                   <Plane className="h-5 w-5 text-primary-foreground" />
                 </div>
                 <div>
-                  <h1 className="text-lg font-bold text-foreground">Stratos Jets</h1>
+                  <h1 className="text-lg font-bold text-foreground">Charter Pro</h1>
                   <p className="text-xs text-muted-foreground">Open Legs & Availability</p>
                 </div>
               </div>
@@ -272,17 +245,25 @@ const Availability = () => {
           {/* Filters */}
           <Card>
             <CardContent className="pt-6">
-              <div className="grid gap-4 md:grid-cols-4">
-                <div className="md:col-span-1">
-                  <Label htmlFor="search">Search</Label>
-                  <div className="relative mt-1.5">
-                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="search"
-                      placeholder="Search or use from:TEB to:MIA..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-8"
+              <div className="grid gap-4 md:grid-cols-5">
+                <div>
+                  <Label>From</Label>
+                  <div className="mt-1.5">
+                    <AirportSearch
+                      value={fromAirport}
+                      onChange={(value) => setFromAirport(value)}
+                      placeholder="Departure airport"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label>To</Label>
+                  <div className="mt-1.5">
+                    <AirportSearch
+                      value={toAirport}
+                      onChange={(value) => setToAirport(value)}
+                      placeholder="Arrival airport"
                     />
                   </div>
                 </div>
@@ -346,7 +327,7 @@ const Availability = () => {
                     variant="outline"
                     onClick={clearFilters}
                     className="w-full"
-                    disabled={!startDate && !endDate && !searchTerm}
+                    disabled={!startDate && !endDate && !fromAirport && !toAirport}
                   >
                     <X className="mr-2 h-4 w-4" />
                     Clear Filters
