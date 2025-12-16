@@ -187,22 +187,38 @@ export default function TrustedOperators() {
 
       if (operatorError) throw operatorError;
 
+      // Fetch aircraft reference data for category lookup
+      const { data: aircraftRefData } = await supabase
+        .from('aircraft')
+        .select('aviapages_name, category');
+
+      // Create a lookup map for categories by aviapages_name
+      const categoryLookup = new Map(
+        (aircraftRefData || []).map(ref => [ref.aviapages_name?.toLowerCase(), ref.category])
+      );
+
       // Add all aircraft for this operator
       const aircraftToInsert = aircraftData
         .filter(ac => ac.registration_number) // Only include aircraft with registration numbers
-        .map((ac: any) => ({
-          tail_number: ac.registration_number,
-          aircraft_type: ac.type || null,
-          aircraft_category: ac.class || null,
-          home_airport_icao: ac.base_airport || null,
-          home_airport_iata: null,
-          home_airport_name: ac.city || null,
-          country_code: ac.country || null,
-          operator_name: operatorName,
-          operator_id: newOperator.id,
-          is_trusted: true,
-          floating_fleet: false
-        }));
+        .map((ac: any) => {
+          // Try to get category from aircraft reference table first
+          const lookupCategory = categoryLookup.get(ac.type?.toLowerCase());
+          const category = lookupCategory || ac.class || null;
+
+          return {
+            tail_number: ac.registration_number,
+            aircraft_type: ac.type || null,
+            aircraft_category: category,
+            home_airport_icao: ac.base_airport || null,
+            home_airport_iata: null,
+            home_airport_name: ac.city || null,
+            country_code: ac.country || null,
+            operator_name: operatorName,
+            operator_id: newOperator.id,
+            is_trusted: true,
+            floating_fleet: false
+          };
+        });
 
       if (aircraftToInsert.length > 0) {
         const { error: aircraftError } = await supabase
@@ -246,23 +262,39 @@ export default function TrustedOperators() {
         .delete()
         .eq('operator_id', operator.id);
 
+      // Fetch aircraft reference data for category lookup
+      const { data: aircraftRefData } = await supabase
+        .from('aircraft')
+        .select('aviapages_name, category');
+
+      // Create a lookup map for categories by aviapages_name
+      const categoryLookup = new Map(
+        (aircraftRefData || []).map(ref => [ref.aviapages_name?.toLowerCase(), ref.category])
+      );
+
       // Add updated aircraft
       if (aircraftData && aircraftData.length > 0) {
         const aircraftToInsert = aircraftData
           .filter(ac => ac.registration_number)
-          .map((ac: any) => ({
-            tail_number: ac.registration_number,
-            aircraft_type: ac.type || null,
-            aircraft_category: ac.class || null,
-            home_airport_icao: ac.base_airport || null,
-            home_airport_iata: null,
-            home_airport_name: ac.city || null,
-            country_code: ac.country || null,
-            operator_name: operator.name,
-            operator_id: operator.id,
-            is_trusted: true,
-            floating_fleet: false
-          }));
+          .map((ac: any) => {
+            // Try to get category from aircraft reference table first
+            const lookupCategory = categoryLookup.get(ac.type?.toLowerCase());
+            const category = lookupCategory || ac.class || null;
+
+            return {
+              tail_number: ac.registration_number,
+              aircraft_type: ac.type || null,
+              aircraft_category: category,
+              home_airport_icao: ac.base_airport || null,
+              home_airport_iata: null,
+              home_airport_name: ac.city || null,
+              country_code: ac.country || null,
+              operator_name: operator.name,
+              operator_id: operator.id,
+              is_trusted: true,
+              floating_fleet: false
+            };
+          });
 
         if (aircraftToInsert.length > 0) {
           await supabase
