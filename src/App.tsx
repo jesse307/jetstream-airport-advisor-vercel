@@ -46,7 +46,7 @@ const App = () => (
             <Route path="/mobile-capture" element={<ProtectedRoute><MobileCapture /></ProtectedRoute>} />
             <Route path="/aircraft-tracking" element={<ProtectedRoute><AircraftTracking /></ProtectedRoute>} />
             <Route path="/quotes" element={<ProtectedRoute><Quotes /></ProtectedRoute>} />
-            <Route path="/availability" element={<ProtectedRoute><Availability /></ProtectedRoute>} />
+            <Route path="/availability" element={<Availability />} />
             <Route path="/templates" element={<ProtectedRoute><Templates /></ProtectedRoute>} />
             <Route path="/trusted-operators" element={<ProtectedRoute><TrustedOperators /></ProtectedRoute>} />
             <Route path="/aircraft-data" element={<ProtectedRoute><AircraftData /></ProtectedRoute>} />

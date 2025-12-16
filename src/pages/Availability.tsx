@@ -237,21 +237,19 @@ const Availability = () => {
         <div className="container mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <Link to="/">
-                <div className="flex items-center gap-2">
-                  <div className="rounded-md bg-primary p-2">
-                    <Plane className="h-5 w-5 text-primary-foreground" />
-                  </div>
-                  <div>
-                    <h1 className="text-lg font-bold text-foreground">Charter Pro</h1>
-                    <p className="text-xs text-muted-foreground">Open Legs & Availability</p>
-                  </div>
+              <div className="flex items-center gap-2">
+                <div className="rounded-md bg-primary p-2">
+                  <Plane className="h-5 w-5 text-primary-foreground" />
                 </div>
-              </Link>
+                <div>
+                  <h1 className="text-lg font-bold text-foreground">Stratos Jets</h1>
+                  <p className="text-xs text-muted-foreground">Open Legs & Availability</p>
+                </div>
+              </div>
             </div>
-            <Button asChild variant="outline">
-              <Link to="/">Back to Dashboard</Link>
-            </Button>
+            <div className="text-sm text-muted-foreground">
+              Real-time aircraft availability
+            </div>
           </div>
         </div>
       </header>
@@ -261,70 +259,15 @@ const Availability = () => {
         <div className="space-y-6">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-2xl font-bold">Open Legs & Availability</h2>
+              <h2 className="text-2xl font-bold">Available Aircraft</h2>
               <p className="text-muted-foreground">
-                Aircraft availability from operator emails
+                Browse available private jets and empty leg flights. Updated in real-time from our trusted operator network.
               </p>
             </div>
             <Badge variant="secondary" className="text-sm">
-              {openLegs.length} {openLegs.length === 1 ? "Aircraft" : "Aircraft"}
+              {openLegs.length} {openLegs.length === 1 ? "Aircraft" : "Aircraft"} Available
             </Badge>
           </div>
-
-          {/* Setup Instructions */}
-          <Card className="bg-muted/50">
-            <CardContent className="pt-6">
-              <div className="space-y-4">
-                <div>
-                  <h3 className="font-semibold mb-2">Email Integration Setup</h3>
-                  <p className="text-sm text-muted-foreground mb-3">
-                    Forward operator availability emails to your Make.com mailhook to automatically parse and store open legs.
-                  </p>
-                </div>
-                <div className="space-y-2">
-                  <div className="flex items-start gap-2 text-sm">
-                    <Badge variant="outline" className="mt-0.5">1</Badge>
-                    <div className="flex-1">
-                      <p className="font-medium">Create Make.com Mailhook</p>
-                      <p className="text-muted-foreground">
-                        In Make.com, create a new scenario with an Email webhook trigger. Copy your unique mailhook email address.
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-2 text-sm">
-                    <Badge variant="outline" className="mt-0.5">2</Badge>
-                    <div className="flex-1">
-                      <p className="font-medium">Add HTTP Module</p>
-                      <p className="text-muted-foreground">
-                        Add an HTTP module in Make.com and configure it to POST the email HTML to:<br />
-                        <code className="bg-background px-1.5 py-0.5 rounded text-xs mt-1 inline-block">
-                          https://hwemookrxvflpinfpkrj.supabase.co/functions/v1/receive-open-leg-email
-                        </code>
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-2 text-sm">
-                    <Badge variant="outline" className="mt-0.5">3</Badge>
-                    <div className="flex-1">
-                      <p className="font-medium">Forward Availability Emails</p>
-                      <p className="text-muted-foreground">
-                        Forward or auto-forward operator availability emails to your Make.com mailhook address. The AI will automatically extract aircraft details, dates, routing, and pricing.
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-2 text-sm">
-                    <Badge variant="outline" className="mt-0.5">4</Badge>
-                    <div className="flex-1">
-                      <p className="font-medium">WhatsApp Integration (Optional)</p>
-                      <p className="text-muted-foreground">
-                        Connect your WhatsApp group messages to Make.com using the WhatsApp Business API or Twilio integration, then send messages to the same endpoint.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
 
           {/* Filters */}
           <Card>
