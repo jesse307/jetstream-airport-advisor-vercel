@@ -96,28 +96,42 @@ export default function TrustedOperators() {
 
     setSearchingOperator(true);
     try {
-      // Search for the operator in Aviapages
-      const { data, error } = await supabase.functions.invoke('search-operator-aircraft', {
-        body: { operatorName: trimmedName }
-      });
+      // Search for the operator in local aviapages_database
+      const { data: aircraftData, error: searchError } = await supabase
+        .from('aviapages_database')
+        .select('*')
+        .ilike('company', `%${trimmedName}%`)
+        .limit(100);
 
-      if (error) throw error;
+      if (searchError) throw searchError;
 
-      if (!data.success || !data.operator) {
+      if (!aircraftData || aircraftData.length === 0) {
         toast.error(`No operator found with name: ${trimmedName}`);
         return;
       }
+
+      // Get the operator name from the first result
+      const operatorName = aircraftData[0].company;
+      const operatorCountry = aircraftData[0].country;
+
+      if (!operatorName) {
+        toast.error(`No valid operator name found`);
+        return;
+      }
+
+      // Use company name as the unique ID (since we don't have company_id in aviapages_database)
+      const companyId = operatorName.toLowerCase().replace(/\s+/g, '-');
 
       // Check if operator already exists
       const { data: existing } = await supabase
         .from('trusted_operators')
         .select('id')
-        .eq('company_id', data.operator.id)
+        .eq('company_id', companyId)
         .eq('user_id', user?.id)
         .single();
 
       if (existing) {
-        toast.error(`${data.operator.name} is already in your trusted operators list`);
+        toast.error(`${operatorName} is already in your trusted operators list`);
         return;
       }
 
@@ -125,10 +139,10 @@ export default function TrustedOperators() {
       const { data: newOperator, error: operatorError } = await supabase
         .from('trusted_operators')
         .insert({
-          company_id: data.operator.id,
-          name: data.operator.name,
-          country_name: data.operator.country,
-          website: data.operator.website,
+          company_id: companyId,
+          name: operatorName,
+          country_name: operatorCountry,
+          website: null,
           user_id: user?.id
         })
         .select()
@@ -137,20 +151,22 @@ export default function TrustedOperators() {
       if (operatorError) throw operatorError;
 
       // Add all aircraft for this operator
-      if (data.aircraft && data.aircraft.length > 0) {
-        const aircraftToInsert = data.aircraft.map((ac: any) => ({
-          tail_number: ac.tailNumber,
-          aircraft_type: ac.aircraftType,
-          home_airport_icao: ac.homeAirportIcao,
-          home_airport_iata: ac.homeAirportIata,
-          home_airport_name: ac.homeAirportName,
-          country_code: ac.countryCode,
-          operator_name: data.operator.name,
+      const aircraftToInsert = aircraftData
+        .filter(ac => ac.registration_number) // Only include aircraft with registration numbers
+        .map((ac: any) => ({
+          tail_number: ac.registration_number,
+          aircraft_type: ac.type || null,
+          home_airport_icao: ac.base_airport || null,
+          home_airport_iata: null,
+          home_airport_name: ac.city || null,
+          country_code: ac.country || null,
+          operator_name: operatorName,
           operator_id: newOperator.id,
           is_trusted: true,
           floating_fleet: false
         }));
 
+      if (aircraftToInsert.length > 0) {
         const { error: aircraftError } = await supabase
           .from('aircraft_locations')
           .insert(aircraftToInsert);
@@ -159,21 +175,17 @@ export default function TrustedOperators() {
           console.error("Error adding aircraft:", aircraftError);
           toast.error("Operator added but some aircraft failed to import");
         } else {
-          toast.success(`Added ${data.operator.name} with ${data.aircraft.length} aircraft`);
+          toast.success(`Added ${operatorName} with ${aircraftToInsert.length} aircraft`);
         }
       } else {
-        toast.success(`Added ${data.operator.name} (no aircraft found)`);
+        toast.success(`Added ${operatorName} (no aircraft found)`);
       }
 
       setSearchTerm("");
       await loadOperators();
     } catch (error: any) {
       console.error("Error searching operator:", error);
-      if (error.message?.includes('rate_limit') || error.message?.includes('429')) {
-        toast.error("Rate limit exceeded. Please wait a few minutes and try again.");
-      } else {
-        toast.error(error.message || "Failed to search operator");
-      }
+      toast.error(error.message || "Failed to search operator");
     } finally {
       setSearchingOperator(false);
     }
@@ -182,33 +194,36 @@ export default function TrustedOperators() {
   const handleRefreshOperator = async (operator: TrustedOperator) => {
     setRefreshingOperator(operator.id);
     try {
-      // Fetch updated aircraft list from Aviapages
-      const { data, error } = await supabase.functions.invoke('search-operator-aircraft', {
-        body: { operatorName: operator.name }
-      });
+      // Fetch updated aircraft list from local aviapages_database
+      const { data: aircraftData, error: searchError } = await supabase
+        .from('aviapages_database')
+        .select('*')
+        .eq('company', operator.name);
 
-      if (error) throw error;
+      if (searchError) throw searchError;
 
-      if (data.success && data.aircraft) {
-        // Delete existing aircraft for this operator
-        await supabase
-          .from('aircraft_locations')
-          .delete()
-          .eq('operator_id', operator.id);
+      // Delete existing aircraft for this operator
+      await supabase
+        .from('aircraft_locations')
+        .delete()
+        .eq('operator_id', operator.id);
 
-        // Add updated aircraft
-        const aircraftToInsert = data.aircraft.map((ac: any) => ({
-          tail_number: ac.tailNumber,
-          aircraft_type: ac.aircraftType,
-          home_airport_icao: ac.homeAirportIcao,
-          home_airport_iata: ac.homeAirportIata,
-          home_airport_name: ac.homeAirportName,
-          country_code: ac.countryCode,
-          operator_name: operator.name,
-          operator_id: operator.id,
-          is_trusted: true,
-          floating_fleet: false
-        }));
+      // Add updated aircraft
+      if (aircraftData && aircraftData.length > 0) {
+        const aircraftToInsert = aircraftData
+          .filter(ac => ac.registration_number)
+          .map((ac: any) => ({
+            tail_number: ac.registration_number,
+            aircraft_type: ac.type || null,
+            home_airport_icao: ac.base_airport || null,
+            home_airport_iata: null,
+            home_airport_name: ac.city || null,
+            country_code: ac.country || null,
+            operator_name: operator.name,
+            operator_id: operator.id,
+            is_trusted: true,
+            floating_fleet: false
+          }));
 
         if (aircraftToInsert.length > 0) {
           await supabase
@@ -216,15 +231,18 @@ export default function TrustedOperators() {
             .insert(aircraftToInsert);
         }
 
-        // Update the operator's updated_at timestamp
-        await supabase
-          .from('trusted_operators')
-          .update({ updated_at: new Date().toISOString() })
-          .eq('id', operator.id);
-
         toast.success(`Refreshed ${operator.name} - ${aircraftToInsert.length} aircraft`);
-        await loadOperators();
+      } else {
+        toast.success(`Refreshed ${operator.name} - 0 aircraft found`);
       }
+
+      // Update the operator's updated_at timestamp
+      await supabase
+        .from('trusted_operators')
+        .update({ updated_at: new Date().toISOString() })
+        .eq('id', operator.id);
+
+      await loadOperators();
     } catch (error: any) {
       console.error("Error refreshing operator:", error);
       toast.error(error.message || "Failed to refresh operator");
