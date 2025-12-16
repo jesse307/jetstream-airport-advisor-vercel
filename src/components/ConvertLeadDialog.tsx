@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { Loader2 } from "lucide-react";
+import { format } from "date-fns";
 
 interface Lead {
   id: string;
@@ -45,6 +46,33 @@ export const ConvertLeadDialog = ({ lead, open, onOpenChange, onSuccess }: Conve
     expectedCloseDate: "",
     description: "",
   });
+
+  // Auto-fill opportunity name when dialog opens with a new lead
+  useEffect(() => {
+    if (lead && open) {
+      // Generate route string
+      let route = `${lead.departure_airport} - ${lead.arrival_airport}`;
+
+      // If roundtrip, add return to departure airport
+      if (lead.trip_type.toLowerCase() === 'roundtrip') {
+        route += ` - ${lead.departure_airport}`;
+      }
+
+      // Format the departure date
+      const formattedDate = format(new Date(lead.departure_date), 'MMM d, yyyy');
+
+      // Combine route and date
+      const opportunityName = `${route} | ${formattedDate}`;
+
+      setOpportunityData({
+        name: opportunityName,
+        amount: "",
+        probability: "50",
+        expectedCloseDate: "",
+        description: "",
+      });
+    }
+  }, [lead, open]);
 
   const handleConvert = async () => {
     if (!lead || !user) return;
@@ -206,12 +234,12 @@ export const ConvertLeadDialog = ({ lead, open, onOpenChange, onSuccess }: Conve
             <h3 className="text-lg font-semibold">Opportunity Information</h3>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2 col-span-2">
-                <Label htmlFor="opportunityName">Opportunity Name</Label>
+                <Label htmlFor="opportunityName">Opportunity Name (Auto-filled)</Label>
                 <Input
                   id="opportunityName"
                   value={opportunityData.name}
                   onChange={(e) => setOpportunityData({ ...opportunityData, name: e.target.value })}
-                  placeholder={`${lead.departure_airport} to ${lead.arrival_airport} - ${lead.first_name} ${lead.last_name}`}
+                  placeholder="Route and date auto-generated"
                 />
               </div>
               <div className="space-y-2">
