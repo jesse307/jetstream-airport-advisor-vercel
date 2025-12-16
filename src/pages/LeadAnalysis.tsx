@@ -1063,8 +1063,6 @@ export default function LeadAnalysis() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column - Lead Info */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Lead Information Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Contact Information */}
             <Card>
               <CardHeader>
@@ -1110,22 +1108,22 @@ export default function LeadAnalysis() {
                     className="ml-auto"
                     onClick={() => {
                       const firstName = lead.first_name || 'there';
-                      
+
                       // Format date as "today", "tomorrow", or actual date
                       let dateText = 'your requested date';
                       if (lead.departure_date) {
                         // Parse date in local time to avoid timezone issues
                         const [year, month, day] = lead.departure_date.split('-').map(Number);
                         const depDate = new Date(year, month - 1, day);
-                        
+
                         const today = new Date();
                         const tomorrow = new Date(today);
                         tomorrow.setDate(tomorrow.getDate() + 1);
-                        
+
                         // Reset hours for comparison
                         today.setHours(0, 0, 0, 0);
                         tomorrow.setHours(0, 0, 0, 0);
-                        
+
                         if (depDate.getTime() === today.getTime()) {
                           dateText = 'today';
                         } else if (depDate.getTime() === tomorrow.getTime()) {
@@ -1134,7 +1132,7 @@ export default function LeadAnalysis() {
                           dateText = format(depDate, 'MMMM d');
                         }
                       }
-                      
+
                       const message = `Hi ${firstName} - Jesse from Stratos Jets. Received your request for a flight on ${dateText}. I just sent an email confirming the flight details. Please take a look when able and we'll get rolling.`;
                       window.open(`sms:${lead.phone}?body=${encodeURIComponent(message)}`, '_self');
                     }}
@@ -1143,12 +1141,12 @@ export default function LeadAnalysis() {
                     Text
                   </Button>
                 </div>
-                
+
                 {lead.source_url && (
                   <div className="text-sm">
-                    <a 
-                      href={lead.source_url} 
-                      target="_blank" 
+                    <a
+                      href={lead.source_url}
+                      target="_blank"
                       rel="noopener noreferrer"
                       className="text-primary hover:underline flex items-center gap-2"
                     >
@@ -1161,8 +1159,6 @@ export default function LeadAnalysis() {
                 )}
               </CardContent>
             </Card>
-
-            </div>
 
             {/* Consolidated Trip Information */}
             <Card className="bg-gradient-to-br from-primary/5 to-accent/5">
