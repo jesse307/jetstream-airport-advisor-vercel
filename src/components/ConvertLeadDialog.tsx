@@ -18,7 +18,13 @@ interface Lead {
   phone: string | null;
   departure_airport: string;
   arrival_airport: string;
+  departure_datetime?: string;
+  return_datetime?: string;
+  // Legacy columns (kept for backward compatibility)
   departure_date: string;
+  departure_time?: string;
+  return_date?: string;
+  return_time?: string;
   passengers: number;
   trip_type: string;
 }
@@ -98,24 +104,37 @@ export const ConvertLeadDialog = ({ lead, open, onOpenChange, onSuccess }: Conve
 
       if (accountError) throw accountError;
 
-      // Create opportunity
+      // Create opportunity with complete trip information from lead
+      const opportunityInsert: any = {
+        name: opportunityData.name || `${lead.departure_airport} to ${lead.arrival_airport} - ${lead.first_name} ${lead.last_name}`,
+        account_id: account.id,
+        stage: "qualification",
+        amount: opportunityData.amount ? parseFloat(opportunityData.amount) : null,
+        probability: parseInt(opportunityData.probability),
+        expected_close_date: opportunityData.expectedCloseDate || null,
+        description: opportunityData.description || null,
+        departure_airport: lead.departure_airport,
+        arrival_airport: lead.arrival_airport,
+        departure_date: lead.departure_date,
+        passengers: lead.passengers,
+        trip_type: lead.trip_type,
+        user_id: user.id,
+      };
+
+      // Include datetime fields if available
+      if (lead.departure_datetime) {
+        opportunityInsert.departure_datetime = lead.departure_datetime;
+      }
+      if (lead.return_datetime) {
+        opportunityInsert.return_datetime = lead.return_datetime;
+      }
+      if (lead.return_date) {
+        opportunityInsert.return_date = lead.return_date;
+      }
+
       const { error: opportunityError } = await supabase
         .from("opportunities")
-        .insert({
-          name: opportunityData.name || `${lead.departure_airport} to ${lead.arrival_airport} - ${lead.first_name} ${lead.last_name}`,
-          account_id: account.id,
-          stage: "qualification",
-          amount: opportunityData.amount ? parseFloat(opportunityData.amount) : null,
-          probability: parseInt(opportunityData.probability),
-          expected_close_date: opportunityData.expectedCloseDate || null,
-          description: opportunityData.description || null,
-          departure_airport: lead.departure_airport,
-          arrival_airport: lead.arrival_airport,
-          departure_date: lead.departure_date,
-          passengers: lead.passengers,
-          trip_type: lead.trip_type,
-          user_id: user.id,
-        });
+        .insert(opportunityInsert);
 
       if (opportunityError) throw opportunityError;
 
@@ -148,9 +167,22 @@ export const ConvertLeadDialog = ({ lead, open, onOpenChange, onSuccess }: Conve
         expectedCloseDate: "",
         description: "",
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error converting lead:", error);
-      toast.error("Failed to convert lead to account");
+      console.error("Full error object:", JSON.stringify(error, null, 2));
+
+      let errorMessage = "Failed to convert lead to account";
+      if (error?.message) {
+        errorMessage = error.message;
+      } else if (error?.error_description) {
+        errorMessage = error.error_description;
+      } else if (error?.details) {
+        errorMessage = error.details;
+      } else if (error?.hint) {
+        errorMessage = error.hint;
+      }
+
+      toast.error(`Conversion failed: ${errorMessage}`);
     } finally {
       setLoading(false);
     }
