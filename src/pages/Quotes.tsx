@@ -120,6 +120,15 @@ export default function Quotes() {
     }
   };
 
+  const formatPrice = (price: number | string): string => {
+    if (!price) return '';
+    const numPrice = typeof price === 'string' ? parseFloat(price.replace(/[^0-9.]/g, '')) : price;
+    return numPrice.toLocaleString('en-US', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    });
+  };
+
   const formatForGmail = (quote: Quote) => {
     const extracted = quote.extracted_data || {};
     const quotes = extracted.quotes || [];
@@ -234,7 +243,7 @@ export default function Quotes() {
                                   
                                   ${q.price ? `
                                   <h4 style="margin: 0 0 10px 0; font-size: 22px; font-weight: 700; color: ${stratosNavy};">
-                                    $${q.price}
+                                    $${formatPrice(q.price)}
                                   </h4>
                                   ` : ''}
                                   
@@ -279,7 +288,7 @@ export default function Quotes() {
                             
                             ${q.price ? `
                             <h4 style="margin: 0 0 10px 0; font-size: 22px; font-weight: 700; color: ${stratosNavy};">
-                              $${q.price}
+                              $${formatPrice(q.price)}
                             </h4>
                             ` : ''}
                             
