@@ -74,14 +74,22 @@ export default function TrustedOperators() {
 
           if (aircraftError) {
             console.error(`Error loading aircraft for ${operator.name}:`, aircraftError);
-            return { ...operator, aircraft: [] };
+            return { 
+              ...operator, 
+              fleet_type: (operator.fleet_type as 'floating' | 'fixed') || 'fixed',
+              aircraft: [] 
+            };
           }
 
-          return { ...operator, aircraft: aircraftData || [] };
+          return { 
+            ...operator, 
+            fleet_type: (operator.fleet_type as 'floating' | 'fixed') || 'fixed',
+            aircraft: aircraftData || [] 
+          };
         })
       );
 
-      setOperators(operatorsWithAircraft);
+      setOperators(operatorsWithAircraft as TrustedOperator[]);
     } catch (error: any) {
       console.error("Error loading operators:", error);
       toast.error("Failed to load operators");
