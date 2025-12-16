@@ -231,12 +231,12 @@ async function handleCaptureCommand() {
     // Navigate in the existing Charter Pro tab or create a new one
     if (appTabs.length > 0) {
       chrome.tabs.update(appTabs[0].id, {
-        url: `${baseUrl}/lead-analysis/${result.leadId}`,
+        url: `${baseUrl}/leads/${result.leadId}`,
         active: true
       });
     } else {
       chrome.tabs.create({
-        url: `${baseUrl}/lead-analysis/${result.leadId}`
+        url: `${baseUrl}/leads/${result.leadId}`
       });
     }
   } catch (error) {

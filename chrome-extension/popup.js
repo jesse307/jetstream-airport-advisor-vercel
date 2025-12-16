@@ -210,12 +210,12 @@ async function handleCapture() {
       setTimeout(() => {
         if (charterProTabId) {
           chrome.tabs.update(charterProTabId, {
-            url: `${baseUrl}/lead-analysis/${result.leadId}`,
+            url: `${baseUrl}/leads/${result.leadId}`,
             active: true
           });
         } else {
           chrome.tabs.create({
-            url: `${baseUrl}/lead-analysis/${result.leadId}`
+            url: `${baseUrl}/leads/${result.leadId}`
           });
         }
       }, 500);
