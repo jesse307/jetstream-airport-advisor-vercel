@@ -8,6 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
@@ -30,6 +32,7 @@ interface TrustedOperator {
   country_name: string | null;
   website: string | null;
   notes: string | null;
+  fleet_type: 'floating' | 'fixed';
   created_at: string;
   updated_at: string;
   aircraft: Aircraft[];
@@ -327,6 +330,29 @@ export default function TrustedOperators() {
     }
   };
 
+  const handleUpdateFleetType = async (operatorId: string, fleetType: 'floating' | 'fixed') => {
+    try {
+      const { error } = await supabase
+        .from('trusted_operators')
+        .update({ fleet_type: fleetType })
+        .eq('id', operatorId);
+
+      if (error) throw error;
+
+      // Update local state
+      setOperators(prevOperators =>
+        prevOperators.map(op =>
+          op.id === operatorId ? { ...op, fleet_type: fleetType } : op
+        )
+      );
+
+      toast.success(`Fleet type updated to ${fleetType}`);
+    } catch (error: any) {
+      console.error("Error updating fleet type:", error);
+      toast.error("Failed to update fleet type");
+    }
+  };
+
   const toggleOperator = (operatorId: string) => {
     const newExpanded = new Set(expandedOperators);
     if (newExpanded.has(operatorId)) {
@@ -491,6 +517,9 @@ export default function TrustedOperators() {
                                   {operator.country_name && (
                                     <Badge variant="outline">{operator.country_name}</Badge>
                                   )}
+                                  <Badge variant={operator.fleet_type === 'floating' ? 'default' : 'secondary'}>
+                                    {operator.fleet_type === 'floating' ? 'Floating' : 'Fixed'}
+                                  </Badge>
                                 </div>
                                 <CardDescription>
                                   {operator.aircraft.length} aircraft
@@ -535,6 +564,30 @@ export default function TrustedOperators() {
                       </CollapsibleTrigger>
                       <CollapsibleContent>
                         <CardContent className="space-y-4 pt-4">
+                          {/* Fleet Type Selection */}
+                          <div>
+                            <Label htmlFor={`fleet-type-${operator.id}`} className="text-sm font-medium mb-2 block">
+                              Fleet Type
+                            </Label>
+                            <Select
+                              value={operator.fleet_type || 'fixed'}
+                              onValueChange={(value: 'floating' | 'fixed') => handleUpdateFleetType(operator.id, value)}
+                            >
+                              <SelectTrigger id={`fleet-type-${operator.id}`} className="w-[200px]">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="floating">Floating Fleet</SelectItem>
+                                <SelectItem value="fixed">Fixed Fleet</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {operator.fleet_type === 'floating'
+                                ? 'Aircraft available for charter to various destinations'
+                                : 'Dedicated aircraft for specific clients or routes'}
+                            </p>
+                          </div>
+
                           {/* Notes Section */}
                           <div>
                             <label className="text-sm font-medium mb-2 block">Notes</label>
