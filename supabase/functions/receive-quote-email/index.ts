@@ -102,6 +102,91 @@ async function parseQuotesWithAI(emailContent: string): Promise<any[]> {
   }
 }
 
+// Function to parse client/trip information using AI
+async function parseClientInfoWithAI(emailContent: string): Promise<any> {
+  const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+
+  if (!LOVABLE_API_KEY) {
+    console.log('No LOVABLE_API_KEY found, skipping client info parsing');
+    return {};
+  }
+
+  console.log('Parsing client information with AI...');
+
+  try {
+    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'google/gemini-2.5-flash',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a client information extraction assistant. Extract client and trip details from charter quote emails (which may contain HTML). Extract: client name, email address, phone number, passenger count, routing (departure and arrival airports), trip dates, trip type, and any additional notes. Remove all HTML tags and formatting. Return clean, structured data.'
+          },
+          {
+            role: 'user',
+            content: `Extract client and trip information from this email:\n\n${emailContent}`
+          }
+        ],
+        tools: [
+          {
+            type: 'function',
+            function: {
+              name: 'extract_client_info',
+              description: 'Extract structured client and trip data from email content',
+              parameters: {
+                type: 'object',
+                properties: {
+                  client_name: { type: 'string', description: 'Full name of the client' },
+                  client_first_name: { type: 'string', description: 'Client first name' },
+                  client_last_name: { type: 'string', description: 'Client last name' },
+                  client_email: { type: 'string', description: 'Client email address' },
+                  client_phone: { type: 'string', description: 'Client phone number if mentioned' },
+                  passenger_count: { type: 'number', description: 'Number of passengers' },
+                  departure_airport: { type: 'string', description: 'Departure airport code or name' },
+                  arrival_airport: { type: 'string', description: 'Arrival airport code or name' },
+                  routing: { type: 'string', description: 'Full routing description (e.g., "TEB to TPA")' },
+                  departure_date: { type: 'string', description: 'Departure date' },
+                  return_date: { type: 'string', description: 'Return date if applicable' },
+                  trip_type: { type: 'string', description: 'Trip type (one-way, round-trip, multi-leg)' },
+                  notes: { type: 'string', description: 'Any additional trip notes or special requirements' }
+                }
+              }
+            }
+          }
+        ],
+        tool_choice: { type: 'function', function: { name: 'extract_client_info' } }
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('AI gateway error for client info:', response.status, errorText);
+      return {};
+    }
+
+    const data = await response.json();
+    const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
+
+    if (!toolCall) {
+      console.log('No tool call in AI response for client info');
+      return {};
+    }
+
+    const clientInfo = JSON.parse(toolCall.function.arguments);
+    console.log('AI extracted client info:', Object.keys(clientInfo).join(', '));
+
+    return clientInfo;
+  } catch (error) {
+    console.error('Error parsing client info with AI:', error);
+    return {};
+  }
+}
+
 const handler = async (req: Request): Promise<Response> => {
   console.log("Quote email webhook received - Method:", req.method);
   
@@ -161,7 +246,16 @@ const handler = async (req: Request): Promise<Response> => {
     } else {
       console.log(`Found ${quotesArray.length} pre-parsed quotes`);
     }
-    
+
+    // Extract client information using AI
+    let clientInfo = emailData.client_info || {};
+    if (Object.keys(clientInfo).length === 0) {
+      console.log('No pre-parsed client info found, using AI to extract...');
+      clientInfo = await parseClientInfoWithAI(rawContent);
+    } else {
+      console.log('Found pre-parsed client info');
+    }
+
     // Handle Resend inbound email format for backward compatibility
     const senderEmail = emailData.from?.address || emailData.from || emailData.sender || emailData.From || emailData.sender_email || null;
     const subject = emailData.subject || emailData.Subject || "Quote Submission";
@@ -173,7 +267,10 @@ const handler = async (req: Request): Promise<Response> => {
         raw_email_data: emailData,
         sender_email: senderEmail,
         subject: subject,
-        extracted_data: { quotes: quotesArray },
+        extracted_data: {
+          quotes: quotesArray,
+          client_info: clientInfo
+        },
         processed: true,
         status: 'completed'
       })
@@ -191,14 +288,15 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    console.log("Quote record created:", quoteRecord.id, "with", quotesArray.length, "quotes");
+    console.log("Quote record created:", quoteRecord.id, "with", quotesArray.length, "quotes and client info");
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: "Quotes received and processed with AI",
+        message: "Quotes and client info received and processed with AI",
         quoteId: quoteRecord.id,
-        quotesExtracted: quotesArray.length
+        quotesExtracted: quotesArray.length,
+        clientInfo: clientInfo
       }),
       {
         status: 200,
