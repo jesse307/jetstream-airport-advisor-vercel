@@ -10,6 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AirportSearch } from "@/components/AirportSearch";
+import { AircraftQuoteSearch } from "@/components/AircraftQuoteSearch";
 
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -635,6 +636,9 @@ export default function OpportunityDetail() {
                 </CardContent>
               </Card>
             )}
+
+            {/* Aircraft Quote Search */}
+            <AircraftQuoteSearch opportunityId={opportunity.id} />
           </div>
 
           {/* Right Column - Deal Info & Actions */}
