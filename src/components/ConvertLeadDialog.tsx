@@ -138,9 +138,6 @@ export const ConvertLeadDialog = ({ lead, open, onOpenChange, onSuccess }: Conve
       if (lead.return_datetime) {
         opportunityInsert.return_datetime = lead.return_datetime;
       }
-      if (lead.return_date) {
-        opportunityInsert.return_date = lead.return_date;
-      }
 
       const { error: opportunityError } = await supabase
         .from("opportunities")
