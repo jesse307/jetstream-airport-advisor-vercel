@@ -193,6 +193,18 @@ export const AircraftQuoteSearch = ({ opportunityId }: AircraftQuoteSearchProps)
     window.location.href = `mailto:${operator.contact_email}?subject=${encodeURIComponent(subject)}&body=${body}`;
   };
 
+  const handleQuoteAircraftType = (operator: TrustedOperator, aircraftType: string, category: string | null) => {
+    if (!operator.contact_email) {
+      toast.error("No contact email available for this operator");
+      return;
+    }
+
+    const subject = `Quote Request - ${aircraftType}`;
+    const categoryInfo = category ? ` (${category})` : '';
+    const body = `Hi,%0D%0A%0D%0AI would like to request a quote for any available ${aircraftType}${categoryInfo} from ${operator.name}.%0D%0A%0D%0AThanks!`;
+    window.location.href = `mailto:${operator.contact_email}?subject=${encodeURIComponent(subject)}&body=${body}`;
+  };
+
   if (loading) {
     return (
       <Card>
@@ -429,50 +441,65 @@ export const AircraftQuoteSearch = ({ opportunityId }: AircraftQuoteSearchProps)
                         </div>
                       </div>
 
-                      {/* Aircraft List (Collapsible) */}
+                      {/* Aircraft List (Collapsible) - Grouped by Type */}
                       <Collapsible open={isExpanded}>
                         <CollapsibleContent>
                           <div className="p-4 space-y-2">
-                            {operator.aircraft.map((aircraft) => (
-                              <div
-                                key={aircraft.id}
-                                className="flex items-start justify-between p-3 bg-accent/10 rounded-md hover:bg-accent/20 transition-colors"
-                              >
-                                <div className="flex-1">
-                                  <div className="flex items-center gap-2 mb-1">
-                                    <p className="font-semibold">{aircraft.tail_number}</p>
-                                    {aircraft.aircraft_category && (
-                                      <Badge variant="secondary" className="text-xs">
-                                        {aircraft.aircraft_category}
+                            {(() => {
+                              // Group aircraft by type
+                              const groupedByType = operator.aircraft.reduce((acc, aircraft) => {
+                                const type = aircraft.aircraft_type || 'Unknown Type';
+                                if (!acc[type]) {
+                                  acc[type] = {
+                                    type,
+                                    category: aircraft.aircraft_category,
+                                    aircraft: [],
+                                    count: 0
+                                  };
+                                }
+                                acc[type].aircraft.push(aircraft);
+                                acc[type].count++;
+                                return acc;
+                              }, {} as Record<string, { type: string; category: string | null; aircraft: Aircraft[]; count: number }>);
+
+                              const typeGroups = Object.values(groupedByType);
+
+                              return typeGroups.map((group) => (
+                                <div
+                                  key={group.type}
+                                  className="flex items-start justify-between p-3 bg-accent/10 rounded-md hover:bg-accent/20 transition-colors"
+                                >
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <Plane className="h-4 w-4 text-primary" />
+                                      <p className="font-semibold">{group.type}</p>
+                                      {group.category && (
+                                        <Badge variant="secondary" className="text-xs">
+                                          {group.category}
+                                        </Badge>
+                                      )}
+                                      <Badge variant="outline" className="text-xs">
+                                        {group.count} available
                                       </Badge>
-                                    )}
+                                    </div>
+
+                                    {/* Show tail numbers as a compact list */}
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                      {group.aircraft.map(ac => ac.tail_number).join(', ')}
+                                    </p>
                                   </div>
 
-                                  {aircraft.aircraft_type && (
-                                    <p className="text-sm text-muted-foreground mb-1 flex items-center gap-1">
-                                      <Plane className="h-3 w-3" />
-                                      {aircraft.aircraft_type}
-                                    </p>
-                                  )}
-
-                                  {aircraft.home_airport_name && (
-                                    <p className="text-xs text-muted-foreground flex items-center gap-1">
-                                      <MapPin className="h-3 w-3" />
-                                      {aircraft.home_airport_name} ({aircraft.home_airport_iata || aircraft.home_airport_icao})
-                                    </p>
-                                  )}
+                                  <Button
+                                    size="sm"
+                                    onClick={() => handleQuoteAircraftType(operator, group.type, group.category)}
+                                    disabled={!operator.contact_email}
+                                  >
+                                    <Send className="h-3 w-3 mr-1" />
+                                    Quote
+                                  </Button>
                                 </div>
-
-                                <Button
-                                  size="sm"
-                                  onClick={() => handleQuoteSpecificAircraft(operator, aircraft)}
-                                  disabled={!operator.contact_email}
-                                >
-                                  <Send className="h-3 w-3 mr-1" />
-                                  Quote
-                                </Button>
-                              </div>
-                            ))}
+                              ));
+                            })()}
                           </div>
                         </CollapsibleContent>
                       </Collapsible>
