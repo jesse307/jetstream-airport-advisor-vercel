@@ -53,7 +53,7 @@ export const ConvertLeadDialog = ({ lead, open, onOpenChange, onSuccess }: Conve
     description: "",
   });
 
-  // Auto-fill opportunity name when dialog opens with a new lead
+  // Auto-fill opportunity name and expected close date when dialog opens with a new lead
   useEffect(() => {
     if (lead && open) {
       // Generate route string
@@ -74,7 +74,7 @@ export const ConvertLeadDialog = ({ lead, open, onOpenChange, onSuccess }: Conve
         name: opportunityName,
         amount: "",
         probability: "50",
-        expectedCloseDate: "",
+        expectedCloseDate: lead.departure_date, // Auto-fill with trip departure date
         description: "",
       });
     }
