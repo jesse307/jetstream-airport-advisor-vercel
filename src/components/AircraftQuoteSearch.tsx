@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Search, Plane, Building2, MapPin, Filter } from "lucide-react";
+import { Search, Plane, Building2, MapPin, Filter, X } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
@@ -37,8 +39,8 @@ export const AircraftQuoteSearch = ({ opportunityId }: AircraftQuoteSearchProps)
   const [filteredAircraft, setFilteredAircraft] = useState<Aircraft[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState<string>("all");
-  const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const [selectedOperator, setSelectedOperator] = useState<string>("all");
 
   // Get unique categories and types from aircraft
@@ -52,7 +54,7 @@ export const AircraftQuoteSearch = ({ opportunityId }: AircraftQuoteSearchProps)
 
   useEffect(() => {
     applyFilters();
-  }, [aircraft, searchTerm, categoryFilter, typeFilter, selectedOperator]);
+  }, [aircraft, searchTerm, selectedCategories, selectedTypes, selectedOperator]);
 
   const loadAircraft = async () => {
     if (!user) return;
@@ -111,14 +113,18 @@ export const AircraftQuoteSearch = ({ opportunityId }: AircraftQuoteSearchProps)
       );
     }
 
-    // Category filter
-    if (categoryFilter !== "all") {
-      filtered = filtered.filter(ac => ac.aircraft_category === categoryFilter);
+    // Category filter (multiple selection)
+    if (selectedCategories.length > 0) {
+      filtered = filtered.filter(ac =>
+        ac.aircraft_category && selectedCategories.includes(ac.aircraft_category)
+      );
     }
 
-    // Type filter
-    if (typeFilter !== "all") {
-      filtered = filtered.filter(ac => ac.aircraft_type === typeFilter);
+    // Type filter (multiple selection)
+    if (selectedTypes.length > 0) {
+      filtered = filtered.filter(ac =>
+        ac.aircraft_type && selectedTypes.includes(ac.aircraft_type)
+      );
     }
 
     // Operator filter
@@ -127,6 +133,22 @@ export const AircraftQuoteSearch = ({ opportunityId }: AircraftQuoteSearchProps)
     }
 
     setFilteredAircraft(filtered);
+  };
+
+  const toggleCategory = (category: string) => {
+    setSelectedCategories(prev =>
+      prev.includes(category)
+        ? prev.filter(c => c !== category)
+        : [...prev, category]
+    );
+  };
+
+  const toggleType = (type: string) => {
+    setSelectedTypes(prev =>
+      prev.includes(type)
+        ? prev.filter(t => t !== type)
+        : [...prev, type]
+    );
   };
 
   const handleContactOperator = (aircraft: Aircraft) => {
@@ -186,44 +208,110 @@ export const AircraftQuoteSearch = ({ opportunityId }: AircraftQuoteSearchProps)
             />
           </div>
 
+          {/* Active Filters Display */}
+          {(selectedCategories.length > 0 || selectedTypes.length > 0) && (
+            <div className="flex flex-wrap gap-2">
+              {selectedCategories.map(cat => (
+                <Badge key={cat} variant="secondary" className="gap-1">
+                  {cat}
+                  <X
+                    className="h-3 w-3 cursor-pointer hover:text-destructive"
+                    onClick={() => toggleCategory(cat)}
+                  />
+                </Badge>
+              ))}
+              {selectedTypes.map(type => (
+                <Badge key={type} variant="secondary" className="gap-1">
+                  {type}
+                  <X
+                    className="h-3 w-3 cursor-pointer hover:text-destructive"
+                    onClick={() => toggleType(type)}
+                  />
+                </Badge>
+              ))}
+            </div>
+          )}
+
           {/* Filters */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <Label className="text-xs text-muted-foreground">Category</Label>
-              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All Categories" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Categories</SelectItem>
-                  {categories.map(cat => (
-                    <SelectItem key={cat} value={cat!}>
-                      {cat}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label className="text-xs text-muted-foreground mb-2 block">Category</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="w-full justify-start">
+                    <Filter className="mr-2 h-4 w-4" />
+                    {selectedCategories.length === 0
+                      ? "All Categories"
+                      : `${selectedCategories.length} selected`}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-64" align="start">
+                  <div className="space-y-2">
+                    <div className="font-semibold text-sm mb-3">Select Categories</div>
+                    {categories.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">No categories available</p>
+                    ) : (
+                      categories.map(cat => (
+                        <div key={cat} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={`cat-${cat}`}
+                            checked={selectedCategories.includes(cat!)}
+                            onCheckedChange={() => toggleCategory(cat!)}
+                          />
+                          <label
+                            htmlFor={`cat-${cat}`}
+                            className="text-sm cursor-pointer flex-1"
+                          >
+                            {cat}
+                          </label>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </PopoverContent>
+              </Popover>
             </div>
 
             <div>
-              <Label className="text-xs text-muted-foreground">Aircraft Type</Label>
-              <Select value={typeFilter} onValueChange={setTypeFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All Types" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Types</SelectItem>
-                  {types.map(type => (
-                    <SelectItem key={type} value={type!}>
-                      {type}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label className="text-xs text-muted-foreground mb-2 block">Aircraft Type</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="w-full justify-start">
+                    <Filter className="mr-2 h-4 w-4" />
+                    {selectedTypes.length === 0
+                      ? "All Types"
+                      : `${selectedTypes.length} selected`}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-64 max-h-[300px] overflow-y-auto" align="start">
+                  <div className="space-y-2">
+                    <div className="font-semibold text-sm mb-3">Select Aircraft Types</div>
+                    {types.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">No types available</p>
+                    ) : (
+                      types.map(type => (
+                        <div key={type} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={`type-${type}`}
+                            checked={selectedTypes.includes(type!)}
+                            onCheckedChange={() => toggleType(type!)}
+                          />
+                          <label
+                            htmlFor={`type-${type}`}
+                            className="text-sm cursor-pointer flex-1"
+                          >
+                            {type}
+                          </label>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </PopoverContent>
+              </Popover>
             </div>
 
             <div>
-              <Label className="text-xs text-muted-foreground">Operator</Label>
+              <Label className="text-xs text-muted-foreground mb-2 block">Operator</Label>
               <Select value={selectedOperator} onValueChange={setSelectedOperator}>
                 <SelectTrigger>
                   <SelectValue placeholder="All Operators" />
@@ -241,18 +329,18 @@ export const AircraftQuoteSearch = ({ opportunityId }: AircraftQuoteSearchProps)
           </div>
 
           {/* Clear Filters Button */}
-          {(searchTerm || categoryFilter !== "all" || typeFilter !== "all" || selectedOperator !== "all") && (
+          {(searchTerm || selectedCategories.length > 0 || selectedTypes.length > 0 || selectedOperator !== "all") && (
             <Button
               variant="ghost"
               size="sm"
               onClick={() => {
                 setSearchTerm("");
-                setCategoryFilter("all");
-                setTypeFilter("all");
+                setSelectedCategories([]);
+                setSelectedTypes([]);
                 setSelectedOperator("all");
               }}
             >
-              Clear Filters
+              Clear All Filters
             </Button>
           )}
         </div>
