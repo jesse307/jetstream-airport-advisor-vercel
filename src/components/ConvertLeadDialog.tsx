@@ -129,21 +129,17 @@ export const ConvertLeadDialog = ({ lead, open, onOpenChange, onSuccess }: Conve
         user_id: user.id,
       };
 
-      // Include datetime fields if available
+      // Include datetime fields if available (only if columns exist in database)
+      // Note: These columns are added by migration 20251216000010_add_datetime_fields_to_opportunities
+      // If you get errors about missing columns, ensure this migration has been run
       if (lead.departure_datetime) {
         opportunityInsert.departure_datetime = lead.departure_datetime;
-      }
-      if (lead.departure_time) {
-        opportunityInsert.departure_time = lead.departure_time;
       }
       if (lead.return_datetime) {
         opportunityInsert.return_datetime = lead.return_datetime;
       }
       if (lead.return_date) {
         opportunityInsert.return_date = lead.return_date;
-      }
-      if (lead.return_time) {
-        opportunityInsert.return_time = lead.return_time;
       }
 
       const { error: opportunityError } = await supabase
