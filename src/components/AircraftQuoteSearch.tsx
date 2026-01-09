@@ -35,6 +35,8 @@ interface TrustedOperator {
 
 interface AircraftQuoteSearchProps {
   opportunityId: string;
+  departureAirport?: string;
+  arrivalAirport?: string;
 }
 
 interface QuoteRequest {
@@ -47,7 +49,7 @@ interface QuoteRequest {
   aircraftLocations?: string[]; // For fixed fleet: home bases of matching aircraft
 }
 
-export const AircraftQuoteSearch = ({ opportunityId }: AircraftQuoteSearchProps) => {
+export const AircraftQuoteSearch = ({ opportunityId, departureAirport, arrivalAirport }: AircraftQuoteSearchProps) => {
   const { user } = useAuth();
   const [operators, setOperators] = useState<TrustedOperator[]>([]);
   const [filteredOperators, setFilteredOperators] = useState<TrustedOperator[]>([]);
@@ -58,6 +60,21 @@ export const AircraftQuoteSearch = ({ opportunityId }: AircraftQuoteSearchProps)
   const [expandedOperators, setExpandedOperators] = useState<Set<string>>(new Set());
   const [quoteRequests, setQuoteRequests] = useState<QuoteRequest[]>([]);
   const [selectedRequests, setSelectedRequests] = useState<Set<string>>(new Set());
+  const [maxDistance, setMaxDistance] = useState<number>(150);
+  const [airportCoords, setAirportCoords] = useState<Map<string, { lat: number; lon: number }>>(new Map());
+
+  // Calculate distance between two coordinates using Haversine formula
+  const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+    const R = 3959; // Earth's radius in miles
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  };
 
   // Get unique categories and types from all aircraft
   const allAircraft = operators.flatMap(op => op.aircraft);
@@ -69,12 +86,16 @@ export const AircraftQuoteSearch = ({ opportunityId }: AircraftQuoteSearchProps)
   }, [user]);
 
   useEffect(() => {
+    fetchAirportCoordinates();
+  }, [operators, departureAirport, arrivalAirport]);
+
+  useEffect(() => {
     applyFilters();
   }, [operators, searchTerm, selectedCategories, selectedTypes]);
 
   useEffect(() => {
     generateQuoteRequests();
-  }, [operators, selectedCategories, selectedTypes]);
+  }, [operators, selectedCategories, selectedTypes, maxDistance, airportCoords]);
 
   const loadAircraft = async () => {
     if (!user) return;
@@ -120,6 +141,47 @@ export const AircraftQuoteSearch = ({ opportunityId }: AircraftQuoteSearchProps)
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchAirportCoordinates = async () => {
+    // Collect all unique airport codes
+    const airportCodes = new Set<string>();
+
+    // Add departure and arrival airports from opportunity
+    if (departureAirport) airportCodes.add(departureAirport);
+    if (arrivalAirport) airportCodes.add(arrivalAirport);
+
+    // Add all aircraft home airports
+    operators.forEach(op => {
+      op.aircraft.forEach(ac => {
+        if (ac.home_airport_icao) airportCodes.add(ac.home_airport_icao);
+        if (ac.home_airport_iata) airportCodes.add(ac.home_airport_iata);
+      });
+    });
+
+    // Fetch coordinates for all airports
+    const coords = new Map<string, { lat: number; lon: number }>();
+
+    for (const code of airportCodes) {
+      try {
+        const { data, error } = await supabase
+          .from('fallback_airports')
+          .select('code, latitude, longitude')
+          .eq('code', code)
+          .single();
+
+        if (!error && data && data.latitude && data.longitude) {
+          coords.set(code, {
+            lat: Number(data.latitude),
+            lon: Number(data.longitude)
+          });
+        }
+      } catch (err) {
+        console.error(`Error fetching coords for ${code}:`, err);
+      }
+    }
+
+    setAirportCoords(coords);
   };
 
   const applyFilters = () => {
@@ -173,7 +235,40 @@ export const AircraftQuoteSearch = ({ opportunityId }: AircraftQuoteSearchProps)
           const matchingAircraft = operator.aircraft.filter(ac => {
             const categoryMatch = matchingCategories.includes(ac.aircraft_category || '');
             const typeMatch = matchingTypes.includes(ac.aircraft_type || '');
-            return categoryMatch || typeMatch;
+            if (!categoryMatch && !typeMatch) return false;
+
+            // Apply distance filter for fixed fleet
+            const aircraftCode = ac.home_airport_icao || ac.home_airport_iata;
+            if (!aircraftCode) return false;
+
+            const aircraftCoord = airportCoords.get(aircraftCode);
+            if (!aircraftCoord) return true; // Include if no coords found (fallback)
+
+            // Check distance from departure airport
+            if (departureAirport) {
+              const depCoord = airportCoords.get(departureAirport);
+              if (depCoord) {
+                const distFromDep = calculateDistance(
+                  aircraftCoord.lat, aircraftCoord.lon,
+                  depCoord.lat, depCoord.lon
+                );
+                if (distFromDep <= maxDistance) return true;
+              }
+            }
+
+            // Check distance from arrival airport
+            if (arrivalAirport) {
+              const arrCoord = airportCoords.get(arrivalAirport);
+              if (arrCoord) {
+                const distFromArr = calculateDistance(
+                  aircraftCoord.lat, aircraftCoord.lon,
+                  arrCoord.lat, arrCoord.lon
+                );
+                if (distFromArr <= maxDistance) return true;
+              }
+            }
+
+            return false; // Not within distance of either airport
           });
 
           const locations = new Set(
@@ -184,15 +279,19 @@ export const AircraftQuoteSearch = ({ opportunityId }: AircraftQuoteSearchProps)
           aircraftLocations = Array.from(locations) as string[];
         }
 
-        requests.push({
-          operatorId: operator.id,
-          operatorName: operator.name,
-          operatorEmail: operator.contact_email,
-          fleetType: operator.fleet_type,
-          categories: matchingCategories,
-          types: matchingTypes,
-          aircraftLocations
-        });
+        // Only add request if there are matching aircraft (for fixed fleet) or if floating fleet
+        const hasMatchingAircraft = operator.fleet_type === 'floating' || (aircraftLocations && aircraftLocations.length > 0);
+        if (hasMatchingAircraft) {
+          requests.push({
+            operatorId: operator.id,
+            operatorName: operator.name,
+            operatorEmail: operator.contact_email,
+            fleetType: operator.fleet_type,
+            categories: matchingCategories,
+            types: matchingTypes,
+            aircraftLocations
+          });
+        }
       }
     });
 
@@ -333,6 +432,31 @@ export const AircraftQuoteSearch = ({ opportunityId }: AircraftQuoteSearchProps)
                   Clear All
                 </Button>
               )}
+            </div>
+
+            {/* Distance Selector */}
+            <div className="mb-4">
+              <Label className="text-sm font-semibold mb-2 block">
+                Max Distance from Departure/Arrival (Fixed Fleet Only)
+              </Label>
+              <Select value={maxDistance.toString()} onValueChange={(val) => setMaxDistance(Number(val))}>
+                <SelectTrigger className="w-full md:w-64">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="150">150 miles</SelectItem>
+                  <SelectItem value="200">200 miles</SelectItem>
+                  <SelectItem value="250">250 miles</SelectItem>
+                  <SelectItem value="300">300 miles</SelectItem>
+                  <SelectItem value="350">350 miles</SelectItem>
+                  <SelectItem value="400">400 miles</SelectItem>
+                  <SelectItem value="450">450 miles</SelectItem>
+                  <SelectItem value="500">500 miles</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground mt-1">
+                Floating fleet operators show all aircraft regardless of distance
+              </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

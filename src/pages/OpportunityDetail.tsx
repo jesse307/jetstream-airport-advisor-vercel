@@ -698,7 +698,11 @@ export default function OpportunityDetail() {
 
         {/* Full Width - Aircraft Quote Search */}
         <div className="mt-6">
-          <AircraftQuoteSearch opportunityId={opportunity.id} />
+          <AircraftQuoteSearch
+            opportunityId={opportunity.id}
+            departureAirport={opportunity.departure_airport}
+            arrivalAirport={opportunity.arrival_airport}
+          />
         </div>
       </main>
     </div>
