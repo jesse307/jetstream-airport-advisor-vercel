@@ -1,0 +1,65 @@
+╔══════════════════════════════════════════════════════════════╗
+║           QUICK DEPLOYMENT REFERENCE                         ║
+║         claude-autonomous-chat Edge Function                 ║
+╚══════════════════════════════════════════════════════════════╝
+
+📦 WHAT'S NEW:
+  ✅ Creates accounts automatically (not just leads)
+  ✅ Creates opportunities with full trip details
+  ✅ Includes departure_time, return_date, return_time
+  ✅ Marks leads as converted
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚠️  STEP 0: RUN MIGRATION FIRST! ⚠️
+
+BEFORE deploying, run this migration:
+See: RUN_MIGRATION_FIRST.md
+
+Quick version:
+1. Go to Supabase Dashboard → SQL Editor
+2. Run the migration from file:
+   20260109000001_make_opportunities_user_id_nullable.sql
+
+This makes user_id nullable so chatbot can create records.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🚀 STEP 1: DEPLOY EDGE FUNCTION
+
+1. Open: https://supabase.com/dashboard
+2. Select your project
+3. Edge Functions → claude-autonomous-chat
+4. Click "Deploy new version" or "Redeploy"
+5. Done! ✅
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📝 FILE BEING DEPLOYED:
+   supabase/functions/claude-autonomous-chat/index.ts
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🧪 TEST AFTER DEPLOYMENT:
+
+In your chatbot, try:
+"Test User, 1/20 @ 9am, 2 pax, JFK to LAX, light jet"
+
+Expected result:
+✅ Creates lead
+✅ Creates account
+✅ Creates opportunity
+✅ Shows success message
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📊 VERIFY IN DATABASE:
+
+Check these tables:
+- leads         (new record)
+- accounts      (new record linked to lead)
+- opportunities (new record linked to account)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+For detailed instructions: See DEPLOYMENT_INSTRUCTIONS.md

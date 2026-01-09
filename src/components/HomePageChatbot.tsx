@@ -1,33 +1,80 @@
 import { useState, useRef, useEffect } from "react";
-import { Send, Bot, User as UserIcon, Sparkles } from "lucide-react";
+import { Send, Bot, User as UserIcon, Sparkles, Trash2, Copy, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { MessageContent } from "./MessageContent";
 
 interface Message {
   role: "user" | "assistant";
   content: string;
 }
 
+const STORAGE_KEY = "homepage-chatbot-messages";
+
+const initialMessage: Message = {
+  role: "assistant",
+  content: "Hi! I'm your AI assistant powered by Claude. I can help you:\n\n• Create leads from natural language (e.g., 'Michael Morgan, 1/15 @ noon - 1/17 @ 3pm, 2 pax, TEB to LAX, light jet')\n• Search existing leads and data\n• Calculate flight times and distances\n• Answer questions about routes and airports\n\nWhat can I help you with?"
+};
+
 export function HomePageChatbot() {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      role: "assistant",
-      content: "Hi! I'm your AI assistant powered by Claude. I can help you:\n\n• Create leads from natural language (e.g., 'Michael Morgan, 1/15 @ noon - 1/17 @ 3pm, 2 pax, TEB to LAX, light jet')\n• Search existing leads and data\n• Calculate flight times and distances\n• Answer questions about routes and airports\n\nWhat can I help you with?"
+  const [messages, setMessages] = useState<Message[]>(() => {
+    // Load messages from localStorage on mount
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return Array.isArray(parsed) && parsed.length > 0 ? parsed : [initialMessage];
+      }
+    } catch (error) {
+      console.error("Failed to load saved messages:", error);
     }
-  ]);
+    return [initialMessage];
+  });
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
+  // Save messages to localStorage whenever they change
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
+    } catch (error) {
+      console.error("Failed to save messages:", error);
     }
   }, [messages]);
+
+  // Scroll to bottom whenever messages change or loading state changes
+  useEffect(() => {
+    const scrollToBottom = () => {
+      if (messagesEndRef.current) {
+        messagesEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
+      }
+    };
+
+    // Use setTimeout to ensure DOM has updated
+    const timer = setTimeout(scrollToBottom, 100);
+    return () => clearTimeout(timer);
+  }, [messages, isLoading]);
+
+  const clearConversation = () => {
+    setMessages([initialMessage]);
+    localStorage.removeItem(STORAGE_KEY);
+    toast.success("Conversation cleared");
+  };
+
+  const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
+
+  const copyMessage = (content: string, index: number) => {
+    navigator.clipboard.writeText(content);
+    setCopiedIndex(index);
+    toast.success("Copied to clipboard");
+    setTimeout(() => setCopiedIndex(null), 2000);
+  };
 
   const sendMessage = async () => {
     if (!input.trim() || isLoading) return;
@@ -36,6 +83,11 @@ export function HomePageChatbot() {
     setMessages(prev => [...prev, userMessage]);
     setInput("");
     setIsLoading(true);
+
+    // Refocus input after sending
+    setTimeout(() => {
+      inputRef.current?.focus();
+    }, 0);
 
     let assistantContent = "";
 
@@ -132,9 +184,9 @@ export function HomePageChatbot() {
             if (content) {
               upsertAssistant(content);
 
-              // Show toast for successful lead creation
-              if (content.includes("✅ Created lead")) {
-                toast.success("Lead created successfully!");
+              // Show toast for successful account creation
+              if (content.includes("✅ Created account and opportunity")) {
+                toast.success("Account and opportunity created successfully!");
               }
             }
           } catch {
@@ -205,88 +257,138 @@ export function HomePageChatbot() {
               </CardDescription>
             </div>
           </div>
+          {messages.length > 1 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={clearConversation}
+              className="text-muted-foreground hover:text-destructive"
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Clear
+            </Button>
+          )}
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        <ScrollArea className="h-80 pr-4" ref={scrollRef}>
-          {messages.length === 1 ? (
-            <div className="space-y-4">
-              <div className="flex gap-3 justify-start">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center flex-shrink-0">
-                  <Bot className="w-4 h-4 text-white" />
-                </div>
-                <div className="rounded-lg px-4 py-3 bg-muted text-foreground max-w-[90%]">
-                  <p className="text-sm whitespace-pre-wrap">{messages[0].content}</p>
-                </div>
-              </div>
-
-              {/* Quick Actions */}
-              <div className="space-y-2 mt-4">
-                <p className="text-xs text-muted-foreground font-medium px-2">Quick examples:</p>
-                {quickActions.map((action, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => setInput(action.example)}
-                    className="w-full text-left p-3 rounded-lg border border-border hover:bg-accent hover:border-primary/50 transition-all text-sm group"
-                  >
-                    <div className="font-medium text-foreground group-hover:text-primary mb-1">
-                      {action.label}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      "{action.example}"
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {messages.map((msg, idx) => (
-                <div
-                  key={idx}
-                  className={`flex gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-                >
-                  {msg.role === "assistant" && (
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center flex-shrink-0">
-                      <Bot className="w-4 h-4 text-white" />
-                    </div>
-                  )}
-                  <div
-                    className={`rounded-lg px-4 py-3 max-w-[85%] ${
-                      msg.role === "user"
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted text-foreground"
-                    }`}
-                  >
-                    <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
-                  </div>
-                  {msg.role === "user" && (
-                    <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center flex-shrink-0">
-                      <UserIcon className="w-4 h-4 text-secondary-foreground" />
-                    </div>
-                  )}
-                </div>
-              ))}
-              {isLoading && (
+        <div className="relative h-80 overflow-hidden rounded-lg border">
+          <div
+            ref={scrollAreaRef}
+            className="h-full overflow-y-auto pr-4 scroll-smooth"
+            style={{ scrollBehavior: 'smooth' }}
+          >
+            {messages.length === 1 ? (
+              <div className="space-y-4 p-4">
                 <div className="flex gap-3 justify-start">
                   <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center flex-shrink-0">
-                    <Bot className="w-4 h-4 text-white animate-pulse" />
+                    <Bot className="w-4 h-4 text-white" />
                   </div>
-                  <div className="rounded-lg px-4 py-3 bg-muted text-foreground">
-                    <div className="flex gap-1">
-                      <div className="w-2 h-2 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: "0ms" }} />
-                      <div className="w-2 h-2 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: "150ms" }} />
-                      <div className="w-2 h-2 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: "300ms" }} />
+                  <div className="rounded-lg px-4 py-3 bg-muted text-foreground max-w-[90%]">
+                    <div className="text-sm">
+                      <MessageContent content={messages[0].content} />
                     </div>
                   </div>
                 </div>
-              )}
-            </div>
-          )}
-        </ScrollArea>
+
+                {/* Quick Actions */}
+                <div className="space-y-2 mt-4">
+                  <p className="text-xs text-muted-foreground font-medium px-2">Quick examples:</p>
+                  {quickActions.map((action, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setInput(action.example)}
+                      className="w-full text-left p-3 rounded-lg border border-border hover:bg-accent hover:border-primary/50 transition-all text-sm group"
+                    >
+                      <div className="font-medium text-foreground group-hover:text-primary mb-1">
+                        {action.label}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        "{action.example}"
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4 p-4">
+                {messages.map((msg, idx) => (
+                  <div
+                    key={idx}
+                    className={`flex gap-3 group ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+                  >
+                    {msg.role === "assistant" && (
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center flex-shrink-0">
+                        <Bot className="w-4 h-4 text-white" />
+                      </div>
+                    )}
+                    <div className="flex flex-col max-w-[85%]">
+                      <div
+                        className={`rounded-lg px-4 py-3 ${
+                          msg.role === "user"
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-muted text-foreground"
+                        }`}
+                      >
+                        <div className="text-sm">
+                          {msg.role === "assistant" ? (
+                            <MessageContent content={msg.content} />
+                          ) : (
+                            <p className="whitespace-pre-wrap">{msg.content}</p>
+                          )}
+                        </div>
+                      </div>
+                      {msg.role === "assistant" && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => copyMessage(msg.content, idx)}
+                          className="self-start mt-1 h-6 px-2 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          {copiedIndex === idx ? (
+                            <>
+                              <Check className="w-3 h-3 mr-1" />
+                              Copied
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-3 h-3 mr-1" />
+                              Copy
+                            </>
+                          )}
+                        </Button>
+                      )}
+                    </div>
+                    {msg.role === "user" && (
+                      <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center flex-shrink-0">
+                        <UserIcon className="w-4 h-4 text-secondary-foreground" />
+                      </div>
+                    )}
+                  </div>
+                ))}
+                {isLoading && (
+                  <div className="flex gap-3 justify-start">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center flex-shrink-0">
+                      <Bot className="w-4 h-4 text-white animate-pulse" />
+                    </div>
+                    <div className="rounded-lg px-4 py-3 bg-muted text-foreground">
+                      <div className="flex gap-1">
+                        <div className="w-2 h-2 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: "0ms" }} />
+                        <div className="w-2 h-2 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: "150ms" }} />
+                        <div className="w-2 h-2 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: "300ms" }} />
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {/* Invisible element to scroll to */}
+                <div ref={messagesEndRef} />
+              </div>
+            )}
+          </div>
+        </div>
 
         <div className="flex gap-2">
           <Input
+            ref={inputRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && sendMessage()}

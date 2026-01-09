@@ -1,6 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
-import Anthropic from "npm:@anthropic-ai/sdk@0.32.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -13,26 +12,30 @@ serve(async (req) => {
   }
 
   try {
+    console.log("=== Edge Function Called ===");
     const { messages } = await req.json();
+    console.log("Request received with", messages?.length || 0, "messages");
+
     const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
     if (!ANTHROPIC_API_KEY) {
+      console.error("ANTHROPIC_API_KEY not configured");
       throw new Error("ANTHROPIC_API_KEY is not configured");
     }
 
+    console.log("Environment variables validated");
     const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
-    const anthropic = new Anthropic({ apiKey: ANTHROPIC_API_KEY });
 
     // System prompt for autonomous operation
     const systemPrompt = `You are an autonomous AI assistant for a private jet charter booking platform. You have direct access to the database and can perform operations without asking for permission (but confirm after completion).
 
 ## Your Capabilities:
-1. **Create Leads** - Parse natural language booking requests and create leads directly
+1. **Create Leads** - Parse natural language booking requests and automatically create lead, account, and opportunity
 2. **Search Data** - Query leads, opportunities, accounts, and aircraft
 3. **Lookup Accounts** - Find existing clients by name, email, or company
-4. **Create Opportunities** - Convert leads or create new opportunities with trip details
+4. **Create Opportunities** - Create new opportunities with trip details for existing accounts
 5. **Search Aircraft** - Find matching aircraft from trusted operators based on criteria
 6. **Send Quote Requests** - Generate and send quote requests to selected operators
 7. **Update Records** - Modify existing records when requested
@@ -41,10 +44,13 @@ serve(async (req) => {
 
 ## Complete Workflow:
 When user requests a full booking process, execute these steps in order:
-1. Check if client exists (lookup_accounts) OR create new lead (create_lead)
-2. Create opportunity from lead/client info (create_opportunity)
-3. Search for matching aircraft (search_aircraft)
-4. Send quote requests to operators (send_quote_requests)
+1. Check if client exists (lookup_accounts)
+2. If client doesn't exist: Create new lead (create_lead) - this automatically creates the account and opportunity
+3. If client exists: Create opportunity (create_opportunity)
+4. Search for matching aircraft (search_aircraft) - only after opportunity exists
+5. Send quote requests to operators (send_quote_requests) - only after finding aircraft
+
+IMPORTANT: The create_lead tool now automatically creates a lead, account, and opportunity all in one step for new clients.
 
 ## Natural Language Parsing Rules:
 - **Dates**: Convert casual formats to ISO 8601
@@ -73,7 +79,7 @@ When user requests a full booking process, execute these steps in order:
 
 ## Example Interactions:
 User: "Michael Morgan, 1/15 @ noon - 1/17 @ 3pm, 2 pax, light and superlight"
-Assistant: [Calls create_lead with parsed data] → "Created lead #1234 for Michael Morgan..."
+Assistant: [Calls create_lead with parsed data] → "Created account and opportunity for Michael Morgan..."
 
 User: "Show me all leads from last week"
 Assistant: [Calls search_data with date filters] → "Found 8 leads from last week..."
@@ -82,7 +88,7 @@ Current date/time: ${new Date().toISOString()}
 User timezone: America/New_York (assume Eastern Time for date parsing)`;
 
     // Define tools for Claude
-    const tools: Anthropic.Tool[] = [
+    const tools = [
       {
         name: "create_lead",
         description: "Parse natural language and create a new lead in the system. Extracts name, dates/times, passenger count, airports, and aircraft categories from casual input. ALWAYS use this when user provides booking information.",
@@ -282,7 +288,7 @@ User timezone: America/New_York (assume Eastern Time for date parsing)`;
       },
       {
         name: "create_opportunity",
-        description: "Create a new sales opportunity with trip details. Can be created from a lead or for an existing account. This is the main booking record.",
+        description: "Create a new sales opportunity with trip details for an EXISTING account only. REQUIRES a valid account_id from lookup_accounts. Do NOT use for new clients - create a lead instead.",
         input_schema: {
           type: "object",
           properties: {
@@ -400,108 +406,124 @@ User timezone: America/New_York (assume Eastern Time for date parsing)`;
       }
     ];
 
-    // Call Claude API with streaming
-    const stream = await anthropic.messages.stream({
-      model: "claude-3-5-sonnet-20241022",
-      max_tokens: 2048,
-      system: systemPrompt,
-      messages: messages.map((msg: any) => ({
-        role: msg.role === "user" ? "user" : "assistant",
-        content: msg.content
-      })),
-      tools: tools,
-    });
+    // Call Claude API with direct HTTP request
+    console.log("Calling Anthropic API...");
+    console.log("Messages count:", messages.length);
 
-    // Handle streaming response with tool execution
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 55000); // 55 second timeout
+
+    let anthropicResponse;
+    try {
+      anthropicResponse = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": ANTHROPIC_API_KEY,
+          "anthropic-version": "2023-06-01",
+        },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-20250514",
+          max_tokens: 2048,
+          system: systemPrompt,
+          messages: messages.map((msg: any) => ({
+            role: msg.role === "user" ? "user" : "assistant",
+            content: msg.content
+          })),
+          tools: tools,
+          stream: false,
+        }),
+        signal: controller.signal,
+      });
+    } catch (fetchError) {
+      clearTimeout(timeoutId);
+      console.error("Fetch error:", fetchError);
+      if (fetchError.name === 'AbortError') {
+        throw new Error("Anthropic API request timed out after 55 seconds");
+      }
+      throw new Error(`Failed to call Anthropic API: ${fetchError.message}`);
+    }
+    clearTimeout(timeoutId);
+
+    console.log("Anthropic API response status:", anthropicResponse.status);
+
+    if (!anthropicResponse.ok) {
+      const errorText = await anthropicResponse.text();
+      console.error("Anthropic API error:", errorText);
+      throw new Error(`Anthropic API error: ${anthropicResponse.status} - ${errorText}`);
+    }
+
+    const anthropicData = await anthropicResponse.json();
+    console.log("Anthropic response received, content blocks:", anthropicData.content?.length || 0);
+
+    // Handle response with tool execution
     const encoder = new TextEncoder();
     const readableStream = new ReadableStream({
       async start(controller) {
         try {
-          let toolUseBlock: any = null;
-          let toolUseInputJson = "";
-
-          for await (const event of stream) {
-            // Handle different event types
-            if (event.type === "content_block_start") {
-              if (event.content_block.type === "tool_use") {
-                toolUseBlock = event.content_block;
-                toolUseInputJson = "";
-              }
-            }
-
-            if (event.type === "content_block_delta") {
-              if (event.delta.type === "text_delta") {
-                // Stream text content
-                const chunk = {
-                  choices: [{
-                    delta: {
-                      content: event.delta.text
-                    }
-                  }]
-                };
-                controller.enqueue(encoder.encode(`data: ${JSON.stringify(chunk)}\n\n`));
-              } else if (event.delta.type === "input_json_delta") {
-                // Accumulate tool input
-                toolUseInputJson += event.delta.partial_json;
-              }
-            }
-
-            if (event.type === "content_block_stop") {
-              if (toolUseBlock && toolUseInputJson) {
-                // Execute tool
-                const toolName = toolUseBlock.name;
-                const toolInput = JSON.parse(toolUseInputJson);
-
-                console.log(`Executing tool: ${toolName}`, toolInput);
-
-                // Execute the appropriate tool
-                let toolResult: any;
-                try {
-                  if (toolName === "create_lead") {
-                    toolResult = await executeCreateLead(supabase, toolInput);
-                  } else if (toolName === "search_data") {
-                    toolResult = await executeSearchData(supabase, toolInput);
-                  } else if (toolName === "lookup_accounts") {
-                    toolResult = await executeLookupAccounts(supabase, toolInput);
-                  } else if (toolName === "create_opportunity") {
-                    toolResult = await executeCreateOpportunity(supabase, toolInput);
-                  } else if (toolName === "search_aircraft") {
-                    toolResult = await executeSearchAircraft(supabase, toolInput);
-                  } else if (toolName === "send_quote_requests") {
-                    toolResult = await executeSendQuoteRequests(supabase, toolInput);
-                  } else if (toolName === "update_record") {
-                    toolResult = await executeUpdateRecord(supabase, toolInput);
-                  } else if (toolName === "calculate_metrics") {
-                    toolResult = await executeCalculateMetrics(supabase, toolInput);
-                  } else if (toolName === "enrich_airports") {
-                    toolResult = await executeEnrichAirports(supabase, toolInput);
+          // Process content blocks
+          for (const content of anthropicData.content) {
+            if (content.type === "text") {
+              // Stream text content
+              const chunk = {
+                choices: [{
+                  delta: {
+                    content: content.text
                   }
+                }]
+              };
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify(chunk)}\n\n`));
+            } else if (content.type === "tool_use") {
+              // Execute tool
+              const toolName = content.name;
+              const toolInput = content.input;
 
-                  // Stream tool result as text
-                  if (toolResult) {
-                    const resultChunk = {
-                      choices: [{
-                        delta: {
-                          content: `\n\n${toolResult}`
-                        }
-                      }]
-                    };
-                    controller.enqueue(encoder.encode(`data: ${JSON.stringify(resultChunk)}\n\n`));
-                  }
-                } catch (toolError) {
-                  console.error(`Tool execution error:`, toolError);
-                  const errorChunk = {
+              console.log(`Executing tool: ${toolName}`, toolInput);
+
+              // Execute the appropriate tool
+              let toolResult: any;
+              try {
+                if (toolName === "create_lead") {
+                  toolResult = await executeCreateLead(supabase, toolInput);
+                } else if (toolName === "search_data") {
+                  toolResult = await executeSearchData(supabase, toolInput);
+                } else if (toolName === "lookup_accounts") {
+                  toolResult = await executeLookupAccounts(supabase, toolInput);
+                } else if (toolName === "create_opportunity") {
+                  toolResult = await executeCreateOpportunity(supabase, toolInput);
+                } else if (toolName === "search_aircraft") {
+                  toolResult = await executeSearchAircraft(supabase, toolInput);
+                } else if (toolName === "send_quote_requests") {
+                  toolResult = await executeSendQuoteRequests(supabase, toolInput);
+                } else if (toolName === "update_record") {
+                  toolResult = await executeUpdateRecord(supabase, toolInput);
+                } else if (toolName === "calculate_metrics") {
+                  toolResult = await executeCalculateMetrics(supabase, toolInput);
+                } else if (toolName === "enrich_airports") {
+                  toolResult = await executeEnrichAirports(supabase, toolInput);
+                }
+
+                // Stream tool result as text
+                if (toolResult) {
+                  const resultChunk = {
                     choices: [{
                       delta: {
-                        content: `\n\n❌ Error: ${toolError instanceof Error ? toolError.message : "Tool execution failed"}`
+                        content: `\n\n${toolResult}`
                       }
                     }]
                   };
-                  controller.enqueue(encoder.encode(`data: ${JSON.stringify(errorChunk)}\n\n`));
+                  controller.enqueue(encoder.encode(`data: ${JSON.stringify(resultChunk)}\n\n`));
                 }
-
-                toolUseBlock = null;
-                toolUseInputJson = "";
+              } catch (toolError) {
+                console.error(`Tool execution error:`, toolError);
+                const errorChunk = {
+                  choices: [{
+                    delta: {
+                      content: `\n\n❌ Error: ${toolError instanceof Error ? toolError.message : "Tool execution failed"}`
+                    }
+                  }]
+                };
+                controller.enqueue(encoder.encode(`data: ${JSON.stringify(errorChunk)}\n\n`));
               }
             }
           }
@@ -568,23 +590,96 @@ async function executeCreateLead(supabase: any, input: any): Promise<string> {
       user_id: null // Anonymous for now
     };
 
-    const { data, error } = await supabase
+    const { data: leadRecord, error: leadError } = await supabase
       .from('leads')
       .insert(leadData)
       .select()
       .single();
 
-    if (error) {
-      throw new Error(`Failed to create lead: ${error.message}`);
+    if (leadError) {
+      throw new Error(`Failed to create lead: ${leadError.message}`);
     }
 
-    return `✅ Created lead #${data.id.slice(0, 8)} for ${input.first_name} ${input.last_name}
+    // Create account from the lead
+    const { data: accountRecord, error: accountError } = await supabase
+      .from('accounts')
+      .insert({
+        name: `${input.first_name} ${input.last_name}`,
+        email: leadData.email,
+        phone: input.phone || null,
+        company: null,
+        industry: null,
+        website: null,
+        description: null,
+        lead_id: leadRecord.id,
+        user_id: null, // Anonymous for now
+      })
+      .select()
+      .single();
+
+    if (accountError) {
+      throw new Error(`Failed to create account: ${accountError.message}`);
+    }
+
+    // Convert trip_type format
+    const convertTripType = (tripType: string): string => {
+      if (tripType === "One Way") return "one-way";
+      if (tripType === "Round Trip") return "round-trip";
+      return tripType.toLowerCase().replace(/\s+/g, '-');
+    };
+
+    // Create opportunity from the lead with all time/date fields
+    const opportunityData: any = {
+      name: `${input.departure_airport} to ${input.arrival_airport} - ${input.first_name} ${input.last_name}`,
+      account_id: accountRecord.id,
+      stage: "qualification",
+      amount: null,
+      probability: 50,
+      expected_close_date: depDate,
+      description: input.notes || null,
+      departure_airport: input.departure_airport,
+      arrival_airport: input.arrival_airport,
+      departure_date: depDate,
+      departure_time: depTime, // Include departure time
+      passengers: input.passengers,
+      trip_type: convertTripType(input.trip_type),
+      user_id: null, // Anonymous for now
+    };
+
+    // Add return date/time fields for round trips
+    if (input.return_datetime && retDate && retTime) {
+      opportunityData.return_date = retDate;
+      opportunityData.return_time = retTime;
+    }
+
+    const { error: opportunityError } = await supabase
+      .from('opportunities')
+      .insert(opportunityData);
+
+    if (opportunityError) {
+      throw new Error(`Failed to create opportunity: ${opportunityError.message}`);
+    }
+
+    // Update lead to mark as converted
+    const { error: updateError } = await supabase
+      .from('leads')
+      .update({
+        converted_to_account_id: accountRecord.id,
+        converted_at: new Date().toISOString(),
+      })
+      .eq('id', leadRecord.id);
+
+    if (updateError) {
+      throw new Error(`Failed to update lead: ${updateError.message}`);
+    }
+
+    return `✅ Created account and opportunity for ${input.first_name} ${input.last_name}
 → Route: ${input.departure_airport} → ${input.arrival_airport}
 → Departure: ${new Date(input.departure_datetime).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}
 ${input.return_datetime ? `→ Return: ${new Date(input.return_datetime).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}` : ''}
 → ${input.passengers} passenger${input.passengers > 1 ? 's' : ''}
 ${input.aircraft_categories ? `→ Aircraft: ${input.aircraft_categories}` : ''}
-→ View in CRM: /leads/${data.id}`;
+→ View account: /accounts/${accountRecord.id}`;
   } catch (error) {
     console.error("Create lead error:", error);
     throw error;
@@ -595,10 +690,17 @@ async function executeSearchData(supabase: any, input: any): Promise<string> {
   try {
     let query = supabase.from(input.entity).select('*');
 
-    // Apply filters
+    // Apply filters based on entity type
     if (input.search_text) {
       const searchLower = input.search_text.toLowerCase();
-      query = query.or(`first_name.ilike.%${searchLower}%,last_name.ilike.%${searchLower}%,email.ilike.%${searchLower}%,departure_airport.ilike.%${searchLower}%,arrival_airport.ilike.%${searchLower}%`);
+
+      if (input.entity === 'leads') {
+        query = query.or(`first_name.ilike.%${searchLower}%,last_name.ilike.%${searchLower}%,email.ilike.%${searchLower}%,departure_airport.ilike.%${searchLower}%,arrival_airport.ilike.%${searchLower}%`);
+      } else if (input.entity === 'accounts') {
+        query = query.or(`name.ilike.%${searchLower}%,email.ilike.%${searchLower}%,company.ilike.%${searchLower}%`);
+      } else if (input.entity === 'opportunities') {
+        query = query.or(`name.ilike.%${searchLower}%,departure_airport.ilike.%${searchLower}%,arrival_airport.ilike.%${searchLower}%,description.ilike.%${searchLower}%`);
+      }
     }
 
     if (input.status) {
@@ -649,6 +751,8 @@ async function executeSearchData(supabase: any, input: any): Promise<string> {
         result += `${index + 1}. ${record.first_name} ${record.last_name} - ${record.departure_airport}→${record.arrival_airport} - ${record.departure_date} - ${record.passengers} pax - ${record.status}\n`;
       } else if (input.entity === 'accounts') {
         result += `${index + 1}. ${record.name} - ${record.email || 'No email'} - ${record.phone || 'No phone'}\n`;
+      } else if (input.entity === 'opportunities') {
+        result += `${index + 1}. ${record.name} - ${record.departure_airport}→${record.arrival_airport} - ${record.departure_date} - ${record.passengers} pax - ${record.stage}\n`;
       } else {
         result += `${index + 1}. ${JSON.stringify(record).slice(0, 100)}...\n`;
       }
@@ -826,32 +930,58 @@ async function executeLookupAccounts(supabase: any, input: any): Promise<string>
 
 async function executeCreateOpportunity(supabase: any, input: any): Promise<string> {
   try {
-    // Parse dates
-    const depDate = input.departure_datetime.split('T')[0];
-    const retDate = input.return_datetime ? input.return_datetime.split('T')[0] : null;
-
     // Auto-generate name if not provided
     const opportunityName = input.name || `${input.departure_airport} → ${input.arrival_airport}`;
 
-    // Create opportunity object
-    const opportunityData = {
+    // Convert trip_type from lead format to opportunity format
+    const convertTripType = (tripType: string): string => {
+      if (tripType === "One Way") return "one-way";
+      if (tripType === "Round Trip") return "round-trip";
+      if (tripType === "Multi-Leg") return "multi-leg";
+      return tripType.toLowerCase().replace(/\s+/g, '-');
+    };
+
+    // Build description with additional details
+    let description = input.description || "";
+    if (input.return_datetime) {
+      description = `Return: ${new Date(input.return_datetime).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}\n${description}`;
+    }
+
+    // Get the user_id from the account (accounts are created with a user_id)
+    const { data: accountData, error: accountError } = await supabase
+      .from('accounts')
+      .select('user_id')
+      .eq('id', input.account_id)
+      .single();
+
+    if (accountError) {
+      throw new Error(`Failed to get account user_id: ${accountError.message}`);
+    }
+
+    // Create opportunity object with full flight details
+    const opportunityData: any = {
       account_id: input.account_id,
       name: opportunityName,
-      departure_airport: input.departure_airport,
-      arrival_airport: input.arrival_airport,
-      departure_date: depDate,
-      departure_datetime: input.departure_datetime,
-      return_date: retDate,
-      return_datetime: input.return_datetime || null,
-      passengers: input.passengers,
-      trip_type: input.trip_type,
       stage: "qualification",
       probability: input.probability || 50,
-      expected_close_date: input.expected_close_date || depDate,
+      expected_close_date: input.expected_close_date || input.departure_datetime.split('T')[0],
       amount: input.amount || null,
-      description: input.description || null,
-      user_id: null // Will need to get from auth context
+      description: description.trim() || null,
+      departure_airport: input.departure_airport,
+      arrival_airport: input.arrival_airport,
+      departure_date: input.departure_datetime.split('T')[0],
+      passengers: input.passengers,
+      trip_type: convertTripType(input.trip_type),
+      user_id: accountData.user_id // Use the same user_id as the account
     };
+
+    // Add datetime fields if available
+    if (input.departure_datetime) {
+      opportunityData.departure_datetime = input.departure_datetime;
+    }
+    if (input.return_datetime) {
+      opportunityData.return_datetime = input.return_datetime;
+    }
 
     const { data, error } = await supabase
       .from('opportunities')

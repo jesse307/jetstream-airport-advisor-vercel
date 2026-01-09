@@ -1,73 +1,88 @@
-# Welcome to your Lovable project
+# Jetstream Airport Advisor - Vercel Deployment
 
-## Project info
+This is the Vercel-optimized version of Jetstream Airport Advisor, migrated from Lovable.
 
-**URL**: https://lovable.dev/projects/300e3d3f-6393-4fa8-9ea2-e17c21482f24
+## 🚀 Quick Start
 
-## How can I edit this code?
+### Local Development
 
-There are several ways of editing your application.
+```bash
+# Install dependencies
+npm install
 
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/300e3d3f-6393-4fa8-9ea2-e17c21482f24) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Start development server
 npm run dev
+
+# Build for production
+npm run build
+
+# Preview production build
+npm run preview
 ```
 
-**Edit a file directly in GitHub**
+### Deploy to Vercel
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+See [VERCEL_MIGRATION_GUIDE.md](./VERCEL_MIGRATION_GUIDE.md) for complete deployment instructions.
 
-**Use GitHub Codespaces**
+**Quick Deploy:**
+1. Push to GitHub
+2. Import to Vercel
+3. Add environment variables
+4. Deploy!
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+---
 
-## What technologies are used for this project?
+## 📋 Environment Variables Required
 
-This project is built with:
+Create a `.env.local` file for local development:
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+```env
+VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_PUBLISHABLE_KEY=your_supabase_anon_key
+VITE_GOOGLE_MAPS_API_KEY=your_google_maps_key
+VITE_TINYMCE_API_KEY=your_tinymce_key
+```
 
-## How can I deploy this project?
+---
 
-Simply open [Lovable](https://lovable.dev/projects/300e3d3f-6393-4fa8-9ea2-e17c21482f24) and click on Share -> Publish.
+## 🔗 Links
 
-## Can I connect a custom domain to my Lovable project?
+- **Lovable Version:** Still working at original location
+- **Vercel Version:** This repository
+- **Migration Guide:** [VERCEL_MIGRATION_GUIDE.md](./VERCEL_MIGRATION_GUIDE.md)
 
-Yes, you can!
+---
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+## 📚 Tech Stack
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+- **Frontend:** React 18 + TypeScript + Vite
+- **UI:** Tailwind CSS + shadcn/ui
+- **Backend:** Supabase (Database + Auth + Edge Functions)
+- **Deployment:** Vercel
+- **Maps:** Google Maps API
+- **Editor:** TinyMCE
+
+---
+
+## 🎯 Features
+
+- ✅ Lead Management
+- ✅ Account & Opportunity Tracking
+- ✅ AI Chatbot (Claude-powered)
+- ✅ Flight Search & Booking
+- ✅ Operator Management
+- ✅ Email Automation
+- ✅ Real-time Database
+
+---
+
+## 📝 Recent Updates
+
+- **2026-01-09:** Migrated from Lovable to Vercel
+- **2026-01-09:** Fixed chatbot account creation
+- **2026-01-09:** Enhanced chatbot UI with persistence and markdown
+
+---
+
+**Version:** 1.0.0
+**Last Updated:** 2026-01-09
