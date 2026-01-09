@@ -36,6 +36,14 @@ interface AircraftQuoteSearchProps {
   opportunityId: string;
 }
 
+interface QuoteRequest {
+  operatorId: string;
+  operatorName: string;
+  operatorEmail: string | null;
+  categories: string[];
+  types: string[];
+}
+
 export const AircraftQuoteSearch = ({ opportunityId }: AircraftQuoteSearchProps) => {
   const { user } = useAuth();
   const [operators, setOperators] = useState<TrustedOperator[]>([]);
@@ -45,6 +53,7 @@ export const AircraftQuoteSearch = ({ opportunityId }: AircraftQuoteSearchProps)
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const [expandedOperators, setExpandedOperators] = useState<Set<string>>(new Set());
+  const [quoteRequests, setQuoteRequests] = useState<QuoteRequest[]>([]);
 
   // Get unique categories and types from all aircraft
   const allAircraft = operators.flatMap(op => op.aircraft);
@@ -58,6 +67,10 @@ export const AircraftQuoteSearch = ({ opportunityId }: AircraftQuoteSearchProps)
   useEffect(() => {
     applyFilters();
   }, [operators, searchTerm, selectedCategories, selectedTypes]);
+
+  useEffect(() => {
+    generateQuoteRequests();
+  }, [operators, selectedCategories, selectedTypes]);
 
   const loadAircraft = async () => {
     if (!user) return;
@@ -123,24 +136,43 @@ export const AircraftQuoteSearch = ({ opportunityId }: AircraftQuoteSearchProps)
         }
       }
 
-      // Category filter (multiple selection)
-      if (selectedCategories.length > 0) {
-        aircraftList = aircraftList.filter(ac =>
-          ac.aircraft_category && selectedCategories.includes(ac.aircraft_category)
-        );
-      }
-
-      // Type filter (multiple selection)
-      if (selectedTypes.length > 0) {
-        aircraftList = aircraftList.filter(ac =>
-          ac.aircraft_type && selectedTypes.includes(ac.aircraft_type)
-        );
-      }
-
       return { ...op, aircraft: aircraftList };
     }).filter(op => op.aircraft.length > 0);
 
     setFilteredOperators(filtered);
+  };
+
+  const generateQuoteRequests = () => {
+    if (selectedCategories.length === 0 && selectedTypes.length === 0) {
+      setQuoteRequests([]);
+      return;
+    }
+
+    const requests: QuoteRequest[] = [];
+
+    operators.forEach(operator => {
+      const operatorCategories = new Set(operator.aircraft.map(ac => ac.aircraft_category).filter(Boolean));
+      const operatorTypes = new Set(operator.aircraft.map(ac => ac.aircraft_type).filter(Boolean));
+
+      // Find matching categories
+      const matchingCategories = selectedCategories.filter(cat => operatorCategories.has(cat));
+
+      // Find matching types
+      const matchingTypes = selectedTypes.filter(type => operatorTypes.has(type));
+
+      // Only add request if operator has matching aircraft
+      if (matchingCategories.length > 0 || matchingTypes.length > 0) {
+        requests.push({
+          operatorId: operator.id,
+          operatorName: operator.name,
+          operatorEmail: operator.contact_email,
+          categories: matchingCategories,
+          types: matchingTypes
+        });
+      }
+    });
+
+    setQuoteRequests(requests);
   };
 
   const toggleCategory = (category: string) => {
@@ -171,38 +203,42 @@ export const AircraftQuoteSearch = ({ opportunityId }: AircraftQuoteSearchProps)
     });
   };
 
-  const handleQuoteOperatorCategory = (operator: TrustedOperator, category: string) => {
-    if (!operator.contact_email) {
+  const handleSendQuoteRequest = (request: QuoteRequest) => {
+    if (!request.operatorEmail) {
       toast.error("No contact email available for this operator");
       return;
     }
 
-    const subject = `Quote Request - Any ${category}`;
-    const body = `Hi,%0D%0A%0D%0AI would like to request a quote for any available ${category} from ${operator.name}.%0D%0A%0D%0AThanks!`;
-    window.location.href = `mailto:${operator.contact_email}?subject=${encodeURIComponent(subject)}&body=${body}`;
+    const items: string[] = [];
+    if (request.categories.length > 0) {
+      items.push(...request.categories);
+    }
+    if (request.types.length > 0) {
+      items.push(...request.types);
+    }
+
+    const itemsText = items.join(', ');
+    const subject = `Quote Request - ${itemsText}`;
+    const body = `Hi,%0D%0A%0D%0AI would like to request a quote for the following aircraft from ${request.operatorName}:%0D%0A%0D%0A${items.map(item => `- ${item}`).join('%0D%0A')}%0D%0A%0D%0AThanks!`;
+    window.location.href = `mailto:${request.operatorEmail}?subject=${encodeURIComponent(subject)}&body=${body}`;
   };
 
-  const handleQuoteSpecificAircraft = (operator: TrustedOperator, aircraft: Aircraft) => {
-    if (!operator.contact_email) {
-      toast.error("No contact email available for this operator");
+  const handleSendAllQuotes = () => {
+    const validRequests = quoteRequests.filter(req => req.operatorEmail);
+
+    if (validRequests.length === 0) {
+      toast.error("No valid quote requests with email addresses");
       return;
     }
 
-    const subject = `Quote Request - ${aircraft.tail_number} (${aircraft.aircraft_type || 'Aircraft'})`;
-    const body = `Hi,%0D%0A%0D%0AI would like to request a quote for ${aircraft.tail_number}.%0D%0A%0D%0AThanks!`;
-    window.location.href = `mailto:${operator.contact_email}?subject=${encodeURIComponent(subject)}&body=${body}`;
-  };
+    // Send all emails (will open multiple mailto links)
+    validRequests.forEach((request, index) => {
+      setTimeout(() => {
+        handleSendQuoteRequest(request);
+      }, index * 500); // Stagger the emails to avoid browser blocking
+    });
 
-  const handleQuoteAircraftType = (operator: TrustedOperator, aircraftType: string, category: string | null) => {
-    if (!operator.contact_email) {
-      toast.error("No contact email available for this operator");
-      return;
-    }
-
-    const subject = `Quote Request - ${aircraftType}`;
-    const categoryInfo = category ? ` (${category})` : '';
-    const body = `Hi,%0D%0A%0D%0AI would like to request a quote for any available ${aircraftType}${categoryInfo} from ${operator.name}.%0D%0A%0D%0AThanks!`;
-    window.location.href = `mailto:${operator.contact_email}?subject=${encodeURIComponent(subject)}&body=${body}`;
+    toast.success(`Opening ${validRequests.length} quote request emails`);
   };
 
   if (loading) {
@@ -238,8 +274,10 @@ export const AircraftQuoteSearch = ({ opportunityId }: AircraftQuoteSearchProps)
         </CardDescription>
       </CardHeader>
       <CardContent>
-        {/* Search and Filters */}
-        <div className="space-y-4 mb-6">
+        {/* Two Column Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Left Column - Selection */}
+          <div className="space-y-4">
           {/* Search Bar */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -369,146 +407,107 @@ export const AircraftQuoteSearch = ({ opportunityId }: AircraftQuoteSearchProps)
               Clear All Filters
             </Button>
           )}
-        </div>
 
-        <Separator className="mb-4" />
-
-        {/* Results - Operators with Aircraft */}
-        <div className="space-y-3">
-          {filteredOperators.length === 0 ? (
-            <div className="text-center py-8">
-              <Plane className="h-12 w-12 text-muted-foreground mx-auto mb-3 opacity-20" />
-              <p className="text-sm text-muted-foreground">
-                {operators.length === 0
-                  ? "No aircraft available. Add trusted operators first."
-                  : "No operators match your search criteria."}
-              </p>
-            </div>
-          ) : (
-            <>
-              <div className="text-sm text-muted-foreground mb-2">
-                Found {filteredOperators.length} operator{filteredOperators.length !== 1 ? 's' : ''} with {filteredOperators.reduce((sum, op) => sum + op.aircraft.length, 0)} aircraft
+            {/* Operator List - For Reference */}
+            <div className="mt-4">
+              <Label className="text-sm font-semibold mb-2 block">Available Operators</Label>
+              <div className="text-xs text-muted-foreground space-y-1">
+                {filteredOperators.length === 0 ? (
+                  <p>No operators match your criteria</p>
+                ) : (
+                  filteredOperators.map(op => (
+                    <div key={op.id} className="flex items-center justify-between py-1 border-b border-border/50">
+                      <span>{op.name}</span>
+                      <Badge variant="outline" className="text-xs">{op.aircraft.length}</Badge>
+                    </div>
+                  ))
+                )}
               </div>
-              <div className="max-h-[500px] overflow-y-auto space-y-3">
-                {filteredOperators.map((operator) => {
-                  const isExpanded = expandedOperators.has(operator.id);
-                  const categoriesInFleet = Array.from(new Set(operator.aircraft.map(ac => ac.aircraft_category).filter(Boolean)));
+            </div>
+          </div>
 
-                  return (
-                    <div
-                      key={operator.id}
-                      className="border border-border rounded-lg overflow-hidden"
-                    >
-                      {/* Operator Header */}
-                      <div className="bg-accent/30 p-4">
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-2">
-                              <Building2 className="h-5 w-5 text-primary" />
-                              <h3 className="font-semibold text-lg">{operator.name}</h3>
-                              <Badge variant="outline">{operator.aircraft.length} aircraft</Badge>
-                            </div>
+          {/* Right Column - Quote Requests */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <Label className="text-sm font-semibold">Quote Requests ({quoteRequests.length})</Label>
+              {quoteRequests.length > 0 && (
+                <Button onClick={handleSendAllQuotes} size="sm">
+                  <Send className="h-3 w-3 mr-1" />
+                  Send All ({quoteRequests.length})
+                </Button>
+              )}
+            </div>
 
-                            {/* Categories available from this operator */}
-                            <div className="flex flex-wrap gap-2 mt-2">
-                              {categoriesInFleet.map(category => (
-                                <Button
-                                  key={category}
-                                  size="sm"
-                                  variant="secondary"
-                                  onClick={() => handleQuoteOperatorCategory(operator, category!)}
-                                  disabled={!operator.contact_email}
-                                  className="h-7 text-xs"
-                                >
-                                  <Send className="h-3 w-3 mr-1" />
-                                  Request any {category}
-                                </Button>
+            <Separator />
+
+            <div className="space-y-2 max-h-[500px] overflow-y-auto">
+              {quoteRequests.length === 0 ? (
+                <div className="text-center py-12">
+                  <Plane className="h-12 w-12 text-muted-foreground mx-auto mb-3 opacity-20" />
+                  <p className="text-sm text-muted-foreground">
+                    Select categories or aircraft types to build your quote requests
+                  </p>
+                </div>
+              ) : (
+                quoteRequests.map((request) => (
+                  <div
+                    key={request.operatorId}
+                    className="border border-border rounded-lg p-4 hover:bg-accent/10 transition-colors"
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Building2 className="h-4 w-4 text-primary" />
+                          <h4 className="font-semibold">{request.operatorName}</h4>
+                        </div>
+
+                        {/* Categories */}
+                        {request.categories.length > 0 && (
+                          <div className="mb-2">
+                            <p className="text-xs text-muted-foreground mb-1">Categories:</p>
+                            <div className="flex flex-wrap gap-1">
+                              {request.categories.map(cat => (
+                                <Badge key={cat} variant="secondary" className="text-xs">
+                                  {cat}
+                                </Badge>
                               ))}
                             </div>
                           </div>
+                        )}
 
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => toggleOperator(operator.id)}
-                          >
-                            {isExpanded ? (
-                              <ChevronDown className="h-4 w-4" />
-                            ) : (
-                              <ChevronRight className="h-4 w-4" />
-                            )}
-                          </Button>
-                        </div>
+                        {/* Types */}
+                        {request.types.length > 0 && (
+                          <div>
+                            <p className="text-xs text-muted-foreground mb-1">Aircraft Types:</p>
+                            <div className="flex flex-wrap gap-1">
+                              {request.types.map(type => (
+                                <Badge key={type} variant="outline" className="text-xs">
+                                  {type}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
 
-                      {/* Aircraft List (Collapsible) - Grouped by Type */}
-                      <Collapsible open={isExpanded}>
-                        <CollapsibleContent>
-                          <div className="p-4 space-y-2">
-                            {(() => {
-                              // Group aircraft by type
-                              const groupedByType = operator.aircraft.reduce((acc, aircraft) => {
-                                const type = aircraft.aircraft_type || 'Unknown Type';
-                                if (!acc[type]) {
-                                  acc[type] = {
-                                    type,
-                                    category: aircraft.aircraft_category,
-                                    aircraft: [],
-                                    count: 0
-                                  };
-                                }
-                                acc[type].aircraft.push(aircraft);
-                                acc[type].count++;
-                                return acc;
-                              }, {} as Record<string, { type: string; category: string | null; aircraft: Aircraft[]; count: number }>);
-
-                              const typeGroups = Object.values(groupedByType);
-
-                              return typeGroups.map((group) => (
-                                <div
-                                  key={group.type}
-                                  className="flex items-start justify-between p-3 bg-accent/10 rounded-md hover:bg-accent/20 transition-colors"
-                                >
-                                  <div className="flex-1">
-                                    <div className="flex items-center gap-2 mb-1">
-                                      <Plane className="h-4 w-4 text-primary" />
-                                      <p className="font-semibold">{group.type}</p>
-                                      {group.category && (
-                                        <Badge variant="secondary" className="text-xs">
-                                          {group.category}
-                                        </Badge>
-                                      )}
-                                      <Badge variant="outline" className="text-xs">
-                                        {group.count} available
-                                      </Badge>
-                                    </div>
-
-                                    {/* Show tail numbers as a compact list */}
-                                    <p className="text-xs text-muted-foreground mt-1">
-                                      {group.aircraft.map(ac => ac.tail_number).join(', ')}
-                                    </p>
-                                  </div>
-
-                                  <Button
-                                    size="sm"
-                                    onClick={() => handleQuoteAircraftType(operator, group.type, group.category)}
-                                    disabled={!operator.contact_email}
-                                  >
-                                    <Send className="h-3 w-3 mr-1" />
-                                    Quote
-                                  </Button>
-                                </div>
-                              ));
-                            })()}
-                          </div>
-                        </CollapsibleContent>
-                      </Collapsible>
+                      <Button
+                        size="sm"
+                        onClick={() => handleSendQuoteRequest(request)}
+                        disabled={!request.operatorEmail}
+                      >
+                        <Send className="h-3 w-3 mr-1" />
+                        Send
+                      </Button>
                     </div>
-                  );
-                })}
-              </div>
-            </>
-          )}
+
+                    {!request.operatorEmail && (
+                      <p className="text-xs text-destructive">No email available</p>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
         </div>
       </CardContent>
     </Card>
