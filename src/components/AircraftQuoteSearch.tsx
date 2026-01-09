@@ -178,7 +178,7 @@ export const AircraftQuoteSearch = ({ opportunityId }: AircraftQuoteSearchProps)
 
           const locations = new Set(
             matchingAircraft
-              .map(ac => ac.home_airport_icao || ac.home_airport_iata || ac.home_airport_name)
+              .map(ac => ac.home_airport_icao || ac.home_airport_iata)
               .filter(Boolean)
           );
           aircraftLocations = Array.from(locations) as string[];
