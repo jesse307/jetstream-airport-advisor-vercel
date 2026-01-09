@@ -428,79 +428,74 @@ export const AircraftQuoteSearch = ({ opportunityId }: AircraftQuoteSearchProps)
                 </p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="border rounded-lg divide-y">
                 {quoteRequests.map((request) => (
                   <div
                     key={request.operatorId}
-                    className={`border rounded-lg p-4 transition-all ${
+                    className={`p-4 transition-colors ${
                       selectedRequests.has(request.operatorId)
-                        ? 'border-primary bg-primary/5 shadow-md'
-                        : 'border-border bg-card hover:shadow-md'
+                        ? 'bg-primary/5'
+                        : 'hover:bg-accent/50'
                     }`}
                   >
-                    <div className="flex items-start gap-3 mb-3">
+                    <div className="flex items-start gap-3">
                       <Checkbox
                         id={`request-${request.operatorId}`}
                         checked={selectedRequests.has(request.operatorId)}
                         onCheckedChange={() => toggleRequestSelection(request.operatorId)}
-                        className="mt-0.5"
+                        className="mt-1"
                       />
-                      <div className="flex-1">
+                      <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-2">
                           <Building2 className="h-4 w-4 text-primary flex-shrink-0" />
                           <h4 className="font-semibold text-sm">{request.operatorName}</h4>
                           <Badge
                             variant={request.fleetType === 'floating' ? 'default' : 'outline'}
-                            className="text-xs ml-auto"
+                            className="text-xs"
                           >
-                            {request.fleetType === 'floating' ? 'Floating Fleet' : 'Fixed Fleet'}
+                            {request.fleetType === 'floating' ? 'Floating' : 'Fixed'}
                           </Badge>
                         </div>
 
-                        {/* Aircraft Locations (for fixed fleet) */}
-                        {request.fleetType === 'fixed' && request.aircraftLocations && request.aircraftLocations.length > 0 && (
-                          <div className="mb-2">
-                            <p className="text-xs text-muted-foreground mb-1.5">
-                              <MapPin className="inline h-3 w-3 mr-1" />
-                              Based at:
-                            </p>
-                            <div className="flex flex-wrap gap-1">
-                              {request.aircraftLocations.map(location => (
-                                <Badge key={location} variant="secondary" className="text-xs">
-                                  {location}
-                                </Badge>
-                              ))}
+                        <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm">
+                          {/* Aircraft Locations (for fixed fleet) */}
+                          {request.fleetType === 'fixed' && request.aircraftLocations && request.aircraftLocations.length > 0 && (
+                            <div className="flex items-center gap-1.5">
+                              <MapPin className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                              <span className="text-muted-foreground">
+                                {request.aircraftLocations.join(', ')}
+                              </span>
                             </div>
-                          </div>
-                        )}
+                          )}
 
-                        {/* Categories */}
-                        {request.categories.length > 0 && (
-                          <div className="mb-2">
-                            <p className="text-xs text-muted-foreground mb-1.5">Categories:</p>
-                            <div className="flex flex-wrap gap-1">
-                              {request.categories.map(cat => (
-                                <Badge key={cat} variant="secondary" className="text-xs">
-                                  {cat}
-                                </Badge>
-                              ))}
+                          {/* Categories */}
+                          {request.categories.length > 0 && (
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-muted-foreground text-xs">Categories:</span>
+                              <div className="flex flex-wrap gap-1">
+                                {request.categories.map(cat => (
+                                  <Badge key={cat} variant="secondary" className="text-xs">
+                                    {cat}
+                                  </Badge>
+                                ))}
+                              </div>
                             </div>
-                          </div>
-                        )}
+                          )}
 
-                        {/* Types */}
-                        {request.types.length > 0 && (
-                          <div>
-                            <p className="text-xs text-muted-foreground mb-1.5">Aircraft Types:</p>
-                            <div className="flex flex-wrap gap-1">
-                              {request.types.map(type => (
-                                <Badge key={type} variant="outline" className="text-xs">
-                                  {type}
-                                </Badge>
-                              ))}
+                          {/* Types */}
+                          {request.types.length > 0 && (
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-muted-foreground text-xs">Types:</span>
+                              <div className="flex flex-wrap gap-1">
+                                {request.types.map(type => (
+                                  <Badge key={type} variant="outline" className="text-xs">
+                                    {type}
+                                  </Badge>
+                                ))}
+                              </div>
                             </div>
-                          </div>
-                        )}
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
