@@ -148,36 +148,42 @@ export const AircraftQuoteSearch = ({ opportunityId, departureAirport, arrivalAi
     const airportCodes = new Set<string>();
 
     // Add departure and arrival airports from opportunity
-    if (departureAirport) airportCodes.add(departureAirport);
-    if (arrivalAirport) airportCodes.add(arrivalAirport);
+    if (departureAirport) airportCodes.add(departureAirport.toUpperCase());
+    if (arrivalAirport) airportCodes.add(arrivalAirport.toUpperCase());
 
     // Add all aircraft home airports
     operators.forEach(op => {
       op.aircraft.forEach(ac => {
-        if (ac.home_airport_icao) airportCodes.add(ac.home_airport_icao);
-        if (ac.home_airport_iata) airportCodes.add(ac.home_airport_iata);
+        if (ac.home_airport_icao) airportCodes.add(ac.home_airport_icao.toUpperCase());
+        if (ac.home_airport_iata) airportCodes.add(ac.home_airport_iata.toUpperCase());
       });
     });
 
-    // Fetch coordinates for all airports
+    // Fetch coordinates for all airports in batch
     const coords = new Map<string, { lat: number; lon: number }>();
 
-    for (const code of airportCodes) {
+    if (airportCodes.size > 0) {
       try {
         const { data, error } = await supabase
           .from('fallback_airports')
           .select('code, latitude, longitude')
-          .eq('code', code)
-          .single();
+          .in('code', Array.from(airportCodes));
 
-        if (!error && data && data.latitude && data.longitude) {
-          coords.set(code, {
-            lat: Number(data.latitude),
-            lon: Number(data.longitude)
+        if (!error && data) {
+          data.forEach(airport => {
+            if (airport.latitude && airport.longitude) {
+              coords.set(airport.code.toUpperCase(), {
+                lat: Number(airport.latitude),
+                lon: Number(airport.longitude)
+              });
+            }
           });
+          console.log('Fetched coordinates for airports:', coords);
+        } else if (error) {
+          console.error('Error fetching airport coordinates:', error);
         }
       } catch (err) {
-        console.error(`Error fetching coords for ${code}:`, err);
+        console.error('Error fetching airport coordinates:', err);
       }
     }
 
@@ -238,36 +244,42 @@ export const AircraftQuoteSearch = ({ opportunityId, departureAirport, arrivalAi
             if (!categoryMatch && !typeMatch) return false;
 
             // Apply distance filter for fixed fleet
-            const aircraftCode = ac.home_airport_icao || ac.home_airport_iata;
+            const aircraftCode = (ac.home_airport_icao || ac.home_airport_iata)?.toUpperCase();
             if (!aircraftCode) return false;
 
             const aircraftCoord = airportCoords.get(aircraftCode);
-            if (!aircraftCoord) return true; // Include if no coords found (fallback)
+            if (!aircraftCoord) {
+              console.log(`No coordinates found for aircraft at ${aircraftCode}`);
+              return false; // Exclude if no coords found
+            }
 
             // Check distance from departure airport
             if (departureAirport) {
-              const depCoord = airportCoords.get(departureAirport);
+              const depCoord = airportCoords.get(departureAirport.toUpperCase());
               if (depCoord) {
                 const distFromDep = calculateDistance(
                   aircraftCoord.lat, aircraftCoord.lon,
                   depCoord.lat, depCoord.lon
                 );
+                console.log(`Distance from ${aircraftCode} to ${departureAirport}: ${distFromDep.toFixed(1)} miles`);
                 if (distFromDep <= maxDistance) return true;
               }
             }
 
             // Check distance from arrival airport
             if (arrivalAirport) {
-              const arrCoord = airportCoords.get(arrivalAirport);
+              const arrCoord = airportCoords.get(arrivalAirport.toUpperCase());
               if (arrCoord) {
                 const distFromArr = calculateDistance(
                   aircraftCoord.lat, aircraftCoord.lon,
                   arrCoord.lat, arrCoord.lon
                 );
+                console.log(`Distance from ${aircraftCode} to ${arrivalAirport}: ${distFromArr.toFixed(1)} miles`);
                 if (distFromArr <= maxDistance) return true;
               }
             }
 
+            console.log(`Aircraft at ${aircraftCode} filtered out - beyond ${maxDistance} miles`);
             return false; // Not within distance of either airport
           });
 
