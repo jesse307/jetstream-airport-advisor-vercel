@@ -29,6 +29,7 @@ interface TrustedOperator {
   id: string;
   name: string;
   contact_email: string | null;
+  fleet_type: 'floating' | 'fixed';
   aircraft: Aircraft[];
 }
 
@@ -40,8 +41,10 @@ interface QuoteRequest {
   operatorId: string;
   operatorName: string;
   operatorEmail: string | null;
+  fleetType: 'floating' | 'fixed';
   categories: string[];
   types: string[];
+  aircraftLocations?: string[]; // For fixed fleet: home bases of matching aircraft
 }
 
 export const AircraftQuoteSearch = ({ opportunityId }: AircraftQuoteSearchProps) => {
@@ -82,7 +85,7 @@ export const AircraftQuoteSearch = ({ opportunityId }: AircraftQuoteSearchProps)
       // Get all trusted operators for this user
       const { data: operatorsData, error: operatorsError } = await supabase
         .from('trusted_operators')
-        .select('id, name, contact_email')
+        .select('id, name, contact_email, fleet_type')
         .eq('user_id', user.id);
 
       if (operatorsError) throw operatorsError;
@@ -164,12 +167,31 @@ export const AircraftQuoteSearch = ({ opportunityId }: AircraftQuoteSearchProps)
 
       // Only add request if operator has matching aircraft
       if (matchingCategories.length > 0 || matchingTypes.length > 0) {
+        // For fixed fleet operators, collect unique home airport locations of matching aircraft
+        let aircraftLocations: string[] | undefined;
+        if (operator.fleet_type === 'fixed') {
+          const matchingAircraft = operator.aircraft.filter(ac => {
+            const categoryMatch = matchingCategories.includes(ac.aircraft_category || '');
+            const typeMatch = matchingTypes.includes(ac.aircraft_type || '');
+            return categoryMatch || typeMatch;
+          });
+
+          const locations = new Set(
+            matchingAircraft
+              .map(ac => ac.home_airport_name || ac.home_airport_icao || ac.home_airport_iata)
+              .filter(Boolean)
+          );
+          aircraftLocations = Array.from(locations) as string[];
+        }
+
         requests.push({
           operatorId: operator.id,
           operatorName: operator.name,
           operatorEmail: operator.contact_email,
+          fleetType: operator.fleet_type,
           categories: matchingCategories,
-          types: matchingTypes
+          types: matchingTypes,
+          aircraftLocations
         });
       }
     });
@@ -427,7 +449,30 @@ export const AircraftQuoteSearch = ({ opportunityId }: AircraftQuoteSearchProps)
                         <div className="flex items-center gap-2 mb-2">
                           <Building2 className="h-4 w-4 text-primary flex-shrink-0" />
                           <h4 className="font-semibold text-sm">{request.operatorName}</h4>
+                          <Badge
+                            variant={request.fleetType === 'floating' ? 'default' : 'outline'}
+                            className="text-xs ml-auto"
+                          >
+                            {request.fleetType === 'floating' ? 'Floating Fleet' : 'Fixed Fleet'}
+                          </Badge>
                         </div>
+
+                        {/* Aircraft Locations (for fixed fleet) */}
+                        {request.fleetType === 'fixed' && request.aircraftLocations && request.aircraftLocations.length > 0 && (
+                          <div className="mb-2">
+                            <p className="text-xs text-muted-foreground mb-1.5">
+                              <MapPin className="inline h-3 w-3 mr-1" />
+                              Based at:
+                            </p>
+                            <div className="flex flex-wrap gap-1">
+                              {request.aircraftLocations.map(location => (
+                                <Badge key={location} variant="secondary" className="text-xs">
+                                  {location}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                        )}
 
                         {/* Categories */}
                         {request.categories.length > 0 && (
