@@ -54,6 +54,9 @@ export function HomePageChatbot() {
 
     try {
       const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/claude-autonomous-chat`;
+      console.log("Sending message to:", CHAT_URL);
+      console.log("Messages:", [...messages, userMessage]);
+
       const resp = await fetch(CHAT_URL, {
         method: "POST",
         headers: {
@@ -79,8 +82,22 @@ export function HomePageChatbot() {
 
       if (!resp.ok || !resp.body) {
         const errorText = await resp.text();
-        console.error("API Error:", errorText);
-        throw new Error("Failed to start stream");
+        console.error("API Error:", {
+          status: resp.status,
+          statusText: resp.statusText,
+          error: errorText
+        });
+
+        if (resp.status === 404) {
+          toast.error("Edge Function not deployed. Please deploy claude-autonomous-chat function.");
+        } else if (resp.status === 500) {
+          toast.error(`Server error: ${errorText.slice(0, 100)}`);
+        } else {
+          toast.error(`API error (${resp.status}): ${errorText.slice(0, 100)}`);
+        }
+
+        setIsLoading(false);
+        return;
       }
 
       const reader = resp.body.getReader();
