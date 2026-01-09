@@ -5,7 +5,19 @@ An AI-powered chatbot using Anthropic Claude that appears at the top of the home
 
 ## Features Implemented
 
-### 1. Natural Language Lead Creation
+### 1. Complete Workflow Automation
+Execute the entire booking process with a single conversation:
+```
+"Book a flight for Michael Morgan, 1/15 @ noon - 1/17 @ 3pm, 2 pax, TEB to LAX, light jet"
+
+→ Checks if Michael Morgan exists as a client
+→ Creates lead if new, or uses existing account
+→ Creates opportunity with trip details
+→ Searches for matching aircraft from trusted operators
+→ Sends quote requests to matching operators
+```
+
+### 2. Natural Language Lead Creation
 Parse casual input and auto-create properly formatted leads:
 ```
 "Michael Morgan, 1/15 @ noon - 1/17 @ 3pm, 2 pax, light and superlight"
@@ -136,31 +148,56 @@ supabase functions deploy claude-autonomous-chat --project-ref hwemookrxvflpinfp
 
 ## Tool Capabilities
 
-### 1. create_lead
+### 1. lookup_accounts
+- **Triggers**: "Check if client exists", "Find existing client", "Look up..."
+- **Searches**: Name, email, company
+- **Returns**: List of matching accounts with IDs
+- **Use Case**: Prevents duplicate clients, retrieves account ID for opportunities
+
+### 2. create_lead
 - **Triggers**: "Create lead for...", "Add...", "New booking..."
 - **Extracts**: Name, airports, dates/times, passengers, aircraft categories
 - **Auto-fills**: Trip type, email placeholder if not provided
 - **Returns**: Lead ID and link to view in CRM
 
-### 2. search_data
+### 3. create_opportunity
+- **Triggers**: "Create opportunity", "Book...", "Set up trip..."
+- **Requires**: Account ID (from lookup_accounts), trip details
+- **Creates**: Opportunity in "qualification" stage with 50% probability
+- **Auto-generates**: Opportunity name as "ROUTE - CLIENT"
+- **Returns**: Opportunity ID and link to view
+
+### 4. search_aircraft
+- **Triggers**: "Find aircraft", "Search for jets", "What aircraft are available..."
+- **Filters**: Aircraft categories, route (for distance), passengers
+- **Searches**: Trusted operators and their aircraft inventory
+- **Returns**: List of operators with matching aircraft, fleet type, locations
+
+### 5. send_quote_requests
+- **Triggers**: "Send quotes", "Request prices", "Get quotes from..."
+- **Requires**: Opportunity ID, operator IDs, aircraft categories
+- **Generates**: Quote request details for each operator
+- **Returns**: Confirmation with operator contact info and quote details
+
+### 6. search_data
 - **Triggers**: "Show me...", "Find...", "Search for..."
 - **Filters**: Date range, status, airports, passenger count, text search
 - **Entities**: leads, opportunities, accounts
 - **Returns**: Formatted list of matching records (max 10)
 
-### 3. update_record
+### 7. update_record
 - **Triggers**: "Change...", "Update...", "Modify..."
 - **Safety**: Prevents updating protected fields (id, created_at, user_id)
 - **Requires**: Record ID
 - **Returns**: Confirmation of changes
 
-### 4. calculate_metrics
+### 8. calculate_metrics
 - **Triggers**: "How long...", "What's the distance...", "Calculate..."
 - **Calculates**: Distance (nautical miles), flight time (hours), price range
 - **Uses**: Haversine formula for distance, aircraft database for pricing
 - **Returns**: Formatted metrics with units
 
-### 5. enrich_airports
+### 9. enrich_airports
 - **Triggers**: "Tell me about...", "Info on...", (also called automatically during lead creation)
 - **Returns**: Name, location, coordinates, elevation, runway info
 - **Uses**: fallback_airports table + external APIs

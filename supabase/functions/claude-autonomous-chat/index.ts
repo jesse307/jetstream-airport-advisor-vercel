@@ -31,9 +31,20 @@ serve(async (req) => {
 ## Your Capabilities:
 1. **Create Leads** - Parse natural language booking requests and create leads directly
 2. **Search Data** - Query leads, opportunities, accounts, and aircraft
-3. **Update Records** - Modify existing records when requested
-4. **Calculate Metrics** - Compute flight times, distances, and pricing
-5. **Enrich Data** - Get detailed airport and aircraft information
+3. **Lookup Accounts** - Find existing clients by name, email, or company
+4. **Create Opportunities** - Convert leads or create new opportunities with trip details
+5. **Search Aircraft** - Find matching aircraft from trusted operators based on criteria
+6. **Send Quote Requests** - Generate and send quote requests to selected operators
+7. **Update Records** - Modify existing records when requested
+8. **Calculate Metrics** - Compute flight times, distances, and pricing
+9. **Enrich Data** - Get detailed airport and aircraft information
+
+## Complete Workflow:
+When user requests a full booking process, execute these steps in order:
+1. Check if client exists (lookup_accounts) OR create new lead (create_lead)
+2. Create opportunity from lead/client info (create_opportunity)
+3. Search for matching aircraft (search_aircraft)
+4. Send quote requests to operators (send_quote_requests)
 
 ## Natural Language Parsing Rules:
 - **Dates**: Convert casual formats to ISO 8601
@@ -250,6 +261,142 @@ User timezone: America/New_York (assume Eastern Time for date parsing)`;
           },
           required: ["airport_codes"]
         }
+      },
+      {
+        name: "lookup_accounts",
+        description: "Find existing client accounts by name, email, or company. Use this FIRST before creating new leads to avoid duplicates. Returns matching accounts with their IDs.",
+        input_schema: {
+          type: "object",
+          properties: {
+            search_text: {
+              type: "string",
+              description: "Search by name, email, or company name"
+            },
+            exact_email: {
+              type: "string",
+              description: "Search for exact email match (optional, more precise)"
+            }
+          },
+          required: ["search_text"]
+        }
+      },
+      {
+        name: "create_opportunity",
+        description: "Create a new sales opportunity with trip details. Can be created from a lead or for an existing account. This is the main booking record.",
+        input_schema: {
+          type: "object",
+          properties: {
+            account_id: {
+              type: "string",
+              description: "UUID of the account (from lookup_accounts or after creating lead+account)"
+            },
+            name: {
+              type: "string",
+              description: "Opportunity name (auto-generated as 'ROUTE - CLIENT' if not provided)"
+            },
+            departure_airport: {
+              type: "string",
+              description: "Departure airport code"
+            },
+            arrival_airport: {
+              type: "string",
+              description: "Arrival airport code"
+            },
+            departure_datetime: {
+              type: "string",
+              description: "ISO 8601 datetime"
+            },
+            return_datetime: {
+              type: "string",
+              description: "ISO 8601 datetime for round trips (optional)"
+            },
+            passengers: {
+              type: "number",
+              description: "Number of passengers"
+            },
+            trip_type: {
+              type: "string",
+              enum: ["one-way", "round-trip", "multi-leg"],
+              description: "Trip type"
+            },
+            expected_close_date: {
+              type: "string",
+              description: "ISO date when deal expected to close (defaults to departure date)"
+            },
+            amount: {
+              type: "number",
+              description: "Estimated deal value in dollars (optional)"
+            },
+            probability: {
+              type: "number",
+              description: "Win probability 0-100 (default 50)"
+            },
+            description: {
+              type: "string",
+              description: "Additional notes or requirements"
+            }
+          },
+          required: ["account_id", "departure_airport", "arrival_airport", "departure_datetime", "passengers", "trip_type"]
+        }
+      },
+      {
+        name: "search_aircraft",
+        description: "Search for matching aircraft from trusted operators based on aircraft category/type and route. Returns operators with matching aircraft and their details.",
+        input_schema: {
+          type: "object",
+          properties: {
+            aircraft_categories: {
+              type: "array",
+              items: { type: "string" },
+              description: "Aircraft categories to search for (e.g., ['Light Jet', 'Super Light Jet'])"
+            },
+            departure_airport: {
+              type: "string",
+              description: "Departure airport for distance calculation"
+            },
+            arrival_airport: {
+              type: "string",
+              description: "Arrival airport for distance calculation"
+            },
+            max_distance: {
+              type: "number",
+              description: "Maximum distance in miles from airports for fixed fleet (default 150)"
+            },
+            passengers: {
+              type: "number",
+              description: "Number of passengers (for capacity filtering, optional)"
+            }
+          },
+          required: ["aircraft_categories"]
+        }
+      },
+      {
+        name: "send_quote_requests",
+        description: "Send quote requests to selected operators with matching aircraft. Returns confirmation of quotes sent.",
+        input_schema: {
+          type: "object",
+          properties: {
+            opportunity_id: {
+              type: "string",
+              description: "UUID of the opportunity for this quote request"
+            },
+            operator_ids: {
+              type: "array",
+              items: { type: "string" },
+              description: "Array of operator IDs to send quotes to (from search_aircraft results)"
+            },
+            aircraft_categories: {
+              type: "array",
+              items: { type: "string" },
+              description: "Requested aircraft categories"
+            },
+            message: {
+              type: "string",
+              description: "Additional message or requirements for operators (optional)"
+            }
+          },
+          required: ["opportunity_id", "operator_ids", "aircraft_categories"]
+        }
       }
     ];
 
@@ -314,6 +461,14 @@ User timezone: America/New_York (assume Eastern Time for date parsing)`;
                     toolResult = await executeCreateLead(supabase, toolInput);
                   } else if (toolName === "search_data") {
                     toolResult = await executeSearchData(supabase, toolInput);
+                  } else if (toolName === "lookup_accounts") {
+                    toolResult = await executeLookupAccounts(supabase, toolInput);
+                  } else if (toolName === "create_opportunity") {
+                    toolResult = await executeCreateOpportunity(supabase, toolInput);
+                  } else if (toolName === "search_aircraft") {
+                    toolResult = await executeSearchAircraft(supabase, toolInput);
+                  } else if (toolName === "send_quote_requests") {
+                    toolResult = await executeSendQuoteRequests(supabase, toolInput);
                   } else if (toolName === "update_record") {
                     toolResult = await executeUpdateRecord(supabase, toolInput);
                   } else if (toolName === "calculate_metrics") {
@@ -623,6 +778,242 @@ async function executeEnrichAirports(supabase: any, input: any): Promise<string>
     return result;
   } catch (error) {
     console.error("Enrich airports error:", error);
+    throw error;
+  }
+}
+
+async function executeLookupAccounts(supabase: any, input: any): Promise<string> {
+  try {
+    let query = supabase.from('accounts').select('*');
+
+    // Search by exact email if provided
+    if (input.exact_email) {
+      query = query.eq('email', input.exact_email);
+    } else if (input.search_text) {
+      // Search by name, email, or company
+      const searchLower = input.search_text.toLowerCase();
+      query = query.or(`name.ilike.%${searchLower}%,email.ilike.%${searchLower}%,company.ilike.%${searchLower}%`);
+    }
+
+    query = query.limit(10).order('created_at', { ascending: false });
+
+    const { data, error } = await query;
+
+    if (error) {
+      throw new Error(`Account lookup failed: ${error.message}`);
+    }
+
+    if (!data || data.length === 0) {
+      return `No existing accounts found for "${input.search_text || input.exact_email}". You may need to create a new lead first.`;
+    }
+
+    let result = `Found ${data.length} existing account(s):\n\n`;
+    data.forEach((account: any, index: number) => {
+      result += `${index + 1}. ${account.name}\n`;
+      result += `   → ID: ${account.id}\n`;
+      result += `   → Email: ${account.email}\n`;
+      if (account.phone) result += `   → Phone: ${account.phone}\n`;
+      if (account.company) result += `   → Company: ${account.company}\n`;
+      result += `\n`;
+    });
+
+    return result;
+  } catch (error) {
+    console.error("Lookup accounts error:", error);
+    throw error;
+  }
+}
+
+async function executeCreateOpportunity(supabase: any, input: any): Promise<string> {
+  try {
+    // Parse dates
+    const depDate = input.departure_datetime.split('T')[0];
+    const retDate = input.return_datetime ? input.return_datetime.split('T')[0] : null;
+
+    // Auto-generate name if not provided
+    const opportunityName = input.name || `${input.departure_airport} → ${input.arrival_airport}`;
+
+    // Create opportunity object
+    const opportunityData = {
+      account_id: input.account_id,
+      name: opportunityName,
+      departure_airport: input.departure_airport,
+      arrival_airport: input.arrival_airport,
+      departure_date: depDate,
+      departure_datetime: input.departure_datetime,
+      return_date: retDate,
+      return_datetime: input.return_datetime || null,
+      passengers: input.passengers,
+      trip_type: input.trip_type,
+      stage: "qualification",
+      probability: input.probability || 50,
+      expected_close_date: input.expected_close_date || depDate,
+      amount: input.amount || null,
+      description: input.description || null,
+      user_id: null // Will need to get from auth context
+    };
+
+    const { data, error } = await supabase
+      .from('opportunities')
+      .insert(opportunityData)
+      .select()
+      .single();
+
+    if (error) {
+      throw new Error(`Failed to create opportunity: ${error.message}`);
+    }
+
+    return `✅ Created opportunity #${data.id.slice(0, 8)}: "${opportunityName}"
+→ Route: ${input.departure_airport} → ${input.arrival_airport}
+→ Departure: ${new Date(input.departure_datetime).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}
+${input.return_datetime ? `→ Return: ${new Date(input.return_datetime).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}` : ''}
+→ ${input.passengers} passenger${input.passengers > 1 ? 's' : ''}
+→ Trip Type: ${input.trip_type}
+→ Stage: Qualification (${input.probability || 50}% probability)
+→ View: /opportunities/${data.id}`;
+  } catch (error) {
+    console.error("Create opportunity error:", error);
+    throw error;
+  }
+}
+
+async function executeSearchAircraft(supabase: any, input: any): Promise<string> {
+  try {
+    const maxDistance = input.max_distance || 150;
+
+    // Get trusted operators with their aircraft
+    const { data: operators, error: opError } = await supabase
+      .from('trusted_operators')
+      .select(`
+        id,
+        name,
+        contact_email,
+        fleet_type
+      `);
+
+    if (opError) {
+      throw new Error(`Failed to load operators: ${opError.message}`);
+    }
+
+    if (!operators || operators.length === 0) {
+      return `No trusted operators found. Please add operators first via the Trusted Operators page.`;
+    }
+
+    // Get aircraft for all operators
+    const operatorIds = operators.map((op: any) => op.id);
+    const { data: allAircraft, error: aircraftError } = await supabase
+      .from('aircraft_locations')
+      .select('*')
+      .in('operator_id', operatorIds);
+
+    if (aircraftError) {
+      throw new Error(`Failed to load aircraft: ${aircraftError.message}`);
+    }
+
+    // Match operators with requested aircraft categories
+    const matchingOperators: any[] = [];
+
+    for (const operator of operators) {
+      const operatorAircraft = allAircraft?.filter((ac: any) => ac.operator_id === operator.id) || [];
+
+      // Find matching aircraft
+      const matches = operatorAircraft.filter((ac: any) =>
+        input.aircraft_categories.includes(ac.aircraft_category)
+      );
+
+      if (matches.length > 0) {
+        const locations = new Set(
+          matches
+            .map((ac: any) => ac.home_airport_icao || ac.home_airport_iata)
+            .filter(Boolean)
+        );
+
+        matchingOperators.push({
+          id: operator.id,
+          name: operator.name,
+          email: operator.contact_email,
+          fleetType: operator.fleet_type,
+          matchCount: matches.length,
+          locations: Array.from(locations)
+        });
+      }
+    }
+
+    if (matchingOperators.length === 0) {
+      return `No operators found with aircraft matching: ${input.aircraft_categories.join(', ')}`;
+    }
+
+    let result = `Found ${matchingOperators.length} operator(s) with matching aircraft:\n\n`;
+    matchingOperators.forEach((op: any, index: number) => {
+      result += `${index + 1}. ${op.name}\n`;
+      result += `   → ID: ${op.id}\n`;
+      result += `   → Fleet Type: ${op.fleetType === 'floating' ? 'Floating' : 'Fixed'}\n`;
+      result += `   → Matching Aircraft: ${op.matchCount}\n`;
+      if (op.fleetType === 'fixed' && op.locations.length > 0) {
+        result += `   → Locations: ${op.locations.join(', ')}\n`;
+      }
+      if (op.email) result += `   → Email: ${op.email}\n`;
+      result += `\n`;
+    });
+
+    result += `\nUse send_quote_requests with these operator IDs to send quote requests.`;
+
+    return result;
+  } catch (error) {
+    console.error("Search aircraft error:", error);
+    throw error;
+  }
+}
+
+async function executeSendQuoteRequests(supabase: any, input: any): Promise<string> {
+  try {
+    // Get operator details
+    const { data: operators, error: opError } = await supabase
+      .from('trusted_operators')
+      .select('id, name, contact_email')
+      .in('id', input.operator_ids);
+
+    if (opError || !operators || operators.length === 0) {
+      throw new Error(`Failed to load operators: ${opError?.message || 'No operators found'}`);
+    }
+
+    // Get opportunity details for the quote
+    const { data: opportunity, error: oppError } = await supabase
+      .from('opportunities')
+      .select('*')
+      .eq('id', input.opportunity_id)
+      .single();
+
+    if (oppError || !opportunity) {
+      throw new Error(`Failed to load opportunity: ${oppError?.message || 'Opportunity not found'}`);
+    }
+
+    let result = `✅ Quote requests prepared for ${operators.length} operator(s):\n\n`;
+
+    operators.forEach((op: any, index: number) => {
+      result += `${index + 1}. ${op.name}\n`;
+      if (op.contact_email) {
+        result += `   → Email: ${op.contact_email}\n`;
+        result += `   → Quote Request:\n`;
+        result += `      • Route: ${opportunity.departure_airport} → ${opportunity.arrival_airport}\n`;
+        result += `      • Date: ${new Date(opportunity.departure_datetime).toLocaleDateString()}\n`;
+        result += `      • Passengers: ${opportunity.passengers}\n`;
+        result += `      • Aircraft: ${input.aircraft_categories.join(', ')}\n`;
+        if (input.message) {
+          result += `      • Notes: ${input.message}\n`;
+        }
+      } else {
+        result += `   → ⚠️ No contact email on file\n`;
+      }
+      result += `\n`;
+    });
+
+    result += `\nNote: Quote requests should be sent via email to the operators listed above. `;
+    result += `The system will generate mailto links in the UI for easy sending.`;
+
+    return result;
+  } catch (error) {
+    console.error("Send quote requests error:", error);
     throw error;
   }
 }
