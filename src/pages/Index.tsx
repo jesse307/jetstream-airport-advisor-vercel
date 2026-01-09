@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { AirportSearch } from "@/components/AirportSearch";
 import { FlightCalculator } from "@/components/FlightCalculator";
 import { ApiTest } from "@/components/ApiTest";
+import { HomePageChatbot } from "@/components/HomePageChatbot";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -138,7 +139,10 @@ const Index = () => {
         <div className="space-y-6">
           {/* API Test Panel */}
           {showApiTest && <ApiTest />}
-          
+
+          {/* AI Chatbot */}
+          <HomePageChatbot />
+
           {/* Airport Selection */}
           <div className="bg-card rounded-lg shadow-sm border border-border p-6">
             <h2 className="text-lg font-semibold mb-4">Route Planning</h2>

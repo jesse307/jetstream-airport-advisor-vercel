@@ -9,6 +9,9 @@ verify_jwt = false
 [functions.lead-chat]
 verify_jwt = false
 
+[functions.claude-autonomous-chat]
+verify_jwt = false
+
 [functions.receive-open-leg-email]
 verify_jwt = false
 
