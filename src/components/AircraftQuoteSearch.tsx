@@ -270,243 +270,171 @@ export const AircraftQuoteSearch = ({ opportunityId }: AircraftQuoteSearchProps)
           Search Aircraft to Quote
         </CardTitle>
         <CardDescription>
-          Search available aircraft from your trusted operators
+          Select aircraft categories or types to request quotes from your trusted operators
         </CardDescription>
       </CardHeader>
       <CardContent>
-        {/* Two Column Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Left Column - Selection */}
-          <div className="space-y-4">
-          {/* Search Bar */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search by tail number or aircraft type..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9"
-            />
-          </div>
-
-          {/* Active Filters Display */}
-          {(selectedCategories.length > 0 || selectedTypes.length > 0) && (
-            <div className="flex flex-wrap gap-2">
-              {selectedCategories.map(cat => (
-                <Badge key={cat} variant="secondary" className="gap-1">
-                  {cat}
-                  <X
-                    className="h-3 w-3 cursor-pointer hover:text-destructive"
-                    onClick={() => toggleCategory(cat)}
-                  />
-                </Badge>
-              ))}
-              {selectedTypes.map(type => (
-                <Badge key={type} variant="secondary" className="gap-1">
-                  {type}
-                  <X
-                    className="h-3 w-3 cursor-pointer hover:text-destructive"
-                    onClick={() => toggleType(type)}
-                  />
-                </Badge>
-              ))}
-            </div>
-          )}
-
-          {/* Filters */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <Label className="text-xs text-muted-foreground mb-2 block">Category</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className="w-full justify-start">
-                    <Filter className="mr-2 h-4 w-4" />
-                    {selectedCategories.length === 0
-                      ? "All Categories"
-                      : `${selectedCategories.length} selected`}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-64" align="start">
-                  <div className="space-y-2">
-                    <div className="font-semibold text-sm mb-3">Select Categories</div>
-                    {categories.length === 0 ? (
-                      <p className="text-sm text-muted-foreground">No categories available</p>
-                    ) : (
-                      categories.map(cat => (
-                        <div key={cat} className="flex items-center space-x-2">
-                          <Checkbox
-                            id={`cat-${cat}`}
-                            checked={selectedCategories.includes(cat!)}
-                            onCheckedChange={() => toggleCategory(cat!)}
-                          />
-                          <label
-                            htmlFor={`cat-${cat}`}
-                            className="text-sm cursor-pointer flex-1"
-                          >
-                            {cat}
-                          </label>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </PopoverContent>
-              </Popover>
+        <div className="space-y-6">
+          {/* Selection Section */}
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">Select Aircraft</h3>
+              {(selectedCategories.length > 0 || selectedTypes.length > 0) && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setSelectedCategories([]);
+                    setSelectedTypes([]);
+                  }}
+                >
+                  Clear All
+                </Button>
+              )}
             </div>
 
-            <div>
-              <Label className="text-xs text-muted-foreground mb-2 block">Aircraft Type</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className="w-full justify-start">
-                    <Filter className="mr-2 h-4 w-4" />
-                    {selectedTypes.length === 0
-                      ? "All Types"
-                      : `${selectedTypes.length} selected`}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-64 max-h-[300px] overflow-y-auto" align="start">
-                  <div className="space-y-2">
-                    <div className="font-semibold text-sm mb-3">Select Aircraft Types</div>
-                    {types.length === 0 ? (
-                      <p className="text-sm text-muted-foreground">No types available</p>
-                    ) : (
-                      types.map(type => (
-                        <div key={type} className="flex items-center space-x-2">
-                          <Checkbox
-                            id={`type-${type}`}
-                            checked={selectedTypes.includes(type!)}
-                            onCheckedChange={() => toggleType(type!)}
-                          />
-                          <label
-                            htmlFor={`type-${type}`}
-                            className="text-sm cursor-pointer flex-1"
-                          >
-                            {type}
-                          </label>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </PopoverContent>
-              </Popover>
-            </div>
-
-          </div>
-
-          {/* Clear Filters Button */}
-          {(searchTerm || selectedCategories.length > 0 || selectedTypes.length > 0) && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                setSearchTerm("");
-                setSelectedCategories([]);
-                setSelectedTypes([]);
-              }}
-            >
-              Clear All Filters
-            </Button>
-          )}
-
-            {/* Operator List - For Reference */}
-            <div className="mt-4">
-              <Label className="text-sm font-semibold mb-2 block">Available Operators</Label>
-              <div className="text-xs text-muted-foreground space-y-1">
-                {filteredOperators.length === 0 ? (
-                  <p>No operators match your criteria</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Categories */}
+              <div>
+                <Label className="text-sm font-semibold mb-3 block">Categories</Label>
+                {categories.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No categories available</p>
                 ) : (
-                  filteredOperators.map(op => (
-                    <div key={op.id} className="flex items-center justify-between py-1 border-b border-border/50">
-                      <span>{op.name}</span>
-                      <Badge variant="outline" className="text-xs">{op.aircraft.length}</Badge>
-                    </div>
-                  ))
+                  <div className="space-y-2 max-h-[200px] overflow-y-auto border rounded-lg p-3">
+                    {categories.map(cat => (
+                      <div key={cat} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`cat-${cat}`}
+                          checked={selectedCategories.includes(cat!)}
+                          onCheckedChange={() => toggleCategory(cat!)}
+                        />
+                        <label
+                          htmlFor={`cat-${cat}`}
+                          className="text-sm cursor-pointer flex-1"
+                        >
+                          {cat}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Aircraft Types */}
+              <div>
+                <Label className="text-sm font-semibold mb-3 block">Aircraft Types</Label>
+                {types.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No types available</p>
+                ) : (
+                  <div className="space-y-2 max-h-[200px] overflow-y-auto border rounded-lg p-3">
+                    {types.map(type => (
+                      <div key={type} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`type-${type}`}
+                          checked={selectedTypes.includes(type!)}
+                          onCheckedChange={() => toggleType(type!)}
+                        />
+                        <label
+                          htmlFor={`type-${type}`}
+                          className="text-sm cursor-pointer flex-1"
+                        >
+                          {type}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
                 )}
               </div>
             </div>
           </div>
 
-          {/* Right Column - Quote Requests */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <Label className="text-sm font-semibold">Quote Requests ({quoteRequests.length})</Label>
+          <Separator />
+
+          {/* Quote Requests Section */}
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-lg font-semibold">Quote Requests</h3>
+                <p className="text-sm text-muted-foreground">
+                  {quoteRequests.length === 0
+                    ? "Select categories or aircraft types above to generate requests"
+                    : `${quoteRequests.length} operator${quoteRequests.length === 1 ? '' : 's'} will be contacted`}
+                </p>
+              </div>
               {quoteRequests.length > 0 && (
-                <Button onClick={handleSendAllQuotes} size="sm">
-                  <Send className="h-3 w-3 mr-1" />
-                  Send All ({quoteRequests.length})
+                <Button onClick={handleSendAllQuotes}>
+                  <Send className="h-4 w-4 mr-2" />
+                  Send All Quotes ({quoteRequests.length})
                 </Button>
               )}
             </div>
 
-            <Separator />
-
-            <div className="space-y-2 max-h-[500px] overflow-y-auto">
-              {quoteRequests.length === 0 ? (
-                <div className="text-center py-12">
-                  <Plane className="h-12 w-12 text-muted-foreground mx-auto mb-3 opacity-20" />
-                  <p className="text-sm text-muted-foreground">
-                    Select categories or aircraft types to build your quote requests
-                  </p>
-                </div>
-              ) : (
-                quoteRequests.map((request) => (
+            {quoteRequests.length === 0 ? (
+              <div className="text-center py-16 border-2 border-dashed rounded-lg bg-muted/10">
+                <Plane className="h-16 w-16 text-muted-foreground mx-auto mb-4 opacity-20" />
+                <p className="text-muted-foreground">
+                  Select aircraft categories or types above to build your quote requests
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {quoteRequests.map((request) => (
                   <div
                     key={request.operatorId}
-                    className="border border-border rounded-lg p-4 hover:bg-accent/10 transition-colors"
+                    className="border border-border rounded-lg p-4 hover:shadow-md transition-shadow bg-card"
                   >
                     <div className="flex items-start justify-between mb-3">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Building2 className="h-4 w-4 text-primary" />
-                          <h4 className="font-semibold">{request.operatorName}</h4>
-                        </div>
-
-                        {/* Categories */}
-                        {request.categories.length > 0 && (
-                          <div className="mb-2">
-                            <p className="text-xs text-muted-foreground mb-1">Categories:</p>
-                            <div className="flex flex-wrap gap-1">
-                              {request.categories.map(cat => (
-                                <Badge key={cat} variant="secondary" className="text-xs">
-                                  {cat}
-                                </Badge>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Types */}
-                        {request.types.length > 0 && (
-                          <div>
-                            <p className="text-xs text-muted-foreground mb-1">Aircraft Types:</p>
-                            <div className="flex flex-wrap gap-1">
-                              {request.types.map(type => (
-                                <Badge key={type} variant="outline" className="text-xs">
-                                  {type}
-                                </Badge>
-                              ))}
-                            </div>
-                          </div>
-                        )}
+                      <div className="flex items-center gap-2">
+                        <Building2 className="h-4 w-4 text-primary flex-shrink-0" />
+                        <h4 className="font-semibold text-sm">{request.operatorName}</h4>
                       </div>
-
-                      <Button
-                        size="sm"
-                        onClick={() => handleSendQuoteRequest(request)}
-                        disabled={!request.operatorEmail}
-                      >
-                        <Send className="h-3 w-3 mr-1" />
-                        Send
-                      </Button>
                     </div>
 
+                    {/* Categories */}
+                    {request.categories.length > 0 && (
+                      <div className="mb-3">
+                        <p className="text-xs text-muted-foreground mb-1.5">Categories:</p>
+                        <div className="flex flex-wrap gap-1">
+                          {request.categories.map(cat => (
+                            <Badge key={cat} variant="secondary" className="text-xs">
+                              {cat}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Types */}
+                    {request.types.length > 0 && (
+                      <div className="mb-3">
+                        <p className="text-xs text-muted-foreground mb-1.5">Aircraft Types:</p>
+                        <div className="flex flex-wrap gap-1">
+                          {request.types.map(type => (
+                            <Badge key={type} variant="outline" className="text-xs">
+                              {type}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    <Button
+                      size="sm"
+                      className="w-full mt-2"
+                      onClick={() => handleSendQuoteRequest(request)}
+                      disabled={!request.operatorEmail}
+                    >
+                      <Send className="h-3 w-3 mr-1" />
+                      Send Quote Request
+                    </Button>
+
                     {!request.operatorEmail && (
-                      <p className="text-xs text-destructive">No email available</p>
+                      <p className="text-xs text-destructive mt-2 text-center">No email available</p>
                     )}
                   </div>
-                ))
-              )}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </CardContent>

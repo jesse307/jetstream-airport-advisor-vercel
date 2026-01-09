@@ -637,8 +637,6 @@ export default function OpportunityDetail() {
               </Card>
             )}
 
-            {/* Aircraft Quote Search */}
-            <AircraftQuoteSearch opportunityId={opportunity.id} />
           </div>
 
           {/* Right Column - Deal Info & Actions */}
@@ -696,6 +694,11 @@ export default function OpportunityDetail() {
               </CardContent>
             </Card>
           </div>
+        </div>
+
+        {/* Full Width - Aircraft Quote Search */}
+        <div className="mt-6">
+          <AircraftQuoteSearch opportunityId={opportunity.id} />
         </div>
       </main>
     </div>
