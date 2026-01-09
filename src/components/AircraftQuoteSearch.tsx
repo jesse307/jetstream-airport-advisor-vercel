@@ -54,6 +54,7 @@ export const AircraftQuoteSearch = ({ opportunityId }: AircraftQuoteSearchProps)
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const [expandedOperators, setExpandedOperators] = useState<Set<string>>(new Set());
   const [quoteRequests, setQuoteRequests] = useState<QuoteRequest[]>([]);
+  const [selectedRequests, setSelectedRequests] = useState<Set<string>>(new Set());
 
   // Get unique categories and types from all aircraft
   const allAircraft = operators.flatMap(op => op.aircraft);
@@ -145,6 +146,7 @@ export const AircraftQuoteSearch = ({ opportunityId }: AircraftQuoteSearchProps)
   const generateQuoteRequests = () => {
     if (selectedCategories.length === 0 && selectedTypes.length === 0) {
       setQuoteRequests([]);
+      setSelectedRequests(new Set());
       return;
     }
 
@@ -173,6 +175,9 @@ export const AircraftQuoteSearch = ({ opportunityId }: AircraftQuoteSearchProps)
     });
 
     setQuoteRequests(requests);
+
+    // Auto-select all new requests by default
+    setSelectedRequests(new Set(requests.map(r => r.operatorId)));
   };
 
   const toggleCategory = (category: string) => {
@@ -203,12 +208,27 @@ export const AircraftQuoteSearch = ({ opportunityId }: AircraftQuoteSearchProps)
     });
   };
 
-  const handleSendQuoteRequest = (request: QuoteRequest) => {
-    if (!request.operatorEmail) {
-      toast.error("No contact email available for this operator");
-      return;
-    }
+  const toggleRequestSelection = (operatorId: string) => {
+    setSelectedRequests(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(operatorId)) {
+        newSet.delete(operatorId);
+      } else {
+        newSet.add(operatorId);
+      }
+      return newSet;
+    });
+  };
 
+  const toggleSelectAll = () => {
+    if (selectedRequests.size === quoteRequests.length) {
+      setSelectedRequests(new Set());
+    } else {
+      setSelectedRequests(new Set(quoteRequests.map(r => r.operatorId)));
+    }
+  };
+
+  const handleSendQuoteRequest = (request: QuoteRequest) => {
     const items: string[] = [];
     if (request.categories.length > 0) {
       items.push(...request.categories);
@@ -223,22 +243,22 @@ export const AircraftQuoteSearch = ({ opportunityId }: AircraftQuoteSearchProps)
     window.location.href = `mailto:${request.operatorEmail}?subject=${encodeURIComponent(subject)}&body=${body}`;
   };
 
-  const handleSendAllQuotes = () => {
-    const validRequests = quoteRequests.filter(req => req.operatorEmail);
+  const handleSendSelectedQuotes = () => {
+    const selectedQuoteList = quoteRequests.filter(req => selectedRequests.has(req.operatorId));
 
-    if (validRequests.length === 0) {
-      toast.error("No valid quote requests with email addresses");
+    if (selectedQuoteList.length === 0) {
+      toast.error("No quote requests selected");
       return;
     }
 
     // Send all emails (will open multiple mailto links)
-    validRequests.forEach((request, index) => {
+    selectedQuoteList.forEach((request, index) => {
       setTimeout(() => {
         handleSendQuoteRequest(request);
       }, index * 500); // Stagger the emails to avoid browser blocking
     });
 
-    toast.success(`Opening ${validRequests.length} quote request emails`);
+    toast.success(`Opening ${selectedQuoteList.length} quote request emails`);
   };
 
   if (loading) {
@@ -353,18 +373,27 @@ export const AircraftQuoteSearch = ({ opportunityId }: AircraftQuoteSearchProps)
           {/* Quote Requests Section */}
           <div>
             <div className="flex items-center justify-between mb-4">
-              <div>
-                <h3 className="text-lg font-semibold">Quote Requests</h3>
-                <p className="text-sm text-muted-foreground">
-                  {quoteRequests.length === 0
-                    ? "Select categories or aircraft types above to generate requests"
-                    : `${quoteRequests.length} operator${quoteRequests.length === 1 ? '' : 's'} will be contacted`}
-                </p>
+              <div className="flex items-center gap-3">
+                {quoteRequests.length > 0 && (
+                  <Checkbox
+                    id="select-all"
+                    checked={selectedRequests.size === quoteRequests.length && quoteRequests.length > 0}
+                    onCheckedChange={toggleSelectAll}
+                  />
+                )}
+                <div>
+                  <h3 className="text-lg font-semibold">Quote Requests</h3>
+                  <p className="text-sm text-muted-foreground">
+                    {quoteRequests.length === 0
+                      ? "Select categories or aircraft types above to generate requests"
+                      : `${selectedRequests.size} of ${quoteRequests.length} selected`}
+                  </p>
+                </div>
               </div>
-              {quoteRequests.length > 0 && (
-                <Button onClick={handleSendAllQuotes}>
+              {quoteRequests.length > 0 && selectedRequests.size > 0 && (
+                <Button onClick={handleSendSelectedQuotes}>
                   <Send className="h-4 w-4 mr-2" />
-                  Send All Quotes ({quoteRequests.length})
+                  Send Selected ({selectedRequests.size})
                 </Button>
               )}
             </div>
@@ -381,56 +410,54 @@ export const AircraftQuoteSearch = ({ opportunityId }: AircraftQuoteSearchProps)
                 {quoteRequests.map((request) => (
                   <div
                     key={request.operatorId}
-                    className="border border-border rounded-lg p-4 hover:shadow-md transition-shadow bg-card"
+                    className={`border rounded-lg p-4 transition-all ${
+                      selectedRequests.has(request.operatorId)
+                        ? 'border-primary bg-primary/5 shadow-md'
+                        : 'border-border bg-card hover:shadow-md'
+                    }`}
                   >
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center gap-2">
-                        <Building2 className="h-4 w-4 text-primary flex-shrink-0" />
-                        <h4 className="font-semibold text-sm">{request.operatorName}</h4>
+                    <div className="flex items-start gap-3 mb-3">
+                      <Checkbox
+                        id={`request-${request.operatorId}`}
+                        checked={selectedRequests.has(request.operatorId)}
+                        onCheckedChange={() => toggleRequestSelection(request.operatorId)}
+                        className="mt-0.5"
+                      />
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Building2 className="h-4 w-4 text-primary flex-shrink-0" />
+                          <h4 className="font-semibold text-sm">{request.operatorName}</h4>
+                        </div>
+
+                        {/* Categories */}
+                        {request.categories.length > 0 && (
+                          <div className="mb-2">
+                            <p className="text-xs text-muted-foreground mb-1.5">Categories:</p>
+                            <div className="flex flex-wrap gap-1">
+                              {request.categories.map(cat => (
+                                <Badge key={cat} variant="secondary" className="text-xs">
+                                  {cat}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Types */}
+                        {request.types.length > 0 && (
+                          <div>
+                            <p className="text-xs text-muted-foreground mb-1.5">Aircraft Types:</p>
+                            <div className="flex flex-wrap gap-1">
+                              {request.types.map(type => (
+                                <Badge key={type} variant="outline" className="text-xs">
+                                  {type}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
-
-                    {/* Categories */}
-                    {request.categories.length > 0 && (
-                      <div className="mb-3">
-                        <p className="text-xs text-muted-foreground mb-1.5">Categories:</p>
-                        <div className="flex flex-wrap gap-1">
-                          {request.categories.map(cat => (
-                            <Badge key={cat} variant="secondary" className="text-xs">
-                              {cat}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Types */}
-                    {request.types.length > 0 && (
-                      <div className="mb-3">
-                        <p className="text-xs text-muted-foreground mb-1.5">Aircraft Types:</p>
-                        <div className="flex flex-wrap gap-1">
-                          {request.types.map(type => (
-                            <Badge key={type} variant="outline" className="text-xs">
-                              {type}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    <Button
-                      size="sm"
-                      className="w-full mt-2"
-                      onClick={() => handleSendQuoteRequest(request)}
-                      disabled={!request.operatorEmail}
-                    >
-                      <Send className="h-3 w-3 mr-1" />
-                      Send Quote Request
-                    </Button>
-
-                    {!request.operatorEmail && (
-                      <p className="text-xs text-destructive mt-2 text-center">No email available</p>
-                    )}
                   </div>
                 ))}
               </div>
