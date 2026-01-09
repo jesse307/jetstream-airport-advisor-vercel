@@ -1,0 +1,31 @@
+╔══════════════════════════════════════════════════════════════╗
+║                                                              ║
+║         INSTALL VERCEL AI SDK - COMMAND                      ║
+║                                                              ║
+╚══════════════════════════════════════════════════════════════╝
+
+📝 Run this command in PowerShell or CMD:
+
+cd C:\Users\jesse\OneDrive\Desktop\jetstream-vercel-migration
+npm install ai @ai-sdk/anthropic zod
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📦 PACKAGES BEING INSTALLED:
+
+1. ai - Vercel AI SDK core (streaming, tool calling, React hooks)
+2. @ai-sdk/anthropic - Anthropic Claude provider for Vercel AI SDK
+3. zod - Schema validation for tools (already used in project)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ AFTER INSTALLATION:
+
+The code migration will be ready to use. I'll create:
+- API route: /api/chat
+- Migrated tools from Supabase edge function
+- Updated HomePageChatbot with useChat hook
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Run the command above, then let me know when it's done!
